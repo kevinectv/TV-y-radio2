@@ -29,6 +29,7 @@ import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
 import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
+import java.util.Calendar
 
 @Composable
 fun TvScreen(
@@ -40,11 +41,31 @@ fun TvScreen(
     val timelineStartDecimal = 8.0f // Starts at 08:00 AM
     val timelineEndDecimal = 24.0f  // Ends at 12:00 AM (16 hours scale)
 
-    // Current pointer simulation: 13.4 decimal corresponds precisely to 13:24 PM (1:24 PM)
-    val simulatedTimeDecimal = 13.4f
-    val simulatedHour = simulatedTimeDecimal.toInt()
-    val simulatedMinute = ((simulatedTimeDecimal - simulatedHour) * 60).toInt()
-    val simulatedTimeLabel = String.format("%02d:%02d", simulatedHour, simulatedMinute)
+    // Current live clock and timeline values (synchronized with standard system clock)
+    var currentTimeDecimal by remember { mutableStateOf(13.4f) }
+    var currentTimeString by remember { mutableStateOf("01:24 PM") }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val calendar = Calendar.getInstance()
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val minute = calendar.get(Calendar.MINUTE)
+            val second = calendar.get(Calendar.SECOND)
+            
+            // Decimal representing current high-precision hourly timeline offset
+            val actualDecimal = hour.toFloat() + (minute.toFloat() / 60.0f) + (second.toFloat() / 3600.0f)
+            
+            // Format 12-hour AM/PM matching the top right clock exactly (e.g. "8:29 PM")
+            val displayHour = calendar.get(Calendar.HOUR)
+            val actualHour = if (displayHour == 0) 12 else displayHour
+            val amPmString = if (calendar.get(Calendar.AM_PM) == Calendar.AM) "AM" else "PM"
+            
+            currentTimeString = String.format("%d:%02d %s", actualHour, minute, amPmString)
+            currentTimeDecimal = actualDecimal
+            
+            kotlinx.coroutines.delay(1000)
+        }
+    }
 
     // Active program selections
     val selectedProgram = viewModel.selectedEpgProgram
@@ -71,10 +92,10 @@ fun TvScreen(
         }
     }
 
-    // Effect to automatically synchronize focus details when selected channel changes
-    LaunchedEffect(viewModel.selectedChannel) {
+    // Effect to automatically synchronize focus details when selected channel changes or hour shifts
+    LaunchedEffect(viewModel.selectedChannel, currentTimeDecimal) {
         val runningProgram = viewModel.repository.programsList.find {
-            it.channelId == viewModel.selectedChannel.id && it.isActiveAt(simulatedTimeDecimal)
+            it.channelId == viewModel.selectedChannel.id && it.isActiveAt(currentTimeDecimal)
         }
         if (runningProgram != null) {
             viewModel.selectEpgProgram(runningProgram)
@@ -360,9 +381,10 @@ fun TvScreen(
                             modifier = Modifier
                                 .offset(x = (tickOffset - 30).dp)
                                 .width(60.dp)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .padding(top = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Top
                         ) {
                             Text(
                                 text = hourString,
@@ -373,28 +395,28 @@ fun TvScreen(
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "|",
-                                color = Color.White.copy(alpha = 0.4f),
+                                color = Color.White.copy(alpha = 0.3f),
                                 fontSize = 10.sp
                             )
                         }
                         hourCounter += 1.0f
                     }
 
-                    // Cápsula roja indicadora de la hora actual en el timeline
-                    val currentPointerOffset = (simulatedTimeDecimal - timelineStartDecimal) * hourWidth.value
+                    // Cápsula roja indicadora de la hora actual en el timeline (sincronizada y centrada)
+                    val currentPointerOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
                     Box(
                         modifier = Modifier
-                            .offset(x = (currentPointerOffset - 24).dp)
-                            .width(48.dp)
-                            .height(22.dp)
-                            .background(Color(0xFFE53935), RoundedCornerShape(4.dp))
-                            .align(Alignment.CenterStart),
+                            .offset(x = (currentPointerOffset - 34).dp)
+                            .width(68.dp)
+                            .height(20.dp)
+                            .background(Color(0xFFE53935), RoundedCornerShape(10.dp))
+                            .align(Alignment.BottomStart),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = simulatedTimeLabel,
+                            text = currentTimeString,
                             color = Color.White,
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -443,7 +465,7 @@ fun TvScreen(
                             .clickable {
                                 viewModel.selectChannel(channel)
                                 val running = viewModel.repository.programsList.find {
-                                    it.channelId == channel.id && it.isActiveAt(simulatedTimeDecimal)
+                                    it.channelId == channel.id && it.isActiveAt(currentTimeDecimal)
                                 }
                                 if (running != null) {
                                     viewModel.selectEpgProgram(running)
@@ -581,7 +603,7 @@ fun TvScreen(
                 }
 
                 // Línea vertical roja indicadora de tiempo que atraviesa toda la cuadrícula
-                val lineOffset = (simulatedTimeDecimal - timelineStartDecimal) * hourWidth.value
+                val lineOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
                 Box(
                     modifier = Modifier
                         .offset(x = lineOffset.dp)
