@@ -28,4 +28,27 @@ interface MediaDao {
 
     @Query("DELETE FROM recents")
     suspend fun clearRecents()
+
+    // Playlist Manager Queries
+    @Query("SELECT * FROM playlists ORDER BY name ASC")
+    fun getAllPlaylists(): Flow<List<PlaylistEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlaylist(playlist: PlaylistEntity)
+
+    @Query("DELETE FROM playlists WHERE id = :id")
+    suspend fun deletePlaylist(id: String)
+
+    @Query("SELECT * FROM playlists WHERE id = :id LIMIT 1")
+    suspend fun getPlaylistById(id: String): PlaylistEntity?
+
+    // EPG Sources Queries
+    @Query("SELECT * FROM epg_sources ORDER BY name ASC")
+    fun getAllEpgSources(): Flow<List<EpgSourceEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEpgSource(source: EpgSourceEntity)
+
+    @Query("DELETE FROM epg_sources WHERE id = :id")
+    suspend fun deleteEpgSource(id: String)
 }

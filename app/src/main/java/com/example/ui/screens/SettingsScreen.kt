@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -28,29 +29,97 @@ fun SettingsScreen(
     viewModel: MediaViewModel,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Broad Overview Title
-        item {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                Text(
-                    text = "CONFIGURACIÓN GENERAL",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    text = "Configura la calidad de vídeo, la escala de la guía EPG y opciones del reproductor multimedia.",
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 11.sp
-                )
+    var showIptvSources by remember { mutableStateOf(false) }
+
+    if (showIptvSources) {
+        IptvSourcesScreen(
+            viewModel = viewModel,
+            onBack = { showIptvSources = false },
+            modifier = modifier
+        )
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Broad Overview Title
+            item {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    Text(
+                        text = "CONFIGURACIÓN GENERAL",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        text = "Configura la calidad de vídeo, la escala de la guía EPG y opciones del reproductor multimedia.",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 11.sp
+                    )
+                }
             }
-        }
+
+            // IPTV PLAYLIST MANAGER ENTRANCE
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showIptvSources = true }
+                        .tvFocusEffect(shape = RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.09f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color(0xFF4A89FF).copy(alpha = 0.15f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Dns,
+                                contentDescription = null,
+                                tint = Color(0xFF4A89FF),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "PLAYLIST MANAGER / FUENTES IPTV",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = "Configura y administra tus listas de canales M3U, M3U8, credenciales de Xtream Codes y guías EPG XMLTV.",
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.3f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
 
         // 1. STYLE & THEMING CARD
         item {
@@ -328,6 +397,7 @@ fun SettingsScreen(
             }
         }
     }
+}
 }
 
 // Visual reusable category block

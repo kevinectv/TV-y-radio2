@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [FavoriteEntity::class, RecentEntity::class],
+    entities = [FavoriteEntity::class, RecentEntity::class, PlaylistEntity::class, EpgSourceEntity::class],
     version = 1,
     exportSchema = false
 )

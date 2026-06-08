@@ -11,11 +11,14 @@ import com.example.data.MediaRepository
 import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
 import com.example.data.model.RadioStation
+import com.example.data.database.PlaylistEntity
+import com.example.data.database.EpgSourceEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 enum class AppTab(val label: String) {
@@ -235,6 +238,146 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     fun clearRecentsHistory() {
         viewModelScope.launch {
             repository.clearRecentsHistory()
+        }
+    }
+
+    // IPTV sources / EPG manager persistent streams
+    val playlists: StateFlow<List<PlaylistEntity>> = repository.getAllPlaylists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val epgSources: StateFlow<List<EpgSourceEntity>> = repository.getAllEpgSources()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    init {
+        viewModelScope.launch {
+            try {
+                val currentPlaylists = repository.getAllPlaylists().first()
+                if (currentPlaylists.isEmpty()) {
+                    repository.insertPlaylist(
+                        PlaylistEntity(
+                            id = "pluto_es",
+                            name = "Pluto TV España",
+                            type = "M3U URL",
+                            url = "https://i.mjh.nz/PlutoTV/es.json",
+                            channelsCount = 84,
+                            groupsCount = 12,
+                            isEnabled = true,
+                            lastSynced = System.currentTimeMillis() - 3600000L * 3, // 3 hours ago
+                            syncStatus = "Success"
+                        )
+                    )
+                    repository.insertPlaylist(
+                        PlaylistEntity(
+                            id = "samsung_latam",
+                            name = "Samsung TV Plus LATAM",
+                            type = "M3U8 URL",
+                            url = "https://example.com/samsung_latam.m3u8",
+                            channelsCount = 120,
+                            groupsCount = 15,
+                            isEnabled = true,
+                            lastSynced = System.currentTimeMillis() - 3600000L * 24, // 24 hours ago
+                            syncStatus = "Success"
+                        )
+                    )
+                    repository.insertPlaylist(
+                        PlaylistEntity(
+                            id = "xtream_demo",
+                            name = "Lumina Premium Xtream",
+                            type = "Xtream Codes",
+                            url = "http://premium-iptv.dns.to:8080",
+                            username = "lumina_guest",
+                            password = "••••••••••••",
+                            channelsCount = 1850,
+                            groupsCount = 42,
+                            isEnabled = false,
+                            lastSynced = System.currentTimeMillis() - 3600000L * 48,
+                            syncStatus = "Error"
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                // Ignore initialization failures
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                val currentEpg = repository.getAllEpgSources().first()
+                if (currentEpg.isEmpty()) {
+                    repository.insertEpgSource(
+                        EpgSourceEntity(
+                            id = "epg_es",
+                            name = "EPG Oficial España XML",
+                            url = "https://i.mjh.nz/PlutoTV/es.xml",
+                            lastSynced = System.currentTimeMillis() - 3600000L * 2,
+                            syncStatus = "Success",
+                            isEnabled = true
+                        )
+                    )
+                    repository.insertEpgSource(
+                        EpgSourceEntity(
+                            id = "epg_global",
+                            name = "EPG Global Backup",
+                            url = "https://example.com/epg/global.xml.gz",
+                            lastSynced = System.currentTimeMillis() - 3600000L * 12,
+                            syncStatus = "Success",
+                            isEnabled = false
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                // Ignore initialization failures
+            }
+        }
+    }
+
+    // IPTV Database CRUD handlers
+    fun addPlaylist(playlist: PlaylistEntity) {
+        viewModelScope.launch {
+            repository.insertPlaylist(playlist)
+        }
+    }
+
+    fun deletePlaylist(id: String) {
+        viewModelScope.launch {
+            repository.deletePlaylist(id)
+        }
+    }
+
+    fun togglePlaylist(playlist: PlaylistEntity) {
+        viewModelScope.launch {
+            repository.insertPlaylist(playlist.copy(isEnabled = !playlist.isEnabled))
+        }
+    }
+
+    fun updatePlaylist(playlist: PlaylistEntity) {
+        viewModelScope.launch {
+            repository.insertPlaylist(playlist)
+        }
+    }
+
+    // EPG Database CRUD handlers
+    fun addEpgSource(source: EpgSourceEntity) {
+        viewModelScope.launch {
+            repository.insertEpgSource(source)
+        }
+    }
+
+    fun deleteEpgSource(id: String) {
+        viewModelScope.launch {
+            repository.deleteEpgSource(id)
+        }
+    }
+
+    fun toggleEpgSource(source: EpgSourceEntity) {
+        viewModelScope.launch {
+            repository.insertEpgSource(source.copy(isEnabled = !source.isEnabled))
+        }
+    }
+
+    fun updateEpgSource(source: EpgSourceEntity) {
+        viewModelScope.launch {
+            repository.insertEpgSource(source)
         }
     }
 }

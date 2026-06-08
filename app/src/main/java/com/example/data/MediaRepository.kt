@@ -3,6 +3,8 @@ package com.example.data
 import com.example.data.database.FavoriteEntity
 import com.example.data.database.MediaDao
 import com.example.data.database.RecentEntity
+import com.example.data.database.PlaylistEntity
+import com.example.data.database.EpgSourceEntity
 import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
 import com.example.data.model.RadioStation
@@ -189,4 +191,14 @@ class MediaRepository(private val mediaDao: MediaDao) {
     suspend fun clearRecentsHistory() {
         mediaDao.clearRecents()
     }
+
+    // Playlist & EPG Manager actions
+    fun getAllPlaylists(): Flow<List<PlaylistEntity>> = mediaDao.getAllPlaylists()
+    suspend fun insertPlaylist(playlist: PlaylistEntity) = mediaDao.insertPlaylist(playlist)
+    suspend fun deletePlaylist(id: String) = mediaDao.deletePlaylist(id)
+    suspend fun getPlaylistById(id: String): PlaylistEntity? = mediaDao.getPlaylistById(id)
+
+    fun getAllEpgSources(): Flow<List<EpgSourceEntity>> = mediaDao.getAllEpgSources()
+    suspend fun insertEpgSource(source: EpgSourceEntity) = mediaDao.insertEpgSource(source)
+    suspend fun deleteEpgSource(id: String) = mediaDao.deleteEpgSource(id)
 }
