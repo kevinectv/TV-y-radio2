@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
 import com.example.ui.MediaViewModel
+import androidx.compose.ui.platform.LocalDensity
 import com.example.ui.components.tvFocusEffect
 import java.util.Calendar
 
@@ -102,11 +103,32 @@ fun TvScreen(
         }
     }
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF04060C)) // Fondo secundario negro / ultra-oscuro
     ) {
+        val screenWidth = maxWidth
+        val density = LocalDensity.current
+        var hasAutoScrolled by remember { mutableStateOf(false) }
+
+        // Auto-scroll to center the timeline indicator on launch
+        LaunchedEffect(currentTimeDecimal) {
+            if (!hasAutoScrolled && currentTimeDecimal > timelineStartDecimal && currentTimeDecimal < timelineEndDecimal) {
+                val lineOffsetVal = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
+                val viewportWidthVal = screenWidth.value - 116f // 115.dp fixed column + 1.dp separator
+                val targetScrollDpVal = lineOffsetVal - (viewportWidthVal / 2f)
+                if (targetScrollDpVal > 0f) {
+                    val targetScrollPx = with(density) { targetScrollDpVal.dp.toPx().toInt() }
+                    horizontalScrollState.animateScrollTo(targetScrollPx)
+                }
+                hasAutoScrolled = true
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         // ==========================================
         // 1. PANEL SUPERIOR DE INFORMACIÓN DEL PROGRAMA
         // ==========================================
@@ -357,6 +379,14 @@ fun TvScreen(
                 )
             }
 
+            // Separador vertical fino para alinear exactamente con la cuadrícula de abajo (1.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
+                    .background(Color.White.copy(alpha = 0.08f))
+            )
+
             // Barra de horas scrollable
             Box(
                 modifier = Modifier
@@ -381,22 +411,15 @@ fun TvScreen(
                             modifier = Modifier
                                 .offset(x = (tickOffset - 30).dp)
                                 .width(60.dp)
-                                .fillMaxHeight()
-                                .padding(top = 4.dp),
+                                .fillMaxHeight(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Top
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = hourString,
                                 color = Color.White.copy(alpha = 0.9f),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "|",
-                                color = Color.White.copy(alpha = 0.3f),
-                                fontSize = 10.sp
                             )
                         }
                         hourCounter += 1.0f
@@ -406,17 +429,17 @@ fun TvScreen(
                     val currentPointerOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
                     Box(
                         modifier = Modifier
-                            .offset(x = (currentPointerOffset - 34).dp)
-                            .width(68.dp)
-                            .height(20.dp)
-                            .background(Color(0xFFE53935), RoundedCornerShape(10.dp))
-                            .align(Alignment.BottomStart),
+                            .offset(x = (currentPointerOffset - 38).dp)
+                            .width(76.dp)
+                            .height(24.dp)
+                            .background(Color(0xFFE53935), RoundedCornerShape(12.dp))
+                            .align(Alignment.CenterStart),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = currentTimeString,
                             color = Color.White,
-                            fontSize = 9.5.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -614,4 +637,5 @@ fun TvScreen(
             }
         }
     }
+}
 }
