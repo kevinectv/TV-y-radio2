@@ -214,7 +214,8 @@ fun TvScreen(
                                 .clickable { dateMenuExpanded = true }
                                 .tvFocusEffect(
                                     shape = RoundedCornerShape(8.dp),
-                                    focusedBorderColor = Color(0xFFFF5722),
+                                    focusedBorderColor = Color.White,
+                                    borderWidth = 3.dp,
                                     scaleAmount = 1.05f
                                 )
                                 .padding(horizontal = 20.dp, vertical = 10.dp)
@@ -263,7 +264,8 @@ fun TvScreen(
                                 .clickable { catMenuExpanded = true }
                                 .tvFocusEffect(
                                     shape = RoundedCornerShape(8.dp),
-                                    focusedBorderColor = Color(0xFFFF5722),
+                                    focusedBorderColor = Color.White,
+                                    borderWidth = 3.dp,
                                     scaleAmount = 1.05f
                                 )
                                 .padding(horizontal = 20.dp, vertical = 10.dp)
@@ -341,26 +343,30 @@ fun TvScreen(
                     .fillMaxHeight()
                     .horizontalScroll(horizontalScrollState)
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(hourWidth * (timelineEndDecimal - timelineStartDecimal))
                 ) {
                     var hourCounter = timelineStartDecimal
-                    while (hourCounter < timelineEndDecimal) {
+                    while (hourCounter <= timelineEndDecimal) {
                         val currentHourInt = hourCounter.toInt()
-                        val hourString = if (currentHourInt == 24) "00:00" else String.format("%02d:00", currentHourInt)
+                        val hourString = if (currentHourInt >= 24) "00:00" else String.format("%02d:00", currentHourInt)
+
+                        // Exact position on the horizontal scale for this hour
+                        val tickOffset = (hourCounter - timelineStartDecimal) * hourWidth.value
 
                         Column(
                             modifier = Modifier
-                                .width(hourWidth)
+                                .offset(x = (tickOffset - 30).dp)
+                                .width(60.dp)
                                 .fillMaxHeight(),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = hourString,
-                                color = Color.White,
+                                color = Color.White.copy(alpha = 0.9f),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -373,25 +379,25 @@ fun TvScreen(
                         }
                         hourCounter += 1.0f
                     }
-                }
 
-                // Cápsula roja indicadora de la hora actual en el timeline
-                val currentPointerOffset = (simulatedTimeDecimal - timelineStartDecimal) * hourWidth.value
-                Box(
-                    modifier = Modifier
-                        .offset(x = currentPointerOffset.dp - 24.dp)
-                        .width(48.dp)
-                        .height(22.dp)
-                        .background(Color(0xFFE53935), RoundedCornerShape(4.dp))
-                        .align(Alignment.CenterStart),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = simulatedTimeLabel,
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    // Cápsula roja indicadora de la hora actual en el timeline
+                    val currentPointerOffset = (simulatedTimeDecimal - timelineStartDecimal) * hourWidth.value
+                    Box(
+                        modifier = Modifier
+                            .offset(x = (currentPointerOffset - 24).dp)
+                            .width(48.dp)
+                            .height(22.dp)
+                            .background(Color(0xFFE53935), RoundedCornerShape(4.dp))
+                            .align(Alignment.CenterStart),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = simulatedTimeLabel,
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
                 }
             }
         }
@@ -430,8 +436,8 @@ fun TvScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (isChannelSelected) Color(0xFF2C313C) else Color(0xFF1E222A)) // Gris oscuro
                             .border(
-                                width = if (isChannelSelected) 1.5.dp else 0.dp,
-                                color = if (isChannelSelected) Color(0xFFFF5722) else Color.Transparent,
+                                width = if (isChannelSelected) 3.dp else 1.dp,
+                                color = if (isChannelSelected) Color.White else Color.White.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
@@ -445,7 +451,8 @@ fun TvScreen(
                             }
                             .tvFocusEffect(
                                 shape = RoundedCornerShape(8.dp),
-                                focusedBorderColor = Color(0xFFFF5722),
+                                focusedBorderColor = Color.White,
+                                borderWidth = 3.dp,
                                 scaleAmount = 1.05f
                             ),
                         contentAlignment = Alignment.Center
@@ -509,8 +516,8 @@ fun TvScreen(
                                     label = "bg_color"
                                 )
 
-                                val borderStrokeColorByState = if (isSelectedInDetails) Color(0xFFFFCC80) else Color.White.copy(alpha = 0.05f)
-                                val borderStrokeWidth = if (isSelectedInDetails) 2.dp else 1.dp
+                                val borderStrokeColorByState = if (isSelectedInDetails) Color.White else Color.White.copy(alpha = 0.08f)
+                                val borderStrokeWidth = if (isSelectedInDetails) 3.dp else 1.dp
 
                                 Box(
                                     modifier = Modifier
@@ -542,8 +549,9 @@ fun TvScreen(
                                         }
                                         .tvFocusEffect(
                                             shape = RoundedCornerShape(8.dp),
-                                            focusedBorderColor = Color(0xFFF95D02), // Focus Naranja TiviMate
-                                            scaleAmount = 1.03f
+                                            focusedBorderColor = Color.White,
+                                            borderWidth = 3.dp,
+                                            scaleAmount = 1.04f
                                         )
                                         .zIndex(if (isSelectedInDetails) 2f else 1f)
                                         .padding(horizontal = 12.dp, vertical = 6.dp),
