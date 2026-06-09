@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -35,24 +36,23 @@ fun Modifier.tvFocusEffect(
         properties["unfocusedBorderColor"] = unfocusedBorderColor
     }
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
+    var isFocused by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) scaleAmount else 1f,
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 120f),
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 150f),
         label = "tv_focus_scale"
     )
 
     val translationY by animateFloatAsState(
-        targetValue = if (isFocused) -10f else 0f, // physically lifts up on Y axis gracefully
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 120f),
+        targetValue = if (isFocused) -12f else 0f, // physically lifts up on Y axis gracefully
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 150f),
         label = "tv_focus_translation_y"
     )
 
     val elevation by animateFloatAsState(
         targetValue = if (isFocused) 12f else 0f, // shadow depth
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 120f),
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 150f),
         label = "tv_focus_elevation"
     )
 
@@ -62,6 +62,9 @@ fun Modifier.tvFocusEffect(
     )
 
     this
+        .onFocusChanged { focusState ->
+            isFocused = focusState.isFocused || focusState.hasFocus
+        }
         .graphicsLayer {
             this.scaleX = scale
             this.scaleY = scale
@@ -70,7 +73,7 @@ fun Modifier.tvFocusEffect(
             this.shape = shape
             this.clip = false
         }
-        .focusable(interactionSource = interactionSource)
+        .focusable()
         .border(
             width = borderWidth,
             color = if (isFocused) focusedBorderColor.copy(alpha = borderAlpha) else unfocusedBorderColor,
