@@ -14,6 +14,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -37,27 +38,32 @@ fun Modifier.tvFocusEffect(
     }
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    
+    // Convert 10dp to pixels dynamically so it is pronounced on TVs of all resolutions
+    val liftPx = remember(density) { with(density) { 10.dp.toPx() } }
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) scaleAmount else 1f,
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 150f),
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
         label = "tv_focus_scale"
     )
 
     val translationY by animateFloatAsState(
-        targetValue = if (isFocused) -12f else 0f, // physically lifts up on Y axis gracefully
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 150f),
+        targetValue = if (isFocused) -liftPx else 0f, // physically lifts up on Y axis gracefully
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
         label = "tv_focus_translation_y"
     )
 
     val elevation by animateFloatAsState(
         targetValue = if (isFocused) 12f else 0f, // shadow depth
-        animationSpec = spring(dampingRatio = 0.85f, stiffness = 150f),
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
         label = "tv_focus_elevation"
     )
 
     val borderAlpha by animateFloatAsState(
         targetValue = if (isFocused) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
         label = "tv_focus_border_alpha"
     )
 
@@ -73,7 +79,6 @@ fun Modifier.tvFocusEffect(
             this.shape = shape
             this.clip = false
         }
-        .focusable()
         .border(
             width = borderWidth,
             color = if (isFocused) focusedBorderColor.copy(alpha = borderAlpha) else unfocusedBorderColor,

@@ -16,6 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
@@ -46,6 +49,7 @@ fun ProfileSelectionScreen(
     val profilesList by viewModel.profiles.collectAsState()
     var screenMode by remember { mutableStateOf(ProfileScreenMode.SELECT) }
     var selectedProfileForEdit by remember { mutableStateOf<ProfileEntity?>(null) }
+    val manageButtonFocusRequester = remember { FocusRequester() }
 
     // Custom Profile Creator/Editor Temporary States
     var tempName by remember { mutableStateOf("") }
@@ -138,10 +142,11 @@ fun ProfileSelectionScreen(
                             // Row of profiles
                             Row(
                                 modifier = Modifier
-                                    .padding(horizontal = 32.dp)
+                                    .padding(horizontal = 24.dp)
+                                    .padding(vertical = 16.dp)
                                     .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(48.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                verticalAlignment = Alignment.Top
                             ) {
                                 // Dynamic Database Profiles
                                 profilesList.forEachIndexed { index, profile ->
@@ -149,16 +154,16 @@ fun ProfileSelectionScreen(
                                     var isHovered by remember { mutableStateOf(false) }
                                     val focusBorderColor = remember(profile.profileColor) {
                                         try {
-                                            Color(android.graphics.Color.parseColor(profile.profileColor))
+                                             Color(android.graphics.Color.parseColor(profile.profileColor))
                                         } catch (e: Exception) {
-                                            Color.White
+                                             Color.White
                                         }
                                     }
 
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
-                                            .width(148.dp)
+                                            .width(128.dp)
                                             .padding(vertical = 12.dp)
                                     ) {
                                         Box(
@@ -171,6 +176,9 @@ fun ProfileSelectionScreen(
                                                     borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
                                                     scaleAmount = 1.15f
                                                 )
+                                                .focusProperties {
+                                                    down = manageButtonFocusRequester
+                                                }
                                                 .clickable {
                                                     if (screenMode == ProfileScreenMode.SELECT) {
                                                         viewModel.selectProfile(profile)
@@ -287,7 +295,7 @@ fun ProfileSelectionScreen(
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
-                                            .width(148.dp)
+                                            .width(128.dp)
                                             .padding(vertical = 12.dp)
                                     ) {
                                         Box(
@@ -301,6 +309,9 @@ fun ProfileSelectionScreen(
                                                     borderWidth = 1.5.dp,
                                                     scaleAmount = 1.15f
                                                 )
+                                                .focusProperties {
+                                                    down = manageButtonFocusRequester
+                                                }
                                                 .clickable {
                                                     // Init fields for creation
                                                     tempName = ""
@@ -351,6 +362,7 @@ fun ProfileSelectionScreen(
                                 ),
                                 modifier = Modifier
                                     .padding(8.dp)
+                                    .focusRequester(manageButtonFocusRequester)
                                     .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                                     .semantics { testTag = "manage_profiles_button" }
                             ) {
