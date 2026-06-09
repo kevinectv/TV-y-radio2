@@ -159,40 +159,36 @@ fun ProfileSelectionScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
                                             .width(148.dp)
-                                            .tvFocusEffect(
-                                                shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = Color(0xCCECEFF8),
-                                                unfocusedBorderColor = if (isCurrentActive) focusBorderColor.copy(alpha = 0.5f) else Color.Transparent,
-                                                scaleAmount = 1.12f
-                                            )
-                                            .clickable {
-                                                if (screenMode == ProfileScreenMode.SELECT) {
-                                                    viewModel.selectProfile(profile)
-                                                } else {
-                                                    // Open Edit for this profile
-                                                    selectedProfileForEdit = profile
-                                                    tempName = profile.name
-                                                    tempStyle = profile.avatarStyle
-                                                    tempSkinColor = profile.avatarSkinColor
-                                                    tempHairColor = profile.avatarHairColor
-                                                    tempAccessory = profile.avatarAccessory
-                                                    tempExpression = profile.avatarExpression
-                                                    tempProfileColor = profile.profileColor
-                                                    tempIsKids = profile.isKids
-                                                    screenMode = ProfileScreenMode.EDIT
-                                                }
-                                            }
-                                            .padding(6.dp)
+                                            .padding(vertical = 12.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(110.dp)
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .border(
-                                                    width = if (isCurrentActive) 3.dp else 1.5.dp,
-                                                    color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
-                                                    shape = RoundedCornerShape(16.dp)
+                                                .size(112.dp)
+                                                .tvFocusEffect(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    focusedBorderColor = Color(0xCCECEFF8),
+                                                    unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
+                                                    borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
+                                                    scaleAmount = 1.15f
                                                 )
+                                                .clickable {
+                                                    if (screenMode == ProfileScreenMode.SELECT) {
+                                                        viewModel.selectProfile(profile)
+                                                    } else {
+                                                        // Open Edit for this profile
+                                                        selectedProfileForEdit = profile
+                                                        tempName = profile.name
+                                                        tempStyle = profile.avatarStyle
+                                                        tempSkinColor = profile.avatarSkinColor
+                                                        tempHairColor = profile.avatarHairColor
+                                                        tempAccessory = profile.avatarAccessory
+                                                        tempExpression = profile.avatarExpression
+                                                        tempProfileColor = profile.profileColor
+                                                        tempIsKids = profile.isKids
+                                                        screenMode = ProfileScreenMode.EDIT
+                                                    }
+                                                }
+                                                .clip(RoundedCornerShape(16.dp))
                                         ) {
                                             CharacterAvatar(
                                                 style = profile.avatarStyle,
@@ -292,27 +288,27 @@ fun ProfileSelectionScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
                                             .width(148.dp)
-                                            .tvFocusEffect(
-                                                shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = Color(0xCCECEFF8),
-                                                unfocusedBorderColor = Color.Transparent,
-                                                scaleAmount = 1.12f
-                                            )
-                                            .clickable {
-                                                // Init fields for creation
-                                                tempName = ""
-                                                randomizeAvatar()
-                                                tempIsKids = false
-                                                screenMode = ProfileScreenMode.CREATE
-                                            }
-                                            .padding(6.dp)
+                                            .padding(vertical = 12.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(110.dp)
+                                                .size(112.dp)
+                                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                                                .tvFocusEffect(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    focusedBorderColor = Color(0xCCECEFF8),
+                                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
+                                                    borderWidth = 1.5.dp,
+                                                    scaleAmount = 1.15f
+                                                )
+                                                .clickable {
+                                                    // Init fields for creation
+                                                    tempName = ""
+                                                    randomizeAvatar()
+                                                    tempIsKids = false
+                                                    screenMode = ProfileScreenMode.CREATE
+                                                }
                                                 .clip(RoundedCornerShape(16.dp))
-                                                .background(Color.White.copy(alpha = 0.05f))
-                                                .border(2.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
                                                 .semantics { testTag = "add_profile_card" },
                                             contentAlignment = Alignment.Center
                                         ) {
