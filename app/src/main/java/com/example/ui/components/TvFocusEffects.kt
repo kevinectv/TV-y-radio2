@@ -40,19 +40,19 @@ fun Modifier.tvFocusEffect(
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) scaleAmount else 1f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 120f),
         label = "tv_focus_scale"
     )
 
     val translationY by animateFloatAsState(
-        targetValue = if (isFocused) -15f else 0f, // physically lifts up on Y axis
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        targetValue = if (isFocused) -10f else 0f, // physically lifts up on Y axis gracefully
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 120f),
         label = "tv_focus_translation_y"
     )
 
     val elevation by animateFloatAsState(
-        targetValue = if (isFocused) 16f else 0f, // shadow depth
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        targetValue = if (isFocused) 12f else 0f, // shadow depth
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 120f),
         label = "tv_focus_elevation"
     )
 

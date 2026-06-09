@@ -138,9 +138,9 @@ fun ProfileSelectionScreen(
                             // Row of profiles
                             Row(
                                 modifier = Modifier
-                                    .padding(horizontal = 16.dp)
+                                    .padding(horizontal = 32.dp)
                                     .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(48.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Dynamic Database Profiles
@@ -158,12 +158,12 @@ fun ProfileSelectionScreen(
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
-                                            .width(130.dp)
+                                            .width(148.dp)
                                             .tvFocusEffect(
                                                 shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = Color.White,
+                                                focusedBorderColor = Color(0xCCECEFF8),
                                                 unfocusedBorderColor = if (isCurrentActive) focusBorderColor.copy(alpha = 0.5f) else Color.Transparent,
-                                                scaleAmount = 1.15f
+                                                scaleAmount = 1.12f
                                             )
                                             .clickable {
                                                 if (screenMode == ProfileScreenMode.SELECT) {
@@ -291,12 +291,12 @@ fun ProfileSelectionScreen(
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
-                                            .width(130.dp)
+                                            .width(148.dp)
                                             .tvFocusEffect(
                                                 shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = Color.White,
+                                                focusedBorderColor = Color(0xCCECEFF8),
                                                 unfocusedBorderColor = Color.Transparent,
-                                                scaleAmount = 1.15f
+                                                scaleAmount = 1.12f
                                             )
                                             .clickable {
                                                 // Init fields for creation
