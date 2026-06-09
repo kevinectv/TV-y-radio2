@@ -19,7 +19,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import com.example.data.database.ProfileEntity
+import java.util.UUID
 
 enum class AppTab(val label: String) {
     HOME("Home"),
@@ -37,6 +41,107 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
 
     fun selectTab(tab: AppTab) {
         currentTab = tab
+    }
+
+    // Active Profile and Selector State
+    val activeProfileIdFlow = MutableStateFlow<String>("")
+
+    var activeProfile by mutableStateOf<ProfileEntity?>(null)
+        internal set
+
+    var showProfileSelector by mutableStateOf(true)
+
+    val profiles: StateFlow<List<ProfileEntity>> = repository.getProfiles()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun selectProfile(profile: ProfileEntity) {
+        activeProfile = profile
+        isDarkTheme = (profile.interfacePref == "dark")
+        selectedLanguage = profile.languagePref
+        activeProfileIdFlow.value = profile.id
+        showProfileSelector = false
+    }
+
+    fun logoutProfile() {
+        activeProfile = null
+        showProfileSelector = true
+    }
+
+    fun createProfile(
+        name: String,
+        avatarStyle: String,
+        skinColor: String,
+        hairColor: String,
+        accessory: String,
+        expression: String,
+        profileColor: String,
+        isKids: Boolean
+    ) {
+        viewModelScope.launch {
+            val id = UUID.randomUUID().toString()
+            val newProfile = ProfileEntity(
+                id = id,
+                name = name,
+                avatarStyle = avatarStyle,
+                avatarSkinColor = skinColor,
+                avatarHairColor = hairColor,
+                avatarAccessory = accessory,
+                avatarExpression = expression,
+                profileColor = profileColor,
+                isKids = isKids,
+                languagePref = "Español",
+                interfacePref = "dark"
+            )
+            repository.insertProfile(newProfile)
+            
+            // If it's the first profile, auto-select it!
+            val currentProfiles = repository.getProfiles().first()
+            if (currentProfiles.isEmpty() || currentProfiles.size == 1) {
+                selectProfile(newProfile)
+            }
+        }
+    }
+
+    fun updateProfile(
+        id: String,
+        name: String,
+        avatarStyle: String,
+        skinColor: String,
+        hairColor: String,
+        accessory: String,
+        expression: String,
+        profileColor: String,
+        isKids: Boolean
+    ) {
+        viewModelScope.launch {
+            val updated = ProfileEntity(
+                id = id,
+                name = name,
+                avatarStyle = avatarStyle,
+                avatarSkinColor = skinColor,
+                avatarHairColor = hairColor,
+                avatarAccessory = accessory,
+                avatarExpression = expression,
+                profileColor = profileColor,
+                isKids = isKids,
+                languagePref = selectedLanguage,
+                interfacePref = if (isDarkTheme) "dark" else "light"
+            )
+            repository.insertProfile(updated)
+            if (activeProfile?.id == id) {
+                activeProfile = updated
+            }
+        }
+    }
+
+    fun deleteProfile(id: String) {
+        viewModelScope.launch {
+            repository.deleteProfile(id)
+            if (activeProfile?.id == id) {
+                activeProfile = null
+                showProfileSelector = true
+            }
+        }
     }
 
     companion object {
@@ -89,7 +194,9 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
 
         // Add to history
         viewModelScope.launch {
-            repository.markAsRecent(channel.id, "channel")
+            activeProfile?.id?.let { pId ->
+                repository.markAsRecent(pId, channel.id, "channel")
+            }
         }
     }
 
@@ -140,7 +247,9 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
         isRadioPlaying = true
         // Add to history
         viewModelScope.launch {
-            repository.markAsRecent(station.id, "radio")
+            activeProfile?.id?.let { pId ->
+                repository.markAsRecent(pId, station.id, "radio")
+            }
         }
     }
 
@@ -194,6 +303,13 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
 
     fun toggleTheme() {
         isDarkTheme = !isDarkTheme
+        activeProfile?.let { prof ->
+            val updated = prof.copy(interfacePref = if (isDarkTheme) "dark" else "light")
+            activeProfile = updated
+            viewModelScope.launch {
+                repository.insertProfile(updated)
+            }
+        }
     }
 
     fun updateStreamQuality(quality: String) {
@@ -206,6 +322,13 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
 
     fun updateLanguage(lang: String) {
         selectedLanguage = lang
+        activeProfile?.let { prof ->
+            val updated = prof.copy(languagePref = lang)
+            activeProfile = updated
+            viewModelScope.launch {
+                repository.insertProfile(updated)
+            }
+        }
     }
 
     fun updateRegion(reg: String) {
@@ -220,64 +343,79 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     val allChannels: StateFlow<List<Channel>> = repository.getAllChannelsFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), repository.channelsList)
 
-    val favoriteChannels: StateFlow<List<Channel>> = repository.getFavorites()
-        .combine(repository.getAllChannelsFlow()) { favEntities, allChans ->
-            val favIds = favEntities.filter { it.type == "channel" }.map { it.itemId }.toSet()
-            allChans.filter { it.id in favIds }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val favoriteChannels: StateFlow<List<Channel>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getFavorites(pId).combine(repository.getAllChannelsFlow()) { favEntities, allChans ->
+                val favIds = favEntities.filter { it.type == "channel" }.map { it.itemId }.toSet()
+                allChans.filter { it.id in favIds }
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val favoriteRadioStations: StateFlow<List<RadioStation>> = repository.getFavorites()
-        .combine(MutableStateFlow(repository.radioStationsList)) { favEntities, allRadios ->
-            val favIds = favEntities.filter { it.type == "radio" }.map { it.itemId }.toSet()
-            allRadios.filter { it.id in favIds }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val favoriteRadioStations: StateFlow<List<RadioStation>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getFavorites(pId).combine(MutableStateFlow(repository.radioStationsList)) { favEntities, allRadios ->
+                val favIds = favEntities.filter { it.type == "radio" }.map { it.itemId }.toSet()
+                allRadios.filter { it.id in favIds }
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val recentChannels: StateFlow<List<Channel>> = repository.getRecents()
-        .combine(repository.getAllChannelsFlow()) { recentEntities, allChans ->
-            val recentIds = recentEntities.filter { it.type == "channel" }.map { it.itemId }
-            // Filter and match order of played
-            recentIds.mapNotNull { id -> allChans.find { it.id == id } }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val recentChannels: StateFlow<List<Channel>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getRecents(pId).combine(repository.getAllChannelsFlow()) { recentEntities, allChans ->
+                val recentIds = recentEntities.filter { it.type == "channel" }.map { it.itemId }
+                recentIds.mapNotNull { id -> allChans.find { it.id == id } }
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val recentRadioStations: StateFlow<List<RadioStation>> = repository.getRecents()
-        .combine(MutableStateFlow(repository.radioStationsList)) { recentEntities, allRadios ->
-            val recentIds = recentEntities.filter { it.type == "radio" }.map { it.itemId }
-            recentIds.mapNotNull { id -> allRadios.find { it.id == id } }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val recentRadioStations: StateFlow<List<RadioStation>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getRecents(pId).combine(MutableStateFlow(repository.radioStationsList)) { recentEntities, allRadios ->
+                val recentIds = recentEntities.filter { it.type == "radio" }.map { it.itemId }
+                recentIds.mapNotNull { id -> allRadios.find { it.id == id } }
+            }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Direct helper to toggle favorite
     fun toggleChannelFavorite(channelId: String) {
         viewModelScope.launch {
-            val favId = "channel_$channelId"
-            if (repository.isFavorite(channelId, "channel")) {
-                repository.removeFavorite(channelId, "channel")
+            val pId = activeProfile?.id ?: return@launch
+            if (repository.isFavorite(pId, channelId, "channel")) {
+                repository.removeFavorite(pId, channelId, "channel")
             } else {
-                repository.addFavorite(channelId, "channel")
+                repository.addFavorite(pId, channelId, "channel")
             }
         }
     }
 
     fun toggleRadioFavorite(radioId: String) {
         viewModelScope.launch {
-            if (repository.isFavorite(radioId, "radio")) {
-                repository.removeFavorite(radioId, "radio")
+            val pId = activeProfile?.id ?: return@launch
+            if (repository.isFavorite(pId, radioId, "radio")) {
+                repository.removeFavorite(pId, radioId, "radio")
             } else {
-                repository.addFavorite(radioId, "radio")
+                repository.addFavorite(pId, radioId, "radio")
             }
         }
     }
 
     suspend fun isChannelFavorite(channelId: String): Boolean {
-        return repository.isFavorite(channelId, "channel")
+        val pId = activeProfile?.id ?: return false
+        return repository.isFavorite(pId, channelId, "channel")
     }
 
     suspend fun isRadioFavorite(radioId: String): Boolean {
-        return repository.isFavorite(radioId, "radio")
+        val pId = activeProfile?.id ?: return false
+        return repository.isFavorite(pId, radioId, "radio")
     }
 
     fun clearRecentsHistory() {
         viewModelScope.launch {
-            repository.clearRecentsHistory()
+            val pId = activeProfile?.id ?: return@launch
+            repository.clearRecentsHistory(pId)
         }
     }
 
@@ -463,6 +601,66 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
                 if (channels.isNotEmpty() && (selectedChannel == DefaultChannel || !channels.any { it.id == selectedChannel.id })) {
                     selectChannel(channels.first())
                 }
+            }
+        }
+        viewModelScope.launch {
+            try {
+                val list = repository.getProfiles().first()
+                if (list.isEmpty()) {
+                    val initialList = listOf(
+                        ProfileEntity(
+                            id = "p1",
+                            name = "Lumina Ultra",
+                            avatarStyle = "ninja",
+                            avatarSkinColor = "#FFD1A4",
+                            avatarHairColor = "#FFCC00",
+                            avatarAccessory = "headband",
+                            avatarExpression = "cool",
+                            profileColor = "#00E5FF",
+                            isKids = false
+                        ),
+                        ProfileEntity(
+                            id = "p2",
+                            name = "Premium User",
+                            avatarStyle = "futuristic",
+                            avatarSkinColor = "#E0A96D",
+                            avatarHairColor = "#00FFFF",
+                            avatarAccessory = "visor",
+                            avatarExpression = "smile",
+                            profileColor = "#FF4081",
+                            isKids = false
+                        ),
+                        ProfileEntity(
+                            id = "p3",
+                            name = "Mago IPTV",
+                            avatarStyle = "wizard",
+                            avatarSkinColor = "#FFAA66",
+                            avatarHairColor = "#9C27B0",
+                            avatarAccessory = "hat",
+                            avatarExpression = "wink",
+                            profileColor = "#E040FB",
+                            isKids = false
+                        ),
+                        ProfileEntity(
+                            id = "p4",
+                            name = "Kids Zone",
+                            avatarStyle = "superhero",
+                            avatarSkinColor = "#FFD1A4",
+                            avatarHairColor = "#E50914",
+                            avatarAccessory = "star",
+                            avatarExpression = "smile",
+                            profileColor = "#4CAF50",
+                            isKids = true
+                        )
+                    )
+                    initialList.forEach { repository.insertProfile(it) }
+                    // Auto select first
+                    selectProfile(initialList.first())
+                } else if (activeProfile == null) {
+                    selectProfile(list.first())
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

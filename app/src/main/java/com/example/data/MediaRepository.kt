@@ -4,6 +4,7 @@ import com.example.data.database.FavoriteEntity
 import com.example.data.database.MediaDao
 import com.example.data.database.RecentEntity
 import com.example.data.database.PlaylistEntity
+import com.example.data.database.ProfileEntity
 import com.example.data.database.EpgSourceEntity
 import com.example.data.database.ChannelEntity
 import com.example.data.model.Channel
@@ -147,31 +148,35 @@ class MediaRepository(private val mediaDao: MediaDao) {
 
 
     // Reactive streams from the DB
-    fun getFavorites(): Flow<List<FavoriteEntity>> = mediaDao.getFavorites()
-    fun getRecents(): Flow<List<RecentEntity>> = mediaDao.getRecents()
+    fun getProfiles(): Flow<List<ProfileEntity>> = mediaDao.getProfiles()
+    suspend fun insertProfile(profile: ProfileEntity) = mediaDao.insertProfile(profile)
+    suspend fun deleteProfile(id: String) = mediaDao.deleteProfile(id)
 
-    suspend fun addFavorite(itemId: String, type: String) {
-        mediaDao.insertFavorite(FavoriteEntity(id = "${type}_$itemId", type = type, itemId = itemId))
+    fun getFavorites(profileId: String): Flow<List<FavoriteEntity>> = mediaDao.getFavorites(profileId)
+    fun getRecents(profileId: String): Flow<List<RecentEntity>> = mediaDao.getRecents(profileId)
+
+    suspend fun addFavorite(profileId: String, itemId: String, type: String) {
+        mediaDao.insertFavorite(FavoriteEntity(id = "${profileId}_${type}_$itemId", profileId = profileId, type = type, itemId = itemId))
     }
 
-    suspend fun removeFavorite(itemId: String, type: String) {
-        mediaDao.deleteFavorite("${type}_$itemId")
+    suspend fun removeFavorite(profileId: String, itemId: String, type: String) {
+        mediaDao.deleteFavorite("${profileId}_${type}_$itemId")
     }
 
-    suspend fun isFavorite(itemId: String, type: String): Boolean {
-        return mediaDao.isFavorite("${type}_$itemId")
+    suspend fun isFavorite(profileId: String, itemId: String, type: String): Boolean {
+        return mediaDao.isFavorite("${profileId}_${type}_$itemId")
     }
 
-    suspend fun markAsRecent(itemId: String, type: String) {
-        mediaDao.insertRecent(RecentEntity(id = "${type}_$itemId", type = type, itemId = itemId, lastPlayedAt = System.currentTimeMillis()))
+    suspend fun markAsRecent(profileId: String, itemId: String, type: String) {
+        mediaDao.insertRecent(RecentEntity(id = "${profileId}_${type}_$itemId", profileId = profileId, type = type, itemId = itemId, lastPlayedAt = System.currentTimeMillis()))
     }
 
-    suspend fun removeRecent(itemId: String, type: String) {
-        mediaDao.deleteRecent("${type}_$itemId")
+    suspend fun removeRecent(profileId: String, itemId: String, type: String) {
+        mediaDao.deleteRecent("${profileId}_${type}_$itemId")
     }
 
-    suspend fun clearRecentsHistory() {
-        mediaDao.clearRecents()
+    suspend fun clearRecentsHistory(profileId: String) {
+        mediaDao.clearRecents(profileId)
     }
 
     fun getAllChannelsFlow(): Flow<List<Channel>> {

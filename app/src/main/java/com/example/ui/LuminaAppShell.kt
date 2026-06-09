@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.ui.components.ElegantBackground
 import com.example.ui.components.tvFocusEffect
+import com.example.ui.components.CharacterAvatar
+import com.example.ui.screens.ProfileSelectionScreen
 import com.example.ui.screens.*
 import kotlinx.coroutines.delay
 import java.util.*
@@ -99,19 +101,27 @@ fun LuminaAppShell(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // User Profile Circle
+                        // User Profile Circle (Clicking switches/selects profile)
+                        val activeColorHex = viewModel.activeProfile?.profileColor ?: "#00E5FF"
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.15f))
-                                .border(1.5.dp, Color(0xFF4A89FF), CircleShape)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.5.dp, Color(android.graphics.Color.parseColor(activeColorHex)), RoundedCornerShape(8.dp))
+                                .clickable { viewModel.logoutProfile() }
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         ) {
-                            Image(
-                                painter = rememberAsyncImagePainter("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100"),
-                                contentDescription = "Perfil del Usuario",
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            viewModel.activeProfile?.let { profile ->
+                                CharacterAvatar(
+                                    style = profile.avatarStyle,
+                                    skinColorHex = profile.avatarSkinColor,
+                                    hairColorHex = profile.avatarHairColor,
+                                    accessory = profile.avatarAccessory,
+                                    expression = profile.avatarExpression,
+                                    profileColorHex = profile.profileColor,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
 
                         // Search expander icon + input box

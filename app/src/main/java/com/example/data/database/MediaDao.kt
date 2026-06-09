@@ -5,8 +5,17 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MediaDao {
-    @Query("SELECT * FROM favorites ORDER BY addedAt DESC")
-    fun getFavorites(): Flow<List<FavoriteEntity>>
+    @Query("SELECT * FROM profiles ORDER BY name ASC")
+    fun getProfiles(): Flow<List<ProfileEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProfile(profile: ProfileEntity)
+
+    @Query("DELETE FROM profiles WHERE id = :id")
+    suspend fun deleteProfile(id: String)
+
+    @Query("SELECT * FROM favorites WHERE profileId = :profileId ORDER BY addedAt DESC")
+    fun getFavorites(profileId: String): Flow<List<FavoriteEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFavorite(favorite: FavoriteEntity)
@@ -17,8 +26,8 @@ interface MediaDao {
     @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE id = :id LIMIT 1)")
     suspend fun isFavorite(id: String): Boolean
 
-    @Query("SELECT * FROM recents ORDER BY lastPlayedAt DESC LIMIT 20")
-    fun getRecents(): Flow<List<RecentEntity>>
+    @Query("SELECT * FROM recents WHERE profileId = :profileId ORDER BY lastPlayedAt DESC LIMIT 20")
+    fun getRecents(profileId: String): Flow<List<RecentEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecent(recent: RecentEntity)
@@ -26,8 +35,8 @@ interface MediaDao {
     @Query("DELETE FROM recents WHERE id = :id")
     suspend fun deleteRecent(id: String)
 
-    @Query("DELETE FROM recents")
-    suspend fun clearRecents()
+    @Query("DELETE FROM recents WHERE profileId = :profileId")
+    suspend fun clearRecents(profileId: String)
 
     // Playlist Manager Queries
     @Query("SELECT * FROM playlists ORDER BY name ASC")
