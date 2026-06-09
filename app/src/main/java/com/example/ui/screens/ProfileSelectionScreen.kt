@@ -159,6 +159,12 @@ fun ProfileSelectionScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
                                             .width(130.dp)
+                                            .tvFocusEffect(
+                                                shape = RoundedCornerShape(16.dp),
+                                                focusedBorderColor = Color.White,
+                                                unfocusedBorderColor = if (isCurrentActive) focusBorderColor.copy(alpha = 0.5f) else Color.Transparent,
+                                                scaleAmount = 1.15f
+                                            )
                                             .clickable {
                                                 if (screenMode == ProfileScreenMode.SELECT) {
                                                     viewModel.selectProfile(profile)
@@ -176,13 +182,7 @@ fun ProfileSelectionScreen(
                                                     screenMode = ProfileScreenMode.EDIT
                                                 }
                                             }
-                                            .tvFocusEffect(
-                                                shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = focusBorderColor,
-                                                unfocusedBorderColor = if (isCurrentActive) focusBorderColor.copy(alpha = 0.5f) else Color.Transparent,
-                                                scaleAmount = 1.1f
-                                            )
-                                            .padding(4.dp)
+                                            .padding(6.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -292,6 +292,12 @@ fun ProfileSelectionScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
                                             .width(130.dp)
+                                            .tvFocusEffect(
+                                                shape = RoundedCornerShape(16.dp),
+                                                focusedBorderColor = Color.White,
+                                                unfocusedBorderColor = Color.Transparent,
+                                                scaleAmount = 1.15f
+                                            )
                                             .clickable {
                                                 // Init fields for creation
                                                 tempName = ""
@@ -299,13 +305,7 @@ fun ProfileSelectionScreen(
                                                 tempIsKids = false
                                                 screenMode = ProfileScreenMode.CREATE
                                             }
-                                            .tvFocusEffect(
-                                                shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = Color.White,
-                                                unfocusedBorderColor = Color.Transparent,
-                                                scaleAmount = 1.1f
-                                            )
-                                            .padding(4.dp)
+                                            .padding(6.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
