@@ -47,8 +47,9 @@ fun HomeScreen(
     val recentChans by viewModel.recentChannels.collectAsState()
     val recentRadios by viewModel.recentRadioStations.collectAsState()
 
+    val allChannels by viewModel.allChannels.collectAsState()
     // Showcase/Banner Channel (First channel by default)
-    val heroChannel = viewModel.repository.channelsList.first()
+    val heroChannel = allChannels.firstOrNull() ?: viewModel.repository.channelsList.first()
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),

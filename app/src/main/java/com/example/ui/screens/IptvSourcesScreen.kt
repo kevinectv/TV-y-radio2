@@ -60,22 +60,13 @@ fun IptvSourcesScreen(
     var activelySyncingPlaylistId by remember { mutableStateOf<String?>(null) }
     var activelySyncingEpgId by remember { mutableStateOf<String?>(null) }
 
-    // Simulated sync algorithm
+    // Real network-enabled sync algorithm
     val triggerSyncPlaylist = { playlist: PlaylistEntity ->
         coroutineScope.launch {
             activelySyncingPlaylistId = playlist.id
-            viewModel.updatePlaylist(playlist.copy(syncStatus = "Syncing..."))
-            delay(800)
-            viewModel.updatePlaylist(
-                playlist.copy(
-                    syncStatus = "Success",
-                    lastSynced = System.currentTimeMillis(),
-                    // Increment count slightly for realistic feedback
-                    channelsCount = if (playlist.channelsCount == 0) (50..300).random() else playlist.channelsCount,
-                    groupsCount = if (playlist.groupsCount == 0) (5..25).random() else playlist.groupsCount
-                )
-            )
-            activelySyncingPlaylistId = null
+            viewModel.syncPlaylist(playlist) {
+                activelySyncingPlaylistId = null
+            }
         }
     }
 
@@ -99,30 +90,25 @@ fun IptvSourcesScreen(
             isSyncingAll = true
             syncProgress = 0.05f
             syncStatusText = "Iniciando descarga de listas..."
-            delay(600)
+            delay(500)
             
+            val enabledPlaylists = playlists.filter { it.isEnabled }
             syncProgress = 0.25f
-            syncStatusText = "Actualizando canales M3U (Pluto TV)..."
-            playlists.filter { it.isEnabled }.forEach {
-                viewModel.updatePlaylist(it.copy(syncStatus = "Syncing..."))
-            }
-            delay(900)
+            syncStatusText = "Actualizando canales M3U cargados..."
             
-            syncProgress = 0.55f
-            syncStatusText = "Procesando categorías & grupos IPTV..."
-            playlists.filter { it.isEnabled }.forEach {
-                viewModel.updatePlaylist(
-                    it.copy(
-                        syncStatus = "Success",
-                        lastSynced = System.currentTimeMillis(),
-                        channelsCount = if (it.channelsCount == 0) (80..500).random() else it.channelsCount,
-                        groupsCount = if (it.groupsCount == 0) (8..30).random() else it.groupsCount
-                    )
-                )
+            if (enabledPlaylists.isNotEmpty()) {
+                val progressStep = 0.5f / enabledPlaylists.size
+                enabledPlaylists.forEach { pl ->
+                    syncStatusText = "Sincronizando ${pl.name}..."
+                    viewModel.syncPlaylist(pl)
+                    delay(400)
+                    syncProgress += progressStep
+                }
+            } else {
+                syncProgress = 0.75f
             }
-            delay(800)
             
-            syncProgress = 0.75f
+            syncProgress = 0.80f
             syncStatusText = "Sincronizando Guías EPG XMLTV..."
             epgSources.filter { it.isEnabled }.forEach {
                 viewModel.updateEpgSource(it.copy(syncStatus = "Syncing..."))
@@ -130,7 +116,7 @@ fun IptvSourcesScreen(
             delay(900)
             
             syncProgress = 0.90f
-            syncStatusText = "indexando programas de televisión..."
+            syncStatusText = "Indexando programas..."
             epgSources.filter { it.isEnabled }.forEach {
                 viewModel.updateEpgSource(
                     it.copy(

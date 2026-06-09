@@ -82,12 +82,14 @@ fun TvScreen(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
 
+    val allChannels by viewModel.allChannels.collectAsState()
+
     // Filter channels list dynamically based on category selection
-    val filteredChannels = remember(selectedCategoryFilter) {
+    val filteredChannels = remember(allChannels, selectedCategoryFilter) {
         if (selectedCategoryFilter == "All channels") {
-            viewModel.repository.channelsList
+            allChannels
         } else {
-            viewModel.repository.channelsList.filter {
+            allChannels.filter {
                 it.category.equals(selectedCategoryFilter, ignoreCase = true)
             }
         }
@@ -153,12 +155,51 @@ fun TvScreen(
                         .weight(0.9f)
                         .fillMaxHeight()
                 ) {
-                    AsyncImage(
-                        model = selectedProgram.thumbnailUrl,
-                        contentDescription = selectedProgram.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (viewModel.isTvPlaying) {
+                        androidx.compose.ui.viewinterop.AndroidView(
+                            factory = { ctx ->
+                                val videoView = android.widget.VideoView(ctx).apply {
+                                    layoutParams = android.view.ViewGroup.LayoutParams(
+                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                                    )
+                                }
+                                videoView.setOnPreparedListener { mp ->
+                                    mp.isLooping = true
+                                    try {
+                                        mp.setVolume(viewModel.tvVolume, viewModel.tvVolume)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                    videoView.start()
+                                }
+                                videoView.setOnErrorListener { _, _, _ ->
+                                    true
+                                }
+                                videoView
+                            },
+                            update = { videoView ->
+                                val streamUrl = viewModel.selectedChannel.streamUrl
+                                if (videoView.tag != streamUrl && streamUrl.isNotEmpty()) {
+                                    videoView.tag = streamUrl
+                                    try {
+                                        videoView.stopPlayback()
+                                        videoView.setVideoPath(streamUrl)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        AsyncImage(
+                            model = selectedProgram.thumbnailUrl,
+                            contentDescription = selectedProgram.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                     // Degradado horizontal para fusionar la foto a la izquierda con el azul marino oscuro
                     Box(
                         modifier = Modifier
@@ -337,7 +378,9 @@ fun TvScreen(
                             onDismissRequest = { catMenuExpanded = false },
                             modifier = Modifier.background(Color(0xFF1F2228))
                         ) {
-                            val categories = listOf("All channels", "Science", "Cinema", "Sci-Fi", "Tech", "Adventure", "Documentary")
+                            val categories = remember(allChannels) {
+                                listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                            }
                             categories.forEach { category ->
                                 DropdownMenuItem(
                                     text = { Text(text = category, color = Color.White, fontSize = 13.sp) },
@@ -578,7 +621,7 @@ fun TvScreen(
                                         )
                                         .clickable {
                                             viewModel.selectEpgProgram(program)
-                                            val matchedChannel = viewModel.repository.channelsList.find { it.id == program.channelId }
+                                            val matchedChannel = allChannels.find { it.id == program.channelId }
                                             if (matchedChannel != null) {
                                                 viewModel.selectChannel(matchedChannel)
                                             }
@@ -586,7 +629,7 @@ fun TvScreen(
                                         .onFocusChanged { focusState ->
                                             if (focusState.isFocused) {
                                                 viewModel.selectEpgProgram(program)
-                                                val matchedChannel = viewModel.repository.channelsList.find { it.id == program.channelId }
+                                                val matchedChannel = allChannels.find { it.id == program.channelId }
                                                 if (matchedChannel != null) {
                                                     viewModel.selectChannel(matchedChannel)
                                                 }

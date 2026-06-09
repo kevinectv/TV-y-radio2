@@ -51,4 +51,17 @@ interface MediaDao {
 
     @Query("DELETE FROM epg_sources WHERE id = :id")
     suspend fun deleteEpgSource(id: String)
+
+    // Channel Queries
+    @Query("SELECT * FROM channels ORDER BY number ASC, name ASC")
+    fun getAllChannelEntities(): Flow<List<ChannelEntity>>
+
+    @Query("SELECT * FROM channels WHERE playlistId = :playlistId")
+    suspend fun getChannelsByPlaylist(playlistId: String): List<ChannelEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChannels(channels: List<ChannelEntity>)
+
+    @Query("DELETE FROM channels WHERE playlistId = :playlistId")
+    suspend fun deleteChannelsByPlaylist(playlistId: String)
 }

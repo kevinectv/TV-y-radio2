@@ -65,7 +65,7 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     }
 
     fun selectNextChannel() {
-        val list = repository.channelsList
+        val list = allChannels.value
         val index = list.indexOfFirst { it.id == selectedChannel.id }
         if (index != -1) {
             val nextIndex = (index + 1) % list.size
@@ -74,7 +74,7 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     }
 
     fun selectPrevChannel() {
-        val list = repository.channelsList
+        val list = allChannels.value
         val index = list.indexOfFirst { it.id == selectedChannel.id }
         if (index != -1) {
             val prevIndex = if (index - 1 < 0) list.size - 1 else index - 1
@@ -180,10 +180,13 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     }
 
     // Reactive Watchlist, Favorites, and Recents Combine flows
+    val allChannels: StateFlow<List<Channel>> = repository.getAllChannelsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), repository.channelsList)
+
     val favoriteChannels: StateFlow<List<Channel>> = repository.getFavorites()
-        .combine(MutableStateFlow(repository.channelsList)) { favEntities, allChannels ->
+        .combine(repository.getAllChannelsFlow()) { favEntities, allChans ->
             val favIds = favEntities.filter { it.type == "channel" }.map { it.itemId }.toSet()
-            allChannels.filter { it.id in favIds }
+            allChans.filter { it.id in favIds }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val favoriteRadioStations: StateFlow<List<RadioStation>> = repository.getFavorites()
@@ -193,10 +196,10 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentChannels: StateFlow<List<Channel>> = repository.getRecents()
-        .combine(MutableStateFlow(repository.channelsList)) { recentEntities, allChannels ->
+        .combine(repository.getAllChannelsFlow()) { recentEntities, allChans ->
             val recentIds = recentEntities.filter { it.type == "channel" }.map { it.itemId }
             // Filter and match order of played
-            recentIds.mapNotNull { id -> allChannels.find { it.id == id } }
+            recentIds.mapNotNull { id -> allChans.find { it.id == id } }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentRadioStations: StateFlow<List<RadioStation>> = repository.getRecents()
@@ -378,6 +381,42 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     fun updateEpgSource(source: EpgSourceEntity) {
         viewModelScope.launch {
             repository.insertEpgSource(source)
+        }
+    }
+
+    fun syncPlaylist(playlist: PlaylistEntity, onComplete: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                repository.insertPlaylist(playlist.copy(syncStatus = "Syncing..."))
+                val finalUrl = if (playlist.type.equals("Xtream Codes", ignoreCase = true)) {
+                    val baseUrl = playlist.url.removeSuffix("/")
+                    "${baseUrl}/get.php?username=${playlist.username}&password=${playlist.password}&output=ts"
+                } else {
+                    playlist.url
+                }
+                
+                val success = repository.syncPlaylistChannels(playlist.id, finalUrl, playlist.type)
+                
+                if (success) {
+                    val channelsCount = repository.getChannelsCountForPlaylist(playlist.id)
+                    val groupsCount = repository.getGroupsCountForPlaylist(playlist.id)
+                    repository.insertPlaylist(
+                        playlist.copy(
+                            syncStatus = "Success",
+                            lastSynced = System.currentTimeMillis(),
+                            channelsCount = channelsCount,
+                            groupsCount = groupsCount
+                        )
+                    )
+                    onComplete(true)
+                } else {
+                    repository.insertPlaylist(playlist.copy(syncStatus = "Error"))
+                    onComplete(false)
+                }
+            } catch (e: Exception) {
+                repository.insertPlaylist(playlist.copy(syncStatus = "Error"))
+                onComplete(false)
+            }
         }
     }
 }

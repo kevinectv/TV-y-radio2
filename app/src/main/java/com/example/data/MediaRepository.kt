@@ -5,11 +5,13 @@ import com.example.data.database.MediaDao
 import com.example.data.database.RecentEntity
 import com.example.data.database.PlaylistEntity
 import com.example.data.database.EpgSourceEntity
+import com.example.data.database.ChannelEntity
 import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
 import com.example.data.model.RadioStation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 
 class MediaRepository(private val mediaDao: MediaDao) {
 
@@ -192,10 +194,193 @@ class MediaRepository(private val mediaDao: MediaDao) {
         mediaDao.clearRecents()
     }
 
+    fun getAllChannelsFlow(): Flow<List<Channel>> {
+        return mediaDao.getAllChannelEntities().combine(mediaDao.getAllPlaylists()) { dbChans, playlists ->
+            val enabledPlaylistIds = playlists.filter { it.isEnabled }.map { it.id }.toSet()
+            val dynamicList = dbChans.filter { it.playlistId in enabledPlaylistIds }.map { entity ->
+                Channel(
+                    id = entity.id,
+                    name = entity.name,
+                    streamUrl = entity.streamUrl,
+                    logoUrl = entity.logoUrl,
+                    category = entity.category,
+                    description = entity.description.ifEmpty { "Canal de la lista IPTV" },
+                    number = entity.number
+                )
+            }
+            channelsList + dynamicList
+        }
+    }
+
+    suspend fun syncPlaylistChannels(playlistId: String, url: String, type: String): Boolean {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val client = okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+                val request = okhttp3.Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                    .build()
+                
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) return@withContext false
+                val bodyString = response.body?.string() ?: return@withContext false
+                
+                val parsedList = if (bodyString.trim().startsWith("{")) {
+                    parseJsonPlaylist(bodyString, playlistId)
+                } else {
+                    parseM3uPlaylist(bodyString, playlistId)
+                }
+                
+                mediaDao.deleteChannelsByPlaylist(playlistId)
+                if (parsedList.isNotEmpty()) {
+                    mediaDao.insertChannels(parsedList)
+                }
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+    }
+
+    private fun parseJsonPlaylist(jsonStr: String, playlistId: String): List<ChannelEntity> {
+        val list = mutableListOf<ChannelEntity>()
+        try {
+            val root = org.json.JSONObject(jsonStr)
+            if (root.has("channels")) {
+                val channelsObj = root.getJSONObject("channels")
+                val keys = channelsObj.keys()
+                var index = 1
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val chanObj = channelsObj.getJSONObject(key)
+                    val name = chanObj.optString("name", "Unknown Channel")
+                    val logoUrl = chanObj.optString("logo", "")
+                    val streamUrl = chanObj.optString("url", "")
+                    
+                    var category = "General"
+                    if (chanObj.has("groups")) {
+                        val groupsArr = chanObj.optJSONArray("groups")
+                        if (groupsArr != null && groupsArr.length() > 0) {
+                            category = groupsArr.optString(0, "General")
+                        } else {
+                            val groupsStr = chanObj.optString("groups", "")
+                            if (groupsStr.isNotEmpty()) {
+                                category = groupsStr
+                            }
+                        }
+                    }
+                    
+                    if (streamUrl.isNotEmpty()) {
+                        list.add(
+                            ChannelEntity(
+                                id = "${playlistId}_$key",
+                                playlistId = playlistId,
+                                name = name,
+                                streamUrl = streamUrl,
+                                logoUrl = logoUrl,
+                                category = category,
+                                description = "Canal de la lista IPTV",
+                                number = 100 + index
+                            )
+                        )
+                        index++
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    private fun parseM3uPlaylist(m3uContent: String, playlistId: String): List<ChannelEntity> {
+        val list = mutableListOf<ChannelEntity>()
+        try {
+            val lines = m3uContent.lines()
+            var currentName = ""
+            var currentLogo = ""
+            var currentCategory = "General"
+            var index = 1
+            
+            for (line in lines) {
+                val trimmed = line.trim()
+                if (trimmed.startsWith("#EXTINF:")) {
+                    val lastComma = trimmed.lastIndexOf(',')
+                    currentName = if (lastComma != -1) {
+                        trimmed.substring(lastComma + 1).trim()
+                    } else {
+                        "Channel $index"
+                    }
+                    
+                    currentLogo = extractAttribute(trimmed, "tvg-logo")
+                    currentCategory = extractAttribute(trimmed, "group-title")
+                    if (currentCategory.isEmpty()) {
+                        currentCategory = "General"
+                    }
+                } else if (trimmed.startsWith("#EXTGRP:")) {
+                    val cat = trimmed.substring(8).trim()
+                    if (cat.isNotEmpty()) {
+                        currentCategory = cat
+                    }
+                } else if (trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
+                    if (currentName.isEmpty()) {
+                        currentName = "Channel $index"
+                    }
+                    list.add(
+                        ChannelEntity(
+                            id = "${playlistId}_$index",
+                            playlistId = playlistId,
+                            name = currentName,
+                            streamUrl = trimmed,
+                            logoUrl = currentLogo,
+                            category = currentCategory,
+                            description = "Canal de la lista IPTV",
+                            number = 100 + index
+                        )
+                    )
+                    currentName = ""
+                    currentLogo = ""
+                    currentCategory = "General"
+                    index++
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    private fun extractAttribute(line: String, attrName: String): String {
+        val key = "$attrName=\""
+        val start = line.indexOf(key)
+        if (start == -1) return ""
+        val fromKey = line.substring(start + key.length)
+        val end = fromKey.indexOf('"')
+        if (end == -1) return ""
+        return fromKey.substring(0, end)
+    }
+
+    suspend fun getChannelsCountForPlaylist(playlistId: String): Int {
+        return mediaDao.getChannelsByPlaylist(playlistId).size
+    }
+
+    suspend fun getGroupsCountForPlaylist(playlistId: String): Int {
+        return mediaDao.getChannelsByPlaylist(playlistId).map { it.category }.distinct().size
+    }
+
     // Playlist & EPG Manager actions
     fun getAllPlaylists(): Flow<List<PlaylistEntity>> = mediaDao.getAllPlaylists()
     suspend fun insertPlaylist(playlist: PlaylistEntity) = mediaDao.insertPlaylist(playlist)
-    suspend fun deletePlaylist(id: String) = mediaDao.deletePlaylist(id)
+    
+    suspend fun deletePlaylist(id: String) {
+        mediaDao.deletePlaylist(id)
+        mediaDao.deleteChannelsByPlaylist(id)
+    }
+    
     suspend fun getPlaylistById(id: String): PlaylistEntity? = mediaDao.getPlaylistById(id)
 
     fun getAllEpgSources(): Flow<List<EpgSourceEntity>> = mediaDao.getAllEpgSources()
