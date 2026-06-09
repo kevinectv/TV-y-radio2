@@ -22,7 +22,8 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getDatabase(this)
         val mediaDao = database.mediaDao()
         val repository = MediaRepository(mediaDao)
-        val factory = MediaViewModelFactory(repository)
+        val sharedPrefs = getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
+        val factory = MediaViewModelFactory(repository, sharedPrefs)
         
         val viewModel = ViewModelProvider(this, factory)[MediaViewModel::class.java]
 

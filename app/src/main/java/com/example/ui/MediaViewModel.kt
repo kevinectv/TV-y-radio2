@@ -33,7 +33,10 @@ enum class AppTab(val label: String) {
     SETTINGS("Settings")
 }
 
-class MediaViewModel(val repository: MediaRepository) : ViewModel() {
+class MediaViewModel(
+    val repository: MediaRepository,
+    private val sharedPreferences: android.content.SharedPreferences? = null
+) : ViewModel() {
 
     // Selected App Tab
     var currentTab by mutableStateOf(AppTab.HOME)
@@ -60,11 +63,13 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
         selectedLanguage = profile.languagePref
         activeProfileIdFlow.value = profile.id
         showProfileSelector = false
+        sharedPreferences?.edit()?.putString("last_active_profile_id", profile.id)?.apply()
     }
 
     fun logoutProfile() {
         activeProfile = null
         showProfileSelector = true
+        sharedPreferences?.edit()?.remove("last_active_profile_id")?.apply()
     }
 
     fun createProfile(
@@ -140,6 +145,7 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
             if (activeProfile?.id == id) {
                 activeProfile = null
                 showProfileSelector = true
+                sharedPreferences?.edit()?.remove("last_active_profile_id")?.apply()
             }
         }
     }
@@ -605,74 +611,43 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
         }
         viewModelScope.launch {
             try {
+                // Safely purge legacy default profiles (p1, p2, p3, p4) on startup to keep DB clean
+                repository.deleteProfile("p1")
+                repository.deleteProfile("p2")
+                repository.deleteProfile("p3")
+                repository.deleteProfile("p4")
+
                 val list = repository.getProfiles().first()
                 if (list.isEmpty()) {
-                    val initialList = listOf(
-                        ProfileEntity(
-                            id = "p1",
-                            name = "Lumina Ultra",
-                            avatarStyle = "ninja",
-                            avatarSkinColor = "#FFD1A4",
-                            avatarHairColor = "#FFCC00",
-                            avatarAccessory = "headband",
-                            avatarExpression = "cool",
-                            profileColor = "#00E5FF",
-                            isKids = false
-                        ),
-                        ProfileEntity(
-                            id = "p2",
-                            name = "Premium User",
-                            avatarStyle = "futuristic",
-                            avatarSkinColor = "#E0A96D",
-                            avatarHairColor = "#00FFFF",
-                            avatarAccessory = "visor",
-                            avatarExpression = "smile",
-                            profileColor = "#FF4081",
-                            isKids = false
-                        ),
-                        ProfileEntity(
-                            id = "p3",
-                            name = "Mago IPTV",
-                            avatarStyle = "wizard",
-                            avatarSkinColor = "#FFAA66",
-                            avatarHairColor = "#9C27B0",
-                            avatarAccessory = "hat",
-                            avatarExpression = "wink",
-                            profileColor = "#E040FB",
-                            isKids = false
-                        ),
-                        ProfileEntity(
-                            id = "p4",
-                            name = "Kids Zone",
-                            avatarStyle = "superhero",
-                            avatarSkinColor = "#FFD1A4",
-                            avatarHairColor = "#E50914",
-                            avatarAccessory = "star",
-                            avatarExpression = "smile",
-                            profileColor = "#4CAF50",
-                            isKids = true
-                        )
-                    )
-                    initialList.forEach { repository.insertProfile(it) }
-                    // Do not auto-select first at startup, let the user choose or create a profile on the Profile Selection screen!
+                    // Let the user create their own custom profile from scratch!
                     showProfileSelector = true
-                } else if (activeProfile == null) {
-                    // Do not auto-select first at startup, let the user choose or create a profile on the Profile Selection screen!
-                    showProfileSelector = true
+                } else {
+                    // Check if there was a saved active profile from the last session
+                    val lastActiveId = sharedPreferences?.getString("last_active_profile_id", null)
+                    val matchedProfile = list.find { it.id == lastActiveId }
+                    if (matchedProfile != null) {
+                        selectProfile(matchedProfile)
+                    } else {
+                        showProfileSelector = true
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                showProfileSelector = true
             }
         }
     }
 }
 
 // Simple Factory for Constructor Injection
-class MediaViewModelFactory(private val repository: MediaRepository) : ViewModelProvider.Factory {
+class MediaViewModelFactory(
+    private val repository: MediaRepository,
+    private val sharedPreferences: android.content.SharedPreferences
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MediaViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MediaViewModel(repository) as T
+            return MediaViewModel(repository, sharedPreferences) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

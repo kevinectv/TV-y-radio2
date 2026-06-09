@@ -10,23 +10,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * A reusable focus modifier tailored for hybrid mobile/TV applications.
- * Handles D-pad selection zoom and elegant neon borders on focus.
+ * Handles D-pad selection zoom, elegant 3D lift/elevation, and vibrant borders on focus.
  */
 fun Modifier.tvFocusEffect(
     shape: Shape = RoundedCornerShape(12.dp),
     focusedBorderColor: Color = Color(0xFF4A89FF),
     unfocusedBorderColor: Color = Color.Transparent,
     borderWidth: Dp = 2.dp,
-    scaleAmount: Float = 1.05f
+    scaleAmount: Float = 1.12f
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "tvFocusEffect"
@@ -40,8 +40,20 @@ fun Modifier.tvFocusEffect(
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) scaleAmount else 1f,
-        animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f),
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
         label = "tv_focus_scale"
+    )
+
+    val translationY by animateFloatAsState(
+        targetValue = if (isFocused) -15f else 0f, // physically lifts up on Y axis
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        label = "tv_focus_translation_y"
+    )
+
+    val elevation by animateFloatAsState(
+        targetValue = if (isFocused) 16f else 0f, // shadow depth
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 250f),
+        label = "tv_focus_elevation"
     )
 
     val borderAlpha by animateFloatAsState(
@@ -50,7 +62,14 @@ fun Modifier.tvFocusEffect(
     )
 
     this
-        .scale(scale)
+        .graphicsLayer {
+            this.scaleX = scale
+            this.scaleY = scale
+            this.translationY = translationY
+            this.shadowElevation = elevation
+            this.shape = shape
+            this.clip = false
+        }
         .focusable(interactionSource = interactionSource)
         .border(
             width = borderWidth,

@@ -101,7 +101,7 @@ fun ProfileSelectionScreen(
             // --- HEADER ---
             if (screenMode == ProfileScreenMode.SELECT || screenMode == ProfileScreenMode.MANAGE) {
                 Text(
-                    text = "ARVIO LUMINA",
+                    text = "LUMINA",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
@@ -506,21 +506,12 @@ fun ProfileSelectionScreen(
                                                             .clickable { tempStyle = styleName }
                                                             .padding(horizontal = 12.dp, vertical = 6.dp)
                                                     ) {
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                        ) {
-                                                            val isPremium3D = styleName in listOf("ninja", "futuristic", "wizard", "superhero")
-                                                            if (isPremium3D) {
-                                                                Text("✨", fontSize = 10.sp)
-                                                            }
-                                                            Text(
-                                                                text = if (isPremium3D) "${styleName.capitalize(Locale.ROOT)} 3D" else styleName.capitalize(Locale.ROOT),
-                                                                fontSize = 11.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
-                                                            )
-                                                        }
+                                                        Text(
+                                                            text = styleName.capitalize(Locale.ROOT),
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
+                                                        )
                                                     }
                                                 }
                                             }
