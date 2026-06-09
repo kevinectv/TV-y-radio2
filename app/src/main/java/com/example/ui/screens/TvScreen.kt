@@ -3,6 +3,8 @@ package com.example.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -77,28 +79,37 @@ fun TvScreen(
     var catMenuExpanded by remember { mutableStateOf(false) }
     val datesList = listOf("Today", "Tomorrow", "Wednesday", "Thursday")
     var selectedDate by remember { mutableStateOf("Today") }
+    var searchQuery by remember { mutableStateOf("") }
 
-    // Synchronized scroll states for 2D Grid
+    // Synchronized horizontal scroll state for EPG grid
     val horizontalScrollState = rememberScrollState()
-    val verticalScrollState = rememberScrollState()
 
     val allChannels by viewModel.allChannels.collectAsState()
 
-    // Filter channels list dynamically based on category selection
-    val filteredChannels = remember(allChannels, selectedCategoryFilter) {
-        if (selectedCategoryFilter == "All channels") {
+    // Filter channels list dynamically based on category selection AND search query
+    val filteredChannels = remember(allChannels, selectedCategoryFilter, searchQuery) {
+        val catFiltered = if (selectedCategoryFilter == "All channels") {
             allChannels
         } else {
             allChannels.filter {
                 it.category.equals(selectedCategoryFilter, ignoreCase = true)
             }
         }
+        if (searchQuery.isEmpty()) {
+            catFiltered
+        } else {
+            catFiltered.filter {
+                it.name.contains(searchQuery, ignoreCase = true) || 
+                it.category.contains(searchQuery, ignoreCase = true)
+            }
+        }
     }
 
     // Effect to automatically synchronize focus details when selected channel changes or hour shifts
     LaunchedEffect(viewModel.selectedChannel, currentTimeDecimal) {
-        val runningProgram = viewModel.repository.programsList.find {
-            it.channelId == viewModel.selectedChannel.id && it.isActiveAt(currentTimeDecimal)
+        val programs = viewModel.getProgramsForChannel(viewModel.selectedChannel.id)
+        val runningProgram = programs.find {
+            it.isActiveAt(currentTimeDecimal)
         }
         if (runningProgram != null) {
             viewModel.selectEpgProgram(runningProgram)
@@ -131,554 +142,620 @@ fun TvScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-        // ==========================================
-        // 1. PANEL SUPERIOR DE INFORMACIÓN DEL PROGRAMA
-        // ==========================================
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(260.dp) // Proporcionado para estilo Android TV de alta gama
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF0B1222), // Fondo azul marino oscuro profundo
-                            Color(0xFF04060C)  // Degradado a negro sutil
-                        )
-                    )
-                )
-        ) {
-            // Imagen de portada del programa alineada a la derecha
-            Row(modifier = Modifier.fillMaxSize()) {
-                Spacer(modifier = Modifier.weight(1f)) // Deja espacio libre a la izquierda para los textos
-                Box(
-                    modifier = Modifier
-                        .weight(0.9f)
-                        .fillMaxHeight()
-                ) {
-                    if (viewModel.isTvPlaying) {
-                        androidx.compose.ui.viewinterop.AndroidView(
-                            factory = { ctx ->
-                                val videoView = android.widget.VideoView(ctx).apply {
-                                    layoutParams = android.view.ViewGroup.LayoutParams(
-                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                                    )
-                                }
-                                videoView.setOnPreparedListener { mp ->
-                                    mp.isLooping = true
-                                    try {
-                                        mp.setVolume(viewModel.tvVolume, viewModel.tvVolume)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                    videoView.start()
-                                }
-                                videoView.setOnErrorListener { _, _, _ ->
-                                    true
-                                }
-                                videoView
-                            },
-                            update = { videoView ->
-                                val streamUrl = viewModel.selectedChannel.streamUrl
-                                if (videoView.tag != streamUrl && streamUrl.isNotEmpty()) {
-                                    videoView.tag = streamUrl
-                                    try {
-                                        videoView.stopPlayback()
-                                        videoView.setVideoPath(streamUrl)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        AsyncImage(
-                            model = selectedProgram.thumbnailUrl,
-                            contentDescription = selectedProgram.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    // Degradado horizontal para fusionar la foto a la izquierda con el azul marino oscuro
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color(0xFF0D162B),
-                                        Color(0xFF0B1222).copy(alpha = 0.85f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    )
-                    // Degradado vertical inferior para fusionar con la cuadrícula
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color(0xFF04060C).copy(alpha = 0.95f)
-                                    )
-                                )
-                            )
-                    )
-                }
-            }
-
-            // Datos del programa sobrepuestos a la izquierda
-            Column(
+            // ==========================================
+            // 1. PANEL SUPERIOR INTEGRADO DE REPRODUCCIÓN E INFORMACIÓN
+            // ==========================================
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .fillMaxWidth()
+                    .height(265.dp) // Proporcionado para estilo Android TV de alta gama
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF0B1222), // Fondo azul marino oscuro profundo
+                                Color(0xFF04060C)  // Degradado a negro sutil
+                            )
+                        )
+                    )
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "PROGRAM",
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.5.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    // Nombre de canal | Nombre del programa
-                    Text(
-                        text = "${viewModel.selectedChannel.name} | ${selectedProgram.title}",
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // Metadatos formateados idénticamente al mockup
-                    val durationMin = (selectedProgram.durationHours * 60).toInt()
-                    val metaTimeLabel = "08.06.2026 13:24. | ${selectedProgram.category.uppercase()} | $durationMin MIN. | ${selectedProgram.startTime} - ${selectedProgram.endTime}"
-                    Text(
-                        text = metaTimeLabel,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Descripción del programa (hasta 3 líneas)
-                    Text(
-                        text = selectedProgram.description,
-                        color = Color.White.copy(alpha = 0.82f),
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                // Selector de filtros grandes debajo de la descripción
                 Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Selector de fecha (Today dropdown)
-                    Box {
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF333842), RoundedCornerShape(8.dp))
-                                .clickable { dateMenuExpanded = true }
-                                .tvFocusEffect(
-                                    shape = RoundedCornerShape(8.dp),
-                                    focusedBorderColor = Color.White,
-                                    borderWidth = 3.dp,
-                                    scaleAmount = 1.05f
-                                )
-                                .padding(horizontal = 20.dp, vertical = 10.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = selectedDate,
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Fecha opciones",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        DropdownMenu(
-                            expanded = dateMenuExpanded,
-                            onDismissRequest = { dateMenuExpanded = false },
-                            modifier = Modifier.background(Color(0xFF1F2228))
-                        ) {
-                            datesList.forEach { date ->
-                                DropdownMenuItem(
-                                    text = { Text(text = date, color = Color.White, fontSize = 13.sp) },
-                                    onClick = {
-                                        selectedDate = date
-                                        dateMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // Selector de Categoría (All channels dropdown)
-                    Box {
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF333842), RoundedCornerShape(8.dp))
-                                .clickable { catMenuExpanded = true }
-                                .tvFocusEffect(
-                                    shape = RoundedCornerShape(8.dp),
-                                    focusedBorderColor = Color.White,
-                                    borderWidth = 3.dp,
-                                    scaleAmount = 1.05f
-                                )
-                                .padding(horizontal = 20.dp, vertical = 10.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = selectedCategoryFilter,
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Canales opciones",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        DropdownMenu(
-                            expanded = catMenuExpanded,
-                            onDismissRequest = { catMenuExpanded = false },
-                            modifier = Modifier.background(Color(0xFF1F2228))
-                        ) {
-                            val categories = remember(allChannels) {
-                                listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
-                            }
-                            categories.forEach { category ->
-                                DropdownMenuItem(
-                                    text = { Text(text = category, color = Color.White, fontSize = 13.sp) },
-                                    onClick = {
-                                        selectedCategoryFilter = category
-                                        catMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ==========================================
-        // 2. TIMELINE HORIZONTAL SUPERIOR DE LA RECUADRICULA
-        // ==========================================
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp)
-                .background(Color(0xFF090F1B)) // Color de la barra de la línea de tiempo
-        ) {
-            // Espacio fijo para alinearse con la columna de los logos
-            Box(
-                modifier = Modifier
-                    .width(115.dp)
-                    .fillMaxHeight()
-                    .background(Color(0xFF080D1A)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "CANALES",
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            // Separador vertical fino para alinear exactamente con la cuadrícula de abajo (1.dp)
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(1.dp)
-                    .background(Color.White.copy(alpha = 0.08f))
-            )
-
-            // Barra de horas scrollable
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .horizontalScroll(horizontalScrollState)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(hourWidth * (timelineEndDecimal - timelineStartDecimal))
-                ) {
-                    var hourCounter = timelineStartDecimal
-                    while (hourCounter <= timelineEndDecimal) {
-                        val currentHourInt = hourCounter.toInt()
-                        val hourString = if (currentHourInt >= 24) "00:00" else String.format("%02d:00", currentHourInt)
-
-                        // Exact position on the horizontal scale for this hour
-                        val tickOffset = (hourCounter - timelineStartDecimal) * hourWidth.value
-
-                        Column(
-                            modifier = Modifier
-                                .offset(x = (tickOffset - 30).dp)
-                                .width(60.dp)
-                                .fillMaxHeight(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = hourString,
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        hourCounter += 1.0f
-                    }
-
-                    // Cápsula roja indicadora de la hora actual en el timeline (sincronizada y centrada)
-                    val currentPointerOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
-                    Box(
+                    // Datos del programa sobrepuestos a la izquierda
+                    Column(
                         modifier = Modifier
-                            .offset(x = (currentPointerOffset - 38).dp)
-                            .width(76.dp)
-                            .height(24.dp)
-                            .background(Color(0xFFE53935), RoundedCornerShape(12.dp))
-                            .align(Alignment.CenterStart),
-                        contentAlignment = Alignment.Center
+                            .weight(1.1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = currentTimeString,
-                            color = Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            text = "PROGRAMACIÓN EN VIVO",
+                            color = Color(0xFFF95D02), // Color de acento naranja
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.5.sp
                         )
+
+                        Spacer(modifier = Modifier.height(3.dp))
+
+                        // Nombre de canal | Nombre del programa
+                        Text(
+                            text = if (viewModel.selectedChannel.id != "no_channel") {
+                                "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
+                            } else {
+                                "Ningún Canal Cargado"
+                            },
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        // Metadatos formateados idénticamente al mockup
+                        val durationMin = (selectedProgram.durationHours * 60).toInt()
+                        val metaTimeLabel = if (viewModel.selectedChannel.id != "no_channel") {
+                            "08.06.2026 13:24 | ${selectedProgram.category.uppercase()} | $durationMin MIN. | ${selectedProgram.startTime} - ${selectedProgram.endTime}"
+                        } else {
+                            "IPTV | CARGAR LISTA M3U"
+                        }
+                        Text(
+                            text = metaTimeLabel,
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Descripción del programa (hasta 2 líneas para balancear con el reproductor widget)
+                        Text(
+                            text = if (viewModel.selectedChannel.id != "no_channel") {
+                                selectedProgram.description
+                            } else {
+                                "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                            },
+                            color = Color.White.copy(alpha = 0.82f),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(24.dp))
+
+                    // REPRODUCTOR EN MINIATURA DE 16:9 INTEGRADO A LA DERECHA
+                    Box(
+                        modifier = Modifier
+                            .weight(0.9f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .aspectRatio(16f / 9f)
+                                .fillMaxHeight()
+                                .border(1.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.Black)
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (viewModel.isTvPlaying && viewModel.selectedChannel.streamUrl.isNotEmpty() && viewModel.selectedChannel.id != "no_channel") {
+                                    androidx.compose.ui.viewinterop.AndroidView(
+                                        factory = { ctx ->
+                                            android.widget.VideoView(ctx).apply {
+                                                layoutParams = android.view.ViewGroup.LayoutParams(
+                                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                                                )
+                                            }
+                                        },
+                                        update = { videoView ->
+                                            val streamUrl = viewModel.selectedChannel.streamUrl
+                                            if (videoView.tag != streamUrl && streamUrl.isNotEmpty()) {
+                                                videoView.tag = streamUrl
+                                                try {
+                                                    videoView.stopPlayback()
+                                                    videoView.setVideoPath(streamUrl)
+                                                    videoView.setOnPreparedListener { mp ->
+                                                        mp.isLooping = true
+                                                        try {
+                                                            mp.setVolume(viewModel.tvVolume, viewModel.tvVolume)
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        }
+                                                        videoView.start()
+                                                    }
+                                                    videoView.setOnErrorListener { _, _, _ ->
+                                                        true
+                                                    }
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    AsyncImage(
+                                        model = if (viewModel.selectedChannel.id != "no_channel") {
+                                            selectedProgram.thumbnailUrl
+                                        } else {
+                                            "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=300"
+                                        },
+                                        contentDescription = selectedProgram.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        // Separador delgado
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(Color.White.copy(alpha = 0.08f))
-        )
-
-        // ==========================================
-        // 3. CUADRÍCULA EPG PRINCIPAL SÍNCRONA 2D
-        // ==========================================
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            // COLUMNA FIJA DE CANALES (Solo logos alineados)
-            Column(
+            // ==========================================
+            // 2. PANEL DE FILTROS Y BÚSQUEDA DEL TIMELINE
+            // ==========================================
+            Row(
                 modifier = Modifier
-                    .width(115.dp)
-                    .fillMaxHeight()
-                    .background(Color(0xFF080D1A)) // Azul marino oscuro
-                    .verticalScroll(verticalScrollState)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                filteredChannels.forEach { channel ->
-                    val isChannelSelected = viewModel.selectedChannel.id == channel.id
+                // Selector de fecha (Today dropdown)
+                Box {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .padding(horizontal = 8.dp, vertical = 6.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isChannelSelected) Color(0xFF2C313C) else Color(0xFF1E222A)) // Gris oscuro
-                            .border(
-                                width = if (isChannelSelected) 3.dp else 1.dp,
-                                color = if (isChannelSelected) Color.White else Color.White.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .clickable {
-                                viewModel.selectChannel(channel)
-                                val running = viewModel.repository.programsList.find {
-                                    it.channelId == channel.id && it.isActiveAt(currentTimeDecimal)
-                                }
-                                if (running != null) {
-                                    viewModel.selectEpgProgram(running)
-                                }
-                            }
+                            .background(Color(0xFF333842), RoundedCornerShape(8.dp))
+                            .clickable { dateMenuExpanded = true }
                             .tvFocusEffect(
                                 shape = RoundedCornerShape(8.dp),
                                 focusedBorderColor = Color.White,
                                 borderWidth = 3.dp,
                                 scaleAmount = 1.05f
-                            ),
-                        contentAlignment = Alignment.Center
+                            )
+                            .padding(horizontal = 16.dp, vertical = 7.dp)
                     ) {
-                        AsyncImage(
-                            model = channel.logoUrl,
-                            contentDescription = channel.name,
-                            modifier = Modifier.size(38.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-                }
-            }
-
-            // Separador vertical grueso
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(1.dp)
-                    .background(Color.White.copy(alpha = 0.08f))
-            )
-
-            // CONTENEDOR DE PROGRAMACIONES DESPLAZABLE VERTICAL Y HORIZONTALMENTE
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .horizontalScroll(horizontalScrollState)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .verticalScroll(verticalScrollState)
-                        .width(hourWidth * (timelineEndDecimal - timelineStartDecimal))
-                ) {
-                    filteredChannels.forEach { channel ->
                         Row(
-                            modifier = Modifier
-                                .height(64.dp)
-                                .fillMaxWidth()
-                                .drawBehind {
-                                    drawLine(
-                                        color = Color.White.copy(alpha = 0.06f),
-                                        start = Offset(0f, size.height),
-                                        end = Offset(size.width, size.height),
-                                        strokeWidth = 1f
-                                    )
-                                },
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            val channelPrograms = viewModel.repository.programsList.filter { it.channelId == channel.id }
+                            Text(
+                                text = selectedDate,
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Fecha opciones",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
 
-                            channelPrograms.forEach { program ->
-                                val programWidth = hourWidth * program.durationHours
-                                val isSelectedInDetails = selectedProgram.id == program.id
-
-                                // Animaciones fluidas para enfocar y seleccionar
-                                val blockBgColor by animateColorAsState(
-                                    targetValue = if (isSelectedInDetails) Color(0xFFF95D02) else Color(0xFF242730), // Naranja vs Gris oscuro
-                                    animationSpec = tween(durationMillis = 200),
-                                    label = "bg_color"
-                                )
-
-                                val borderStrokeColorByState = if (isSelectedInDetails) Color.White else Color.White.copy(alpha = 0.08f)
-                                val borderStrokeWidth = if (isSelectedInDetails) 3.dp else 1.dp
-
-                                Box(
-                                    modifier = Modifier
-                                        .width(programWidth)
-                                        .fillMaxHeight()
-                                        .padding(horizontal = 3.dp, vertical = 6.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(blockBgColor)
-                                        .border(
-                                            width = borderStrokeWidth,
-                                            color = borderStrokeColorByState,
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .clickable {
-                                            viewModel.selectEpgProgram(program)
-                                            val matchedChannel = allChannels.find { it.id == program.channelId }
-                                            if (matchedChannel != null) {
-                                                viewModel.selectChannel(matchedChannel)
-                                            }
-                                        }
-                                        .onFocusChanged { focusState ->
-                                            if (focusState.isFocused) {
-                                                viewModel.selectEpgProgram(program)
-                                                val matchedChannel = allChannels.find { it.id == program.channelId }
-                                                if (matchedChannel != null) {
-                                                    viewModel.selectChannel(matchedChannel)
-                                                }
-                                            }
-                                        }
-                                        .tvFocusEffect(
-                                            shape = RoundedCornerShape(8.dp),
-                                            focusedBorderColor = Color.White,
-                                            borderWidth = 3.dp,
-                                            scaleAmount = 1.04f
-                                        )
-                                        .zIndex(if (isSelectedInDetails) 2f else 1f)
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = program.title,
-                                            color = Color.White,
-                                            fontSize = 12.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = "${program.startTime} - ${program.endTime}",
-                                            color = if (isSelectedInDetails) Color.White.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.55f),
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Normal
-                                        )
-                                    }
+                    DropdownMenu(
+                        expanded = dateMenuExpanded,
+                        onDismissRequest = { dateMenuExpanded = false },
+                        modifier = Modifier.background(Color(0xFF1F2228))
+                    ) {
+                        datesList.forEach { date ->
+                            DropdownMenuItem(
+                                text = { Text(text = date, color = Color.White, fontSize = 12.sp) },
+                                onClick = {
+                                    selectedDate = date
+                                    dateMenuExpanded = false
                                 }
-                            }
+                            )
                         }
                     }
                 }
 
-                // Línea vertical roja indicadora de tiempo que atraviesa toda la cuadrícula
-                val lineOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
+                // Selector de Categoría (All channels dropdown)
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF333842), RoundedCornerShape(8.dp))
+                            .clickable { catMenuExpanded = true }
+                            .tvFocusEffect(
+                                shape = RoundedCornerShape(8.dp),
+                                focusedBorderColor = Color.White,
+                                borderWidth = 3.dp,
+                                scaleAmount = 1.05f
+                            )
+                            .padding(horizontal = 16.dp, vertical = 7.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = selectedCategoryFilter,
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Canales opciones",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = catMenuExpanded,
+                        onDismissRequest = { catMenuExpanded = false },
+                        modifier = Modifier.background(Color(0xFF1F2228))
+                    ) {
+                        val categories = remember(allChannels) {
+                            listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                        }
+                        categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(text = category, color = Color.White, fontSize = 12.sp) },
+                                onClick = {
+                                    selectedCategoryFilter = category
+                                    catMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // BÚSQUEDA INTERACTIVA EN TIEMPO REAL
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Buscar canal por nombre...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                    modifier = Modifier
+                        .width(280.dp)
+                        .height(38.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFF95D02),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                        focusedContainerColor = Color(0xFF2C313B),
+                        unfocusedContainerColor = Color(0xFF1E222A),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar",
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                )
+            }
+
+            // ==========================================
+            // 3. TIMELINE HORIZONTAL SUPERIOR DE LA RECUADRICULA
+            // ==========================================
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .background(Color(0xFF090F1B)) // Color de la barra de la línea de tiempo
+            ) {
+                // Espacio fijo para alinearse con la columna de los logos
                 Box(
                     modifier = Modifier
-                        .offset(x = lineOffset.dp)
+                        .width(115.dp)
                         .fillMaxHeight()
-                        .width(1.5.dp)
-                        .background(Color(0xFFE53935))
+                        .background(Color(0xFF080D1A)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "CANALES",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                // Separador vertical fino para alinear exactamente con la cuadrícula de abajo (1.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(Color.White.copy(alpha = 0.08f))
                 )
+
+                // Barra de horas scrollable
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .horizontalScroll(horizontalScrollState)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(hourWidth * (timelineEndDecimal - timelineStartDecimal))
+                    ) {
+                        var hourCounter = timelineStartDecimal
+                        while (hourCounter <= timelineEndDecimal) {
+                            val currentHourInt = hourCounter.toInt()
+                            val hourString = if (currentHourInt >= 24) "00:00" else String.format("%02d:00", currentHourInt)
+
+                            // Exact position on the horizontal scale for this hour
+                            val tickOffset = (hourCounter - timelineStartDecimal) * hourWidth.value
+
+                            Column(
+                                modifier = Modifier
+                                    .offset(x = (tickOffset - 30).dp)
+                                    .width(60.dp)
+                                    .fillMaxHeight(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = hourString,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            hourCounter += 1.0f
+                        }
+
+                        // Cápsula roja indicadora de la hora actual en el timeline (sincronizada y centrada)
+                        val currentPointerOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
+                        Box(
+                            modifier = Modifier
+                                .offset(x = (currentPointerOffset - 38).dp)
+                                .width(76.dp)
+                                .height(24.dp)
+                                .background(Color(0xFFE53935), RoundedCornerShape(12.dp))
+                                .align(Alignment.CenterStart),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = currentTimeString,
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Separador delgado
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color.White.copy(alpha = 0.08f))
+            )
+
+            // ==========================================
+            // 4. CUADRÍCULA EPG LAZY 2D OPTIMIZADA (SINFÍN SIN LAG)
+            // ==========================================
+            if (filteredChannels.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .background(Color(0xFF04060C)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Sin canales",
+                            tint = Color.White.copy(alpha = 0.2f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "No se encontraron canales",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Importa una lista M3U o cambia tus filtros.",
+                            color = Color.White.copy(alpha = 0.35f),
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .background(Color(0xFF04060C))
+                ) {
+                    items(filteredChannels, key = { it.id }) { channel ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                        ) {
+                            // COLUMNA FIJA DE CANAL (Solo logo alineado)
+                            val isChannelSelected = viewModel.selectedChannel.id == channel.id
+                            Box(
+                                modifier = Modifier
+                                    .width(115.dp)
+                                    .fillMaxHeight()
+                                    .background(Color(0xFF080D1A))
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isChannelSelected) Color(0xFF2C313C) else Color(0xFF1E222A))
+                                    .border(
+                                        width = if (isChannelSelected) 3.dp else 1.dp,
+                                        color = if (isChannelSelected) Color.White else Color.White.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable {
+                                        viewModel.selectChannel(channel)
+                                        val running = viewModel.getProgramsForChannel(channel.id).find {
+                                            it.isActiveAt(currentTimeDecimal)
+                                        }
+                                        if (running != null) {
+                                            viewModel.selectEpgProgram(running)
+                                        }
+                                    }
+                                    .tvFocusEffect(
+                                        shape = RoundedCornerShape(8.dp),
+                                        focusedBorderColor = Color.White,
+                                        borderWidth = 3.dp,
+                                        scaleAmount = 1.05f
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (channel.logoUrl.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = channel.logoUrl,
+                                        contentDescription = channel.name,
+                                        modifier = Modifier.size(38.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                } else {
+                                    Text(
+                                        text = channel.name.take(3).uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            // Separador vertical grueso
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(1.dp)
+                                    .background(Color.White.copy(alpha = 0.08f))
+                            )
+
+                            // CONTENEDOR DE PROGRAMACIONES DESPLAZABLE EN SINCRONÍA HORIZONTAL (REUTILIZANDO SCROLL STATE)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .horizontalScroll(horizontalScrollState)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(hourWidth * (timelineEndDecimal - timelineStartDecimal))
+                                        .drawBehind {
+                                            drawLine(
+                                                color = Color.White.copy(alpha = 0.06f),
+                                                start = Offset(0f, size.height),
+                                                end = Offset(size.width, size.height),
+                                                strokeWidth = 1f
+                                            )
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val channelPrograms = viewModel.getProgramsForChannel(channel.id)
+
+                                    channelPrograms.forEach { program ->
+                                        val programWidth = hourWidth * program.durationHours
+                                        val isSelectedInDetails = selectedProgram.id == program.id
+
+                                        // Animaciones fluidas para enfocar y seleccionar
+                                        val blockBgColor by animateColorAsState(
+                                            targetValue = if (isSelectedInDetails) Color(0xFFF95D02) else Color(0xFF242730), // Naranja vs Gris oscuro
+                                            animationSpec = tween(durationMillis = 200),
+                                            label = "bg_color"
+                                        )
+
+                                        val borderStrokeColorByState = if (isSelectedInDetails) Color.White else Color.White.copy(alpha = 0.08f)
+                                        val borderStrokeWidth = if (isSelectedInDetails) 3.dp else 1.dp
+
+                                        Box(
+                                            modifier = Modifier
+                                                .width(programWidth)
+                                                .fillMaxHeight()
+                                                .padding(horizontal = 3.dp, vertical = 6.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(blockBgColor)
+                                                .border(
+                                                    width = borderStrokeWidth,
+                                                    color = borderStrokeColorByState,
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                                .clickable {
+                                                    viewModel.selectEpgProgram(program)
+                                                    val matchedChannel = allChannels.find { it.id == program.channelId }
+                                                    if (matchedChannel != null) {
+                                                        viewModel.selectChannel(matchedChannel)
+                                                    }
+                                                }
+                                                .onFocusChanged { focusState ->
+                                                    if (focusState.isFocused) {
+                                                        viewModel.selectEpgProgram(program)
+                                                        val matchedChannel = allChannels.find { it.id == program.channelId }
+                                                        if (matchedChannel != null) {
+                                                            viewModel.selectChannel(matchedChannel)
+                                                        }
+                                                    }
+                                                }
+                                                .tvFocusEffect(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    focusedBorderColor = Color.White,
+                                                    borderWidth = 3.dp,
+                                                    scaleAmount = 1.04f
+                                                )
+                                                .zIndex(if (isSelectedInDetails) 2f else 1f)
+                                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.CenterStart
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = program.title,
+                                                    color = Color.White,
+                                                    fontSize = 12.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "${program.startTime} - ${program.endTime}",
+                                                    color = if (isSelectedInDetails) Color.White.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.55f),
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Normal
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Línea vertical roja indicadora de tiempo en cada fila en su contenedor
+                                val lineOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
+                                Box(
+                                    modifier = Modifier
+                                        .offset(x = lineOffset.dp)
+                                        .fillMaxHeight()
+                                        .width(1.5.dp)
+                                        .background(Color(0xFFE53935))
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
-}
 }

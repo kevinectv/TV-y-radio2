@@ -39,17 +39,54 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
         currentTab = tab
     }
 
+    companion object {
+        val DefaultChannel = Channel(
+            id = "no_channel",
+            name = "Ningún canal cargado",
+            streamUrl = "",
+            logoUrl = "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=200",
+            category = "Sin Categoría",
+            description = "Añade una fuente de IPTV desde Ajustes o el menú de lista para comenzar a reproducir.",
+            number = 0
+        )
+        val DefaultProgram = EPGProgram(
+            id = "no_program",
+            channelId = "no_channel",
+            title = "Sin Información de Guía",
+            description = "No hay programación activa. Carga una lista con guía de canales para ver la información.",
+            startTime = "00:00",
+            endTime = "24:00",
+            startHourDecimal = 0.0f,
+            durationHours = 24.0f,
+            thumbnailUrl = "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=200",
+            category = "General"
+        )
+    }
+
     // Interactive Media States - TV
-    var selectedChannel by mutableStateOf<Channel>(repository.channelsList.first())
+    var selectedChannel by mutableStateOf<Channel>(DefaultChannel)
         private set
     var isTvPlaying by mutableStateOf(true)
         private set
     var tvVolume by mutableFloatStateOf(0.81f)
         private set
 
+    fun getProgramsForChannel(channelId: String): List<EPGProgram> {
+        return repository.getProgramsForChannel(channelId)
+    }
+
     fun selectChannel(channel: Channel) {
         selectedChannel = channel
         isTvPlaying = true
+        
+        // Find or generate active program matching current hour
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY).toFloat()
+        val minute = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE).toFloat()
+        val currentTimeDecimal = hour + (minute / 60.0f)
+        val programs = repository.getProgramsForChannel(channel.id)
+        val running = programs.find { it.isActiveAt(currentTimeDecimal) } ?: programs.firstOrNull() ?: DefaultProgram
+        selectedEpgProgram = running
+
         // Add to history
         viewModelScope.launch {
             repository.markAsRecent(channel.id, "channel")
@@ -83,7 +120,7 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
     }
 
     // EPG Guide interactive details
-    var selectedEpgProgram by mutableStateOf<EPGProgram>(repository.programsList.first())
+    var selectedEpgProgram by mutableStateOf<EPGProgram>(DefaultProgram)
         private set
 
     fun selectEpgProgram(program: EPGProgram) {
@@ -416,6 +453,16 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
             } catch (e: Exception) {
                 repository.insertPlaylist(playlist.copy(syncStatus = "Error"))
                 onComplete(false)
+            }
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            allChannels.collect { channels ->
+                if (channels.isNotEmpty() && (selectedChannel == DefaultChannel || !channels.any { it.id == selectedChannel.id })) {
+                    selectChannel(channels.first())
+                }
             }
         }
     }

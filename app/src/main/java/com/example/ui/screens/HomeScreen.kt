@@ -49,7 +49,7 @@ fun HomeScreen(
 
     val allChannels by viewModel.allChannels.collectAsState()
     // Showcase/Banner Channel (First channel by default)
-    val heroChannel = allChannels.firstOrNull() ?: viewModel.repository.channelsList.first()
+    val heroChannel = allChannels.firstOrNull() ?: MediaViewModel.DefaultChannel
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -311,7 +311,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
             ) {
-                items(viewModel.repository.channelsList) { chan ->
+                items(allChannels) { chan ->
                     ChannelHomeCard(
                         channel = chan,
                         viewModel = viewModel,
@@ -352,7 +352,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
             ) {
                 // Blend channels and radios
-                items(viewModel.repository.channelsList.takeLast(3)) { chan ->
+                items(allChannels.takeLast(3)) { chan ->
                     ChannelHomeCard(
                         channel = chan,
                         viewModel = viewModel,
