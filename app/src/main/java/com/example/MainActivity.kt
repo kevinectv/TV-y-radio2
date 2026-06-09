@@ -10,6 +10,7 @@ import com.example.data.database.AppDatabase
 import com.example.ui.LuminaAppShell
 import com.example.ui.MediaViewModel
 import com.example.ui.MediaViewModelFactory
+import com.example.ui.screens.ProfileSelectionScreen
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +31,11 @@ class MainActivity : ComponentActivity() {
                 darkTheme = viewModel.isDarkTheme,
                 dynamicColor = false // Keep high comfort premium dark colors stable
             ) {
-                LuminaAppShell(viewModel = viewModel)
+                if (viewModel.showProfileSelector) {
+                    ProfileSelectionScreen(viewModel = viewModel)
+                } else {
+                    LuminaAppShell(viewModel = viewModel)
+                }
             }
         }
     }

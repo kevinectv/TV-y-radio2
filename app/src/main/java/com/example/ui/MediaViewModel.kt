@@ -654,10 +654,11 @@ class MediaViewModel(val repository: MediaRepository) : ViewModel() {
                         )
                     )
                     initialList.forEach { repository.insertProfile(it) }
-                    // Auto select first
-                    selectProfile(initialList.first())
+                    // Do not auto-select first at startup, let the user choose or create a profile on the Profile Selection screen!
+                    showProfileSelector = true
                 } else if (activeProfile == null) {
-                    selectProfile(list.first())
+                    // Do not auto-select first at startup, let the user choose or create a profile on the Profile Selection screen!
+                    showProfileSelector = true
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
