@@ -27,36 +27,53 @@ fun CharacterAvatar(
     profileColorHex: String,
     modifier: Modifier = Modifier
 ) {
-    val skinColor = safeColor(skinColorHex, Color(0xFFFCD0A1))
-    val hairColor = safeColor(hairColorHex, Color(0xFF3F2B1E))
-    val profileColor = safeColor(profileColorHex, Color(0xFF00E5FF))
+    val styleLower = style.lowercase(java.util.Locale.ROOT)
+    val imageRes = when (styleLower) {
+        "ninja" -> com.example.R.drawable.img_avatar_ninja
+        "futuristic" -> com.example.R.drawable.img_avatar_futuristic
+        "wizard" -> com.example.R.drawable.img_avatar_wizard
+        "superhero", "kids" -> com.example.R.drawable.img_avatar_kids
+        else -> null
+    }
 
-    Box(
-        modifier = modifier
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        profileColor.copy(alpha = 0.9f),
-                        profileColor.copy(alpha = 0.4f),
-                        Color(0xFF121212)
+    if (imageRes != null) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = imageRes),
+            contentDescription = "Avatar $style",
+            modifier = modifier,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+    } else {
+        val skinColor = safeColor(skinColorHex, Color(0xFFFCD0A1))
+        val hairColor = safeColor(hairColorHex, Color(0xFF3F2B1E))
+        val profileColor = safeColor(profileColorHex, Color(0xFF00E5FF))
+
+        Box(
+            modifier = modifier
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            profileColor.copy(alpha = 0.9f),
+                            profileColor.copy(alpha = 0.4f),
+                            Color(0xFF121212)
+                        )
                     )
                 )
-            )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            val center = Offset(w / 2f, h * 0.48f)
-            val headRadius = w * 0.28f
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                val center = Offset(w / 2f, h * 0.48f)
+                val headRadius = w * 0.28f
 
-            // 1. Draw Body/Shoulders
-            drawShoulders(w, h, skinColor, style, hairColor)
+                // 1. Draw Body/Shoulders
+                drawShoulders(w, h, skinColor, style, hairColor)
 
-            // 2. Draw Head Base
-            drawHeadBase(center, headRadius, skinColor, style)
+                // 2. Draw Head Base
+                drawHeadBase(center, headRadius, skinColor, style)
 
-            // 3. Draw Style Specifics (Ninja hood, Wizard hair, etc.)
-            drawHairAndHeadwear(center, headRadius, hairColor, style, accessory)
+                // 3. Draw Style Specifics (Ninja hood, Wizard hair, etc.)
+                drawHairAndHeadwear(center, headRadius, hairColor, style, accessory)
 
             // 4. Draw Face Expressions (Eyes, Mouth, Eyebrows)
             drawExpression(center, headRadius, expression, accessory, style)
@@ -68,6 +85,7 @@ fun CharacterAvatar(
             drawGlassGlossEffect(w, h)
         }
     }
+}
 }
 
 private fun safeColor(hex: String, fallback: Color): Color {
