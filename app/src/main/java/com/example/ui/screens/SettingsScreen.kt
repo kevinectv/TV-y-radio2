@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -494,6 +495,7 @@ fun SidebarCategoryItem(
             .fillMaxWidth()
             .height(44.dp)
             .clip(RoundedCornerShape(8.dp))
+            .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
             .background(
                 if (isFocused) Color.White else Color.White.copy(alpha = if (isSelected) 0.12f else 0f)
             )

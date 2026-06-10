@@ -212,7 +212,7 @@ fun LuminaAppShell(
                                         shape = RoundedCornerShape(10.dp),
                                         focusedBorderColor = Color.White,
                                         unfocusedBorderColor = Color.Transparent,
-                                        scaleAmount = 1.08f
+                                        scaleAmount = 1.03f
                                     )
                                     .padding(horizontal = 14.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center

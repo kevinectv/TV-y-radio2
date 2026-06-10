@@ -2,6 +2,8 @@ package com.example.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,10 +27,10 @@ import androidx.compose.ui.unit.dp
  */
 fun Modifier.tvFocusEffect(
     shape: Shape = RoundedCornerShape(12.dp),
-    focusedBorderColor: Color = Color(0xFF4A89FF),
+    focusedBorderColor: Color = Color.White,
     unfocusedBorderColor: Color = Color.Transparent,
-    borderWidth: Dp = 2.dp,
-    scaleAmount: Float = 1.12f
+    borderWidth: Dp = 3.dp,
+    scaleAmount: Float = 1.02f
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "tvFocusEffect"
@@ -38,33 +40,18 @@ fun Modifier.tvFocusEffect(
     }
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val density = LocalDensity.current
-    
-    // Convert 10dp to pixels dynamically so it is pronounced on TVs of all resolutions
-    val liftPx = remember(density) { with(density) { 10.dp.toPx() } }
 
+    // Instant, ultra-responsive transitions for fast DPAD/remote navigation
     val scale by animateFloatAsState(
         targetValue = if (isFocused) scaleAmount else 1f,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
+        animationSpec = tween(durationMillis = 80),
         label = "tv_focus_scale"
     )
 
-    val translationY by animateFloatAsState(
-        targetValue = if (isFocused) -liftPx else 0f, // physically lifts up on Y axis gracefully
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
-        label = "tv_focus_translation_y"
-    )
-
-    val elevation by animateFloatAsState(
-        targetValue = if (isFocused) 12f else 0f, // shadow depth
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
-        label = "tv_focus_elevation"
-    )
-
-    val borderAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 220f),
-        label = "tv_focus_border_alpha"
+    val focusBgOverlayAlpha by animateFloatAsState(
+        targetValue = if (isFocused) 0.16f else 0f,
+        animationSpec = tween(durationMillis = 80),
+        label = "tv_focus_bg_overlay"
     )
 
     this
@@ -74,14 +61,18 @@ fun Modifier.tvFocusEffect(
         .graphicsLayer {
             this.scaleX = scale
             this.scaleY = scale
-            this.translationY = translationY
-            this.shadowElevation = elevation
+            this.translationY = 0f // Completely disable vertical offset lift to avoid "resorte" layout shifting
+            this.shadowElevation = if (isFocused) 8f else 0f
             this.shape = shape
             this.clip = false
         }
+        .background(
+            color = if (isFocused) focusedBorderColor.copy(alpha = focusBgOverlayAlpha) else Color.Transparent,
+            shape = shape
+        )
         .border(
             width = borderWidth,
-            color = if (isFocused) focusedBorderColor.copy(alpha = borderAlpha) else unfocusedBorderColor,
+            color = if (isFocused) focusedBorderColor else unfocusedBorderColor,
             shape = shape
         )
 }

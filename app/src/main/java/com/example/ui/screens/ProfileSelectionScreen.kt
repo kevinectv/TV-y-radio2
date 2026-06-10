@@ -174,7 +174,7 @@ fun ProfileSelectionScreen(
                                                     focusedBorderColor = Color(0xCCECEFF8),
                                                     unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
                                                     borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
-                                                    scaleAmount = 1.15f
+                                                    scaleAmount = 1.04f
                                                 )
                                                 .focusProperties {
                                                     down = manageButtonFocusRequester
@@ -306,7 +306,7 @@ fun ProfileSelectionScreen(
                                                     focusedBorderColor = Color(0xCCECEFF8),
                                                     unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
                                                     borderWidth = 1.5.dp,
-                                                    scaleAmount = 1.15f
+                                                    scaleAmount = 1.04f
                                                 )
                                                 .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                                                 .focusProperties {
