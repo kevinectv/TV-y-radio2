@@ -281,16 +281,54 @@ fun TvScreen(
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
-                                    AsyncImage(
-                                        model = if (viewModel.selectedChannel.id != "no_channel") {
-                                            selectedProgram.thumbnailUrl
-                                        } else {
-                                            "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=300"
-                                        },
-                                        contentDescription = selectedProgram.title,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
+                                    if (viewModel.selectedChannel.id != "no_channel") {
+                                        AsyncImage(
+                                            model = selectedProgram.thumbnailUrl,
+                                            contentDescription = selectedProgram.title,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.radialGradient(
+                                                        colors = listOf(
+                                                            Color(0xFF262626),
+                                                            Color(0xFF030303)
+                                                        )
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier.padding(16.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Tv,
+                                                    contentDescription = "Sin lista cargada",
+                                                    tint = Color.White.copy(alpha = 0.35f),
+                                                    modifier = Modifier.size(52.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Text(
+                                                    text = "No hay una lista de reproducción activa",
+                                                    color = Color.White.copy(alpha = 0.9f),
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Importa una lista M3U en la sección de 'Fuentes' para comenzar.",
+                                                    color = Color.White.copy(alpha = 0.55f),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
