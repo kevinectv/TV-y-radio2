@@ -39,6 +39,13 @@ fun Modifier.tvFocusEffect(
         properties["unfocusedBorderColor"] = unfocusedBorderColor
     }
 ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isTabletOrTv = configuration.screenWidthDp >= 580
+
+    if (!isTabletOrTv) {
+        return@composed this
+    }
+
     var isFocused by remember { mutableStateOf(false) }
 
     // Instant, ultra-responsive transitions for fast DPAD/remote navigation
