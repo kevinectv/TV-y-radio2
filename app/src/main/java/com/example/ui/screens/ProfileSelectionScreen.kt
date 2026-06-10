@@ -301,7 +301,6 @@ fun ProfileSelectionScreen(
                                         Box(
                                             modifier = Modifier
                                                 .size(112.dp)
-                                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                                                 .tvFocusEffect(
                                                     shape = RoundedCornerShape(16.dp),
                                                     focusedBorderColor = Color(0xCCECEFF8),
@@ -309,6 +308,7 @@ fun ProfileSelectionScreen(
                                                     borderWidth = 1.5.dp,
                                                     scaleAmount = 1.15f
                                                 )
+                                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                                                 .focusProperties {
                                                     down = manageButtonFocusRequester
                                                 }
