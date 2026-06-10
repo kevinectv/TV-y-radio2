@@ -59,29 +59,29 @@ fun ElegantBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF04060F)) // Very deep obsidian black
+            .background(Color(0xFF000000)) // Pure obsidian black base
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
 
-            // 1. Draw a massive base radial gradient representing background ambient glow
+            // 1. Draw a massive base radial gradient representing background ambient glow (pure clean white/grey glow)
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        dynamicAccent.copy(alpha = 0.18f * pulseIntensity),
-                        Color(0xFF03050B)
+                        Color(0xFFFFFFFF).copy(alpha = 0.05f * pulseIntensity),
+                        Color(0xFF050505)
                     ),
                     center = Offset(width * 0.5f, height * 0.4f),
-                    radius = width * 0.9f
+                    radius = width * 0.85f
                 )
             )
 
-            // 2. Draw side ambient accent lights (Muted crimson on bottom left, neon indigo on top right)
+            // 2. Draw side ambient accent lights (Premium graphite/silver highlights)
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFFF3B30).copy(alpha = 0.08f * pulseIntensity),
+                        Color(0xFF8E8E93).copy(alpha = 0.04f * pulseIntensity),
                         Color.Transparent
                     ),
                     center = Offset(width * 0.1f, height * 0.9f),
@@ -92,7 +92,7 @@ fun ElegantBackground(
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF007AFF).copy(alpha = 0.12f * pulseIntensity),
+                        Color(0xFFFFFFFF).copy(alpha = 0.03f * pulseIntensity),
                         Color.Transparent
                     ),
                     center = Offset(width * 0.9f, height * 0.1f),
@@ -100,16 +100,16 @@ fun ElegantBackground(
                 )
             )
 
-            // 3. Draw vertical light lines (laser beams) with soft blur simulations
+            // 3. Draw vertical light lines (sleek graphite/silver laser beams) with soft blur simulations
             // Beam 1: Left drift
             val beamX1 = width * (0.25f + 0.1f * sin(beamOffset1))
             drawRect(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFF007AFF).copy(alpha = 0.08f * pulseIntensity),
-                        dynamicAccent.copy(alpha = 0.14f * pulseIntensity),
-                        Color(0xFF007AFF).copy(alpha = 0.08f * pulseIntensity),
+                        Color(0xFF444444).copy(alpha = 0.04f * pulseIntensity),
+                        Color(0xFF888888).copy(alpha = 0.06f * pulseIntensity),
+                        Color(0xFF444444).copy(alpha = 0.04f * pulseIntensity),
                         Color.Transparent
                     ),
                     startX = beamX1 - width * 0.12f,
@@ -123,9 +123,9 @@ fun ElegantBackground(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFFFF3B30).copy(alpha = 0.06f * pulseIntensity),
-                        dynamicAccent.copy(alpha = 0.12f * pulseIntensity),
-                        Color(0xFF9B51E0).copy(alpha = 0.08f * pulseIntensity),
+                        Color(0xFF333333).copy(alpha = 0.03f * pulseIntensity),
+                        Color(0xFF666666).copy(alpha = 0.05f * pulseIntensity),
+                        Color(0xFF333333).copy(alpha = 0.03f * pulseIntensity),
                         Color.Transparent
                     ),
                     startX = beamX2 - width * 0.15f,
@@ -138,7 +138,7 @@ fun ElegantBackground(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFF03050B).copy(alpha = 0.85f)
+                        Color(0xFF000000).copy(alpha = 0.9f)
                     ),
                     startY = height * 0.6f,
                     endY = height

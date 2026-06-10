@@ -82,11 +82,7 @@ fun RadioScreen(
     ) {
         // Dynamic Backdrop Blurred glow matching the current station color hex!
         val baseColor = remember(station.themeColorHex) {
-            try {
-                Color(android.graphics.Color.parseColor(station.themeColorHex))
-            } catch (e: Exception) {
-                Color(0xFF6B4EFE)
-            }
+            Color.White
         }
 
         Box(
@@ -94,7 +90,7 @@ fun RadioScreen(
                 .fillMaxSize()
                 .blur(80.dp)
                 .background(Brush.radialGradient(
-                    colors = listOf(baseColor.copy(alpha = 0.28f), Color.Transparent),
+                    colors = listOf(Color.White.copy(alpha = 0.12f), Color.Transparent),
                     radius = 900f
                 ))
         )
@@ -117,15 +113,15 @@ fun RadioScreen(
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier
-                        .background(Color(0xFFFF3B30), RoundedCornerShape(4.dp))
+                        .background(Color.White, RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.size(5.dp).background(Color.White, CircleShape))
+                    Box(modifier = Modifier.size(5.dp).background(Color.Black, CircleShape))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "LIVE",
-                        color = Color.White,
+                        color = Color.Black,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -213,7 +209,7 @@ fun RadioScreen(
                                                 modifier = Modifier
                                                     .width(2.dp)
                                                     .height(barHeight.value.dp)
-                                                    .background(Color(0xFF00FFCC))
+                                                    .background(Color.White)
                                             )
                                         }
                                     }
@@ -343,7 +339,7 @@ fun RadioScreen(
                             .clip(CircleShape)
                             .background(
                                 Brush.radialGradient(
-                                    colors = listOf(baseColor, baseColor.copy(alpha = 0.4f)),
+                                    colors = listOf(Color.White, Color.White.copy(alpha = 0.40f)),
                                     radius = 120f
                                 )
                             )
@@ -353,7 +349,7 @@ fun RadioScreen(
                         Icon(
                             imageVector = if (viewModel.isRadioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                             contentDescription = "Play/Pausa",
-                            tint = Color.White,
+                            tint = Color.Black,
                             modifier = Modifier.size(34.dp)
                         )
                     }

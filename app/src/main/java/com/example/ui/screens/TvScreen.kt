@@ -152,8 +152,8 @@ fun TvScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF0B1222), // Fondo azul marino oscuro profundo
-                                Color(0xFF04060C)  // Degradado a negro sutil
+                                Color(0xFF161616), // Fondo grafito elegante
+                                Color(0xFF000000)  // Negro obsidian puro
                             )
                         )
                     )
@@ -173,7 +173,7 @@ fun TvScreen(
                     ) {
                         Text(
                             text = "PROGRAMACIÓN EN VIVO",
-                            color = Color(0xFFF95D02), // Color de acento naranja
+                            color = Color.White, // Color de acento blanco de gran estilo
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.5.sp
@@ -421,10 +421,10 @@ fun TvScreen(
                         .height(38.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFF95D02),
+                        focusedBorderColor = Color.White,
                         unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
-                        focusedContainerColor = Color(0xFF2C313B),
-                        unfocusedContainerColor = Color(0xFF1E222A),
+                        focusedContainerColor = Color(0xFF222222),
+                        unfocusedContainerColor = Color(0xFF111111),
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White
                     ),
@@ -513,20 +513,20 @@ fun TvScreen(
                             hourCounter += 1.0f
                         }
 
-                        // Cápsula roja indicadora de la hora actual en el timeline (sincronizada y centrada)
+                        // Cápsula blanca indicadora de la hora actual en el timeline (sincronizada y centrada)
                         val currentPointerOffset = (currentTimeDecimal - timelineStartDecimal) * hourWidth.value
                         Box(
                             modifier = Modifier
                                 .offset(x = (currentPointerOffset - 38).dp)
                                 .width(76.dp)
                                 .height(24.dp)
-                                .background(Color(0xFFE53935), RoundedCornerShape(12.dp))
+                                .background(Color.White, RoundedCornerShape(12.dp))
                                 .align(Alignment.CenterStart),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = currentTimeString,
-                                color = Color.White,
+                                color = Color.Black,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -675,7 +675,7 @@ fun TvScreen(
 
                                         // Animaciones fluidas para enfocar y seleccionar
                                         val blockBgColor by animateColorAsState(
-                                            targetValue = if (isSelectedInDetails) Color(0xFFF95D02) else Color(0xFF242730), // Naranja vs Gris oscuro
+                                            targetValue = if (isSelectedInDetails) Color.White else Color(0xFF242730), // Blanco vs Gris oscuro
                                             animationSpec = tween(durationMillis = 200),
                                             label = "bg_color"
                                         )
@@ -724,7 +724,7 @@ fun TvScreen(
                                             Column {
                                                 Text(
                                                     text = program.title,
-                                                    color = Color.White,
+                                                    color = if (isSelectedInDetails) Color.Black else Color.White,
                                                     fontSize = 12.5.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     maxLines = 1,
@@ -733,7 +733,7 @@ fun TvScreen(
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
                                                     text = "${program.startTime} - ${program.endTime}",
-                                                    color = if (isSelectedInDetails) Color.White.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.55f),
+                                                    color = if (isSelectedInDetails) Color.Black.copy(alpha = 0.75f) else Color.White.copy(alpha = 0.55f),
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.Normal
                                                 )
@@ -749,7 +749,7 @@ fun TvScreen(
                                         .offset(x = lineOffset.dp)
                                         .fillMaxHeight()
                                         .width(1.5.dp)
-                                        .background(Color(0xFFE53935))
+                                        .background(Color.White.copy(alpha = 0.6f))
                                 )
                             }
                         }

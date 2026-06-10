@@ -117,12 +117,12 @@ fun HomeScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "DESTACADO LIVE",
-                            color = Color(0xFFFF9500),
-                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            fontWeight = FontWeight.ExtraBold,
                             fontSize = 10.sp,
                             modifier = Modifier
                                 .background(
-                                    Color(0xFFFF9500).copy(alpha = 0.2f),
+                                    Color.White,
                                     RoundedCornerShape(4.dp)
                                 )
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -130,7 +130,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "M3U8 / IPTV PLAYER",
-                            color = Color.White.copy(alpha = 0.5f),
+                            color = Color.White.copy(alpha = 0.60f),
                             fontSize = 11.sp
                         )
                     }
@@ -161,7 +161,7 @@ fun HomeScreen(
                                 viewModel.selectChannel(heroChannel)
                                 viewModel.selectTab(AppTab.TV)
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A89FF)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.height(34.dp)
                         ) {
@@ -171,7 +171,7 @@ fun HomeScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Sintonizar Ahora", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Sintonizar Ahora", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                         }
 
                         // Add to Favorites
@@ -236,7 +236,7 @@ fun HomeScreen(
         val hasFavorites = favoriteChans.isNotEmpty() || favoriteRadios.isNotEmpty()
         if (hasFavorites) {
             item {
-                HomeSectionRowHeader(title = "MIS FAVORITOS GUARDADOS", icon = Icons.Filled.Favorite, color = Color.Red)
+                HomeSectionRowHeader(title = "MIS FAVORITOS GUARDADOS", icon = Icons.Filled.Favorite, color = Color.White)
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -346,7 +346,7 @@ fun HomeScreen(
 
         // 6. RECOMMENDED STREAMING
         item {
-            HomeSectionRowHeader(title = "RECOMENDADOS PARA TI", icon = Icons.Filled.AutoAwesome, color = Color.Cyan)
+            HomeSectionRowHeader(title = "RECOMENDADOS PARA TI", icon = Icons.Filled.AutoAwesome, color = Color.White)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -383,7 +383,7 @@ fun HomeScreen(
 fun HomeSectionRowHeader(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color = Color(0xFF4A89FF)
+    color: Color = Color.White
 ) {
     Row(
         modifier = Modifier

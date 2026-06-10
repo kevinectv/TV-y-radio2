@@ -18,8 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -181,39 +183,38 @@ fun LuminaAppShell(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        AppTab.values().forEach { tab ->
+                        AppTab.values().filter { it != AppTab.SETTINGS }.forEach { tab ->
                             val isSelected = viewModel.currentTab == tab
-                            val activeGlowBg = if (tab == AppTab.RADIO) {
-                                Color(0xFF6B4EFE)
-                            } else if (tab == AppTab.TV) {
-                                Color(0xFFFF9500)
-                            } else {
-                                Color(0xFF4A89FF)
-                            }
-
-                            val tabAlpha by animateFloatAsState(if (isSelected) 1f else 0.7f, label = "tab_alpha")
-                            val tabScale by animateFloatAsState(if (isSelected) 1.05f else 1f, label = "tab_scale")
+                            var isTabFocused by remember { mutableStateOf(false) }
+                            
+                            val tabAlpha by animateFloatAsState(if (isSelected || isTabFocused) 1f else 0.55f, label = "tab_alpha")
+                            val tabScale by animateFloatAsState(if (isTabFocused) 1.1f else (if (isSelected) 1.05f else 1f), label = "tab_scale")
 
                             Box(
                                 modifier = Modifier
                                     .scale(tabScale)
+                                    .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(
-                                        if (isSelected) activeGlowBg.copy(alpha = 0.22f) else Color.Transparent
+                                        when {
+                                            isTabFocused -> Color.White
+                                            isSelected -> Color.White.copy(alpha = 0.15f)
+                                            else -> Color.Transparent
+                                        }
                                     )
                                     .border(
-                                        width = if (isSelected) 1.5.dp else 0.dp,
-                                        color = if (isSelected) activeGlowBg.copy(alpha = 0.6f) else Color.Transparent,
+                                        width = if (isTabFocused) 0.dp else if (isSelected) 1.dp else 0.dp,
+                                        color = if (isSelected) Color.White.copy(alpha = 0.4f) else Color.Transparent,
                                         shape = RoundedCornerShape(10.dp)
                                     )
                                     .clickable { viewModel.selectTab(tab) }
                                     .tvFocusEffect(
                                         shape = RoundedCornerShape(10.dp),
-                                        focusedBorderColor = activeGlowBg,
+                                        focusedBorderColor = Color.White,
                                         unfocusedBorderColor = Color.Transparent,
-                                        scaleAmount = 1.05f
+                                        scaleAmount = 1.08f
                                     )
-                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(
@@ -229,15 +230,15 @@ fun LuminaAppShell(
                                             AppTab.SETTINGS -> Icons.Filled.Settings
                                         },
                                         contentDescription = tab.label,
-                                        tint = if (isSelected) activeGlowBg else Color.White.copy(alpha = tabAlpha),
-                                        modifier = Modifier.size(15.dp)
+                                        tint = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(16.dp)
                                     )
 
                                     Text(
                                         text = tab.label,
-                                        color = if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
+                                        color = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
                                         fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                                        fontWeight = if (isSelected || isTabFocused) FontWeight.ExtraBold else FontWeight.Medium,
                                         letterSpacing = 0.5.sp
                                     )
                                 }
@@ -250,17 +251,39 @@ fun LuminaAppShell(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        IconButton(
-                            onClick = { viewModel.selectTab(AppTab.SETTINGS) },
+                        var isSettingsFocused by remember { mutableStateOf(false) }
+                        val settingsRotation by animateFloatAsState(
+                            targetValue = if (isSettingsFocused) 180f else 0f,
+                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 350, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                            label = "settings_rotation"
+                        )
+
+                        Box(
                             modifier = Modifier
-                                .size(32.dp)
-                                .tvFocusEffect(shape = CircleShape)
+                                .size(36.dp)
+                                .onFocusChanged { isSettingsFocused = it.isFocused || it.hasFocus }
+                                .focusable()
+                                .background(
+                                    color = if (isSettingsFocused) Color.White.copy(alpha = 0.22f) else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .border(
+                                    width = if (isSettingsFocused) 1.5.dp else 0.dp,
+                                    color = if (isSettingsFocused) Color.White.copy(alpha = 0.8f) else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable { viewModel.selectTab(AppTab.SETTINGS) },
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Settings,
                                 contentDescription = "Settings Icon Toggle",
-                                tint = Color.White.copy(alpha = 0.75f),
-                                modifier = Modifier.size(18.dp)
+                                tint = if (isSettingsFocused) Color.White else Color.White.copy(alpha = 0.75f),
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .graphicsLayer {
+                                        rotationZ = settingsRotation
+                                    }
                             )
                         }
 

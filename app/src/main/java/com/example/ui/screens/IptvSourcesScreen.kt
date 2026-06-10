@@ -137,7 +137,7 @@ fun IptvSourcesScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF070B14))
+            .background(Color(0xFF000000))
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -170,7 +170,7 @@ fun IptvSourcesScreen(
                         Icon(
                             imageVector = Icons.Default.Dns,
                             contentDescription = null,
-                            tint = Color(0xFF4A89FF),
+                            tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -198,8 +198,8 @@ fun IptvSourcesScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1E36)),
-                    border = BorderStroke(1.dp, Color(0xFF264C86))
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -210,7 +210,7 @@ fun IptvSourcesScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
-                                    color = Color(0xFF4A89FF),
+                                    color = Color.White,
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -223,10 +223,10 @@ fun IptvSourcesScreen(
                             }
                             Text(
                                 text = "${(syncProgress * 100).toInt()}%",
-                                color = Color(0xFF4A89FF),
+                                color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
-                            )
+                              )
                         }
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -236,7 +236,7 @@ fun IptvSourcesScreen(
                                 .fillMaxWidth()
                                 .height(4.dp)
                                 .clip(RoundedCornerShape(2.dp)),
-                            color = Color(0xFF4A89FF),
+                            color = Color.White,
                             trackColor = Color.White.copy(alpha = 0.1f)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
