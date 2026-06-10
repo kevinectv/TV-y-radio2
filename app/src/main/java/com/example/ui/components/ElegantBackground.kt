@@ -18,43 +18,10 @@ fun ElegantBackground(
     modifier: Modifier = Modifier,
     accentColorHex: String? = null // For dynamic radio station theme matching
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "background_pulsing")
-
-    // Dynamic color calculation if provided, else use default deep violet
-    val dynamicAccent = remember(accentColorHex) {
-        accentColorHex?.let { Color(android.graphics.Color.parseColor(it)) } ?: Color(0xFF6B4EFE)
-    }
-
-    // High performance background animations
-    val beamOffset1 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * Math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "beam_offset_1"
-    )
-
-    val beamOffset2 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * Math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(18000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "beam_offset_2"
-    )
-
-    val pulseIntensity by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_intensity"
-    )
+    // Fixed static values to prevent any moving animations, keeping the background completely still
+    val beamOffset1 = 0.5f
+    val beamOffset2 = 1.2f
+    val pulseIntensity = 0.65f
 
     Box(
         modifier = modifier
