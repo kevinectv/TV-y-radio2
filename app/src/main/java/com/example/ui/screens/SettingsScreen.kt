@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -289,210 +290,234 @@ fun SettingsWorkspace(
                 }
             }
         } else {
-            // MOBILE SPECIFIC PORTRAIT LAYOUT: Sliding Master-Detail with premium physics-based animations!
-            var activeMobileCategory by remember { mutableStateOf<SettingCategory?>(null) }
-
-            AnimatedContent(
-                targetState = activeMobileCategory,
-                transitionSpec = {
-                    if (targetState != null) {
-                        // Opening detail: detail slides in from right, master slides out to left
-                        slideInHorizontally(
-                            initialOffsetX = { x -> x },
-                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
-                        ) + fadeIn(animationSpec = tween(180)) with slideOutHorizontally(
-                            targetOffsetX = { x -> -x / 2 },
-                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(150))
-                    } else {
-                        // Closing detail: master slides in from left, detail slides out to right
-                        slideInHorizontally(
-                            initialOffsetX = { x -> -x / 2 },
-                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
-                        ) + fadeIn(animationSpec = tween(180)) with slideOutHorizontally(
-                            targetOffsetX = { x -> x },
-                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(150))
-                    }
-                },
-                modifier = Modifier.fillMaxSize(),
-                label = "mobile_settings_slide"
-            ) { category ->
-                if (category == null) {
-                    // Mobile Master list view
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
+            // NEW MOBILE SPECIFIC LAYOUT: Center detail view + horizontal bottom menu!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                // Top header for selected category
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp, top = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "AJUSTES",
-                            color = Color.White,
-                            fontSize = 20.sp,
+                            text = "CATEGORÍA AJUSTE",
+                            color = Color.White.copy(alpha = 0.45f),
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.2.sp,
-                            modifier = Modifier.padding(vertical = 12.dp)
+                            letterSpacing = 1.2.sp
                         )
-
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(bottom = 24.dp)
-                        ) {
-                            items(SettingCategory.values()) { cat ->
-                                MobileMasterItem(
-                                    category = cat,
-                                    onClick = { activeMobileCategory = cat }
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // Mobile Detail view (with fully functional back navigation)
-                    val targetCategory = category
-                    
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        // Mobile Back Navigation Header
-                        Row(
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            IconButton(
-                                onClick = { activeMobileCategory = null },
-                                modifier = Modifier
-                                    .background(Color.White.copy(alpha = 0.08f), CircleShape)
-                                    .size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = "Regresar al menú de configuración",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = targetCategory.label,
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.ExtraBold
+                                text = "${selectedCategory.ordinal + 1} DE ${SettingCategory.values().size}",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = selectedCategory.label.uppercase(),
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = selectedCategory.description,
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        maxLines = 2,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
 
-                        Text(
-                            text = targetCategory.description,
-                            color = Color.White.copy(alpha = 0.45f),
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
+                Divider(color = Color.White.copy(alpha = 0.08f), modifier = Modifier.padding(vertical = 4.dp))
 
-                        Divider(color = Color.White.copy(alpha = 0.08f))
-                        Spacer(modifier = Modifier.height(12.dp))
+                // The scrollable detailed content
+                val scrollState = rememberScrollState()
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        when (selectedCategory) {
+                            SettingCategory.PROFILE -> {
+                                ProfilePaneContent(
+                                    activeProfile = activeProfile,
+                                    profilesList = profilesList,
+                                    viewModel = viewModel
+                                )
+                            }
+                            SettingCategory.IPTV_SOURCES -> {
+                                IptvSourcesPaneContent(onOpenSources = onOpenSources)
+                            }
+                            SettingCategory.EPG -> {
+                                EpgPaneContent(
+                                    viewModel = viewModel,
+                                    autoEpgSync = autoEpgSync,
+                                    onAutoEpgSyncChange = { autoEpgSync = it },
+                                    downloadLogos = downloadLogos,
+                                    onDownloadLogosChange = { downloadLogos = it },
+                                    onSyncNow = {
+                                        Toast.makeText(context, "Sincronizando guía EPG con XMLTV...", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                            SettingCategory.RADIO -> {
+                                RadioPaneContent(
+                                    bufferLatency = bufferLatency,
+                                    onBufferLatencyChange = { bufferLatency = it }
+                                )
+                            }
+                            SettingCategory.REPRODUCTOR -> {
+                                ReproductorPaneContent(
+                                    viewModel = viewModel,
+                                    hwAudioSync = hwAudioSync,
+                                    onHwAudioSyncChange = { hwAudioSync = it },
+                                    eac3Audio = eac3Audio,
+                                    onEac3AudioChange = { eac3Audio = it }
+                                )
+                            }
+                            SettingCategory.APARIENCIA -> {
+                                AparienciaPaneContent(
+                                    viewModel = viewModel,
+                                    realtimeShadows = realtimeShadows,
+                                    onRealtimeShadowsChange = { realtimeShadows = it },
+                                    fluidAnimations = fluidAnimations,
+                                    onFluidAnimationsChange = { fluidAnimations = it }
+                                )
+                            }
+                            SettingCategory.IDIOMA_REGION -> {
+                                IdiomaRegionPaneContent(viewModel = viewModel)
+                            }
+                            SettingCategory.NOTIFICATIONS -> {
+                                NotificationsPaneContent(
+                                    pushAlerts = pushAlerts,
+                                    onPushAlertsChange = { pushAlerts = it },
+                                    updateAlerts = updateAlerts,
+                                    onUpdateAlertsChange = { updateAlerts = it }
+                                )
+                            }
+                            SettingCategory.RENDIMIENTO -> {
+                                RendimientoPaneContent(
+                                    ramOptimization = ramOptimization,
+                                    onRamOptimizationChange = { ramOptimization = it },
+                                    forced60fps = forced60fps,
+                                    onForced60fpsChange = { forced60fps = it },
+                                    onClearCache = {
+                                        Toast.makeText(context, "Caché purgado con éxito. Se liberaron 12.8 MB", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                            SettingCategory.PRIVACIDAD -> {
+                                PrivacidadPaneContent(
+                                    sendErrorStats = sendErrorStats,
+                                    onSendErrorStatsChange = { sendErrorStats = it },
+                                    keepLocalHistory = keepLocalHistory,
+                                    onKeepLocalHistoryChange = { keepLocalHistory = it }
+                                )
+                            }
+                            SettingCategory.BACKUP -> {
+                                BackupPaneContent(
+                                    onBackup = {
+                                        Toast.makeText(context, "Copia de respaldo generada localmente", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onRestore = {
+                                        Toast.makeText(context, "Copia de respaldo restaurada con éxito", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                            SettingCategory.ABOUT -> {
+                                AboutPaneContent()
+                            }
+                        }
+                        // Extra bottom spacing to avoid floating tab overlaps
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+                }
 
-                        val scrollState = rememberScrollState()
-                        Column(
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // GORGEOUS BOTTOM CATEGORIES MENU (As requested: "menú aparezca abajo en teléfonos")
+                Text(
+                    text = "SELECCIONAR CANAL DE AJUSTE",
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+                )
+
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.05f))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(SettingCategory.values()) { category ->
+                        val isSelected = selectedCategory == category
+                        
+                        Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(scrollState),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                                .width(94.dp)
+                                .fillMaxHeight(0.82f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isSelected) Color.White else Color.White.copy(alpha = 0.03f)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) Color.White else Color.White.copy(alpha = 0.05f),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable { selectedCategory = category }
+                                .padding(vertical = 4.dp, horizontal = 5.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            when (targetCategory) {
-                                SettingCategory.PROFILE -> {
-                                    ProfilePaneContent(
-                                        activeProfile = activeProfile,
-                                        profilesList = profilesList,
-                                        viewModel = viewModel
-                                    )
-                                }
-                                SettingCategory.IPTV_SOURCES -> {
-                                    IptvSourcesPaneContent(onOpenSources = onOpenSources)
-                                }
-                                SettingCategory.EPG -> {
-                                    EpgPaneContent(
-                                        viewModel = viewModel,
-                                        autoEpgSync = autoEpgSync,
-                                        onAutoEpgSyncChange = { autoEpgSync = it },
-                                        downloadLogos = downloadLogos,
-                                        onDownloadLogosChange = { downloadLogos = it },
-                                        onSyncNow = {
-                                            Toast.makeText(context, "Sincronizando guía EPG con XMLTV...", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                }
-                                SettingCategory.RADIO -> {
-                                    RadioPaneContent(
-                                        bufferLatency = bufferLatency,
-                                        onBufferLatencyChange = { bufferLatency = it }
-                                    )
-                                }
-                                SettingCategory.REPRODUCTOR -> {
-                                    ReproductorPaneContent(
-                                        viewModel = viewModel,
-                                        hwAudioSync = hwAudioSync,
-                                        onHwAudioSyncChange = { hwAudioSync = it },
-                                        eac3Audio = eac3Audio,
-                                        onEac3AudioChange = { eac3Audio = it }
-                                    )
-                                }
-                                SettingCategory.APARIENCIA -> {
-                                    AparienciaPaneContent(
-                                        viewModel = viewModel,
-                                        realtimeShadows = realtimeShadows,
-                                        onRealtimeShadowsChange = { realtimeShadows = it },
-                                        fluidAnimations = fluidAnimations,
-                                        onFluidAnimationsChange = { fluidAnimations = it }
-                                    )
-                                }
-                                SettingCategory.IDIOMA_REGION -> {
-                                    IdiomaRegionPaneContent(viewModel = viewModel)
-                                }
-                                SettingCategory.NOTIFICATIONS -> {
-                                    NotificationsPaneContent(
-                                        pushAlerts = pushAlerts,
-                                        onPushAlertsChange = { pushAlerts = it },
-                                        updateAlerts = updateAlerts,
-                                        onUpdateAlertsChange = { updateAlerts = it }
-                                    )
-                                }
-                                SettingCategory.RENDIMIENTO -> {
-                                    RendimientoPaneContent(
-                                        ramOptimization = ramOptimization,
-                                        onRamOptimizationChange = { ramOptimization = it },
-                                        forced60fps = forced60fps,
-                                        onForced60fpsChange = { forced60fps = it },
-                                        onClearCache = {
-                                            Toast.makeText(context, "Caché purgado con éxito. Se liberaron 12.8 MB", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                }
-                                SettingCategory.PRIVACIDAD -> {
-                                    PrivacidadPaneContent(
-                                        sendErrorStats = sendErrorStats,
-                                        onSendErrorStatsChange = { sendErrorStats = it },
-                                        keepLocalHistory = keepLocalHistory,
-                                        onKeepLocalHistoryChange = { keepLocalHistory = it }
-                                    )
-                                }
-                                SettingCategory.BACKUP -> {
-                                    BackupPaneContent(
-                                        onBackup = {
-                                            Toast.makeText(context, "Copia de respaldo generada localmente", Toast.LENGTH_SHORT).show()
-                                        },
-                                        onRestore = {
-                                            Toast.makeText(context, "Copia de respaldo restaurada con éxito", Toast.LENGTH_SHORT).show()
-                                        }
-                                    )
-                                }
-                                SettingCategory.ABOUT -> {
-                                    AboutPaneContent()
-                                }
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = category.icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) Color.Black else Color.White.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = category.label,
+                                    color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.7f),
+                                    fontSize = 9.sp,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }

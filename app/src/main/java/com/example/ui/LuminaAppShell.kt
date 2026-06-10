@@ -42,6 +42,9 @@ fun LuminaAppShell(
     viewModel: MediaViewModel,
     modifier: Modifier = Modifier
 ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isWideLayout = configuration.screenWidthDp >= 580
+
     // Current live Clock time string
     var timeString by remember { mutableStateOf("12:00 PM") }
     LaunchedEffect(Unit) {
@@ -126,6 +129,17 @@ fun LuminaAppShell(
                             }
                         }
 
+                        // App Title only on mobile to look elegant
+                        if (!isWideLayout) {
+                            Text(
+                                text = "LUMINA",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.2.sp
+                            )
+                        }
+
                         // Search expander icon + input box
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -158,9 +172,9 @@ fun LuminaAppShell(
                                 OutlinedTextField(
                                     value = viewModel.searchQuery,
                                     onValueChange = { viewModel.updateSearchQuery(it) },
-                                    placeholder = { Text("Buscar canales...", fontSize = 11.sp, color = Color.White.copy(alpha = 0.4f)) },
+                                    placeholder = { Text("Buscar...", fontSize = 11.sp, color = Color.White.copy(alpha = 0.4f)) },
                                     modifier = Modifier
-                                        .width(140.dp)
+                                        .width(if (isWideLayout) 140.dp else 100.dp)
                                         .height(34.dp)
                                         .semantics { testTag = "search_input" },
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -178,49 +192,158 @@ fun LuminaAppShell(
                         }
                     }
 
-                    // Central Node: Main Navigation Tabs Row
+                    // Central Node: Main Navigation Tabs Row - ONLY on Wide Screens
+                    if (isWideLayout) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AppTab.values().filter { it != AppTab.SETTINGS }.forEach { tab ->
+                                val isSelected = viewModel.currentTab == tab
+                                var isTabFocused by remember { mutableStateOf(false) }
+                                
+                                val tabAlpha by animateFloatAsState(if (isSelected || isTabFocused) 1f else 0.55f, label = "tab_alpha")
+                                val tabScale by animateFloatAsState(if (isTabFocused) 1.1f else (if (isSelected) 1.05f else 1f), label = "tab_scale")
+
+                                Box(
+                                    modifier = Modifier
+                                        .scale(tabScale)
+                                        .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            when {
+                                                isTabFocused -> Color.White
+                                                isSelected -> Color.White.copy(alpha = 0.15f)
+                                                else -> Color.Transparent
+                                            }
+                                        )
+                                        .border(
+                                            width = if (isTabFocused) 0.dp else if (isSelected) 1.dp else 0.dp,
+                                            color = if (isSelected) Color.White.copy(alpha = 0.4f) else Color.Transparent,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable { viewModel.selectTab(tab) }
+                                        .tvFocusEffect(
+                                            shape = RoundedCornerShape(10.dp),
+                                            focusedBorderColor = Color.White,
+                                            unfocusedBorderColor = Color.Transparent,
+                                            scaleAmount = 1.03f
+                                        )
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = when (tab) {
+                                                AppTab.HOME -> Icons.Filled.Home
+                                                AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                                AppTab.TV -> Icons.Filled.Tv
+                                                AppTab.RADIO -> Icons.Filled.Radio
+                                                AppTab.SETTINGS -> Icons.Filled.Settings
+                                            },
+                                            contentDescription = tab.label,
+                                            tint = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+
+                                        Text(
+                                            text = tab.label,
+                                            color = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected || isTabFocused) FontWeight.ExtraBold else FontWeight.Medium,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Right Node: Live Clock and Configuration quick icon
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        AppTab.values().filter { it != AppTab.SETTINGS }.forEach { tab ->
-                            val isSelected = viewModel.currentTab == tab
-                            var isTabFocused by remember { mutableStateOf(false) }
-                            
-                            val tabAlpha by animateFloatAsState(if (isSelected || isTabFocused) 1f else 0.55f, label = "tab_alpha")
-                            val tabScale by animateFloatAsState(if (isTabFocused) 1.1f else (if (isSelected) 1.05f else 1f), label = "tab_scale")
+                        // Settings icon in top right - ONLY on Wide Screens (on Mobile it is in the Bottom Bar!)
+                        if (isWideLayout) {
+                            var isSettingsFocused by remember { mutableStateOf(false) }
+                            val settingsRotation by animateFloatAsState(
+                                targetValue = if (isSettingsFocused) 180f else 0f,
+                                animationSpec = androidx.compose.animation.core.tween(durationMillis = 350, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                                label = "settings_rotation"
+                            )
 
                             Box(
                                 modifier = Modifier
-                                    .scale(tabScale)
-                                    .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .size(36.dp)
+                                    .onFocusChanged { isSettingsFocused = it.isFocused || it.hasFocus }
+                                    .focusable()
                                     .background(
-                                        when {
-                                            isTabFocused -> Color.White
-                                            isSelected -> Color.White.copy(alpha = 0.15f)
-                                            else -> Color.Transparent
-                                        }
+                                        color = if (isSettingsFocused) Color.White.copy(alpha = 0.22f) else Color.Transparent,
+                                        shape = CircleShape
                                     )
                                     .border(
-                                        width = if (isTabFocused) 0.dp else if (isSelected) 1.dp else 0.dp,
-                                        color = if (isSelected) Color.White.copy(alpha = 0.4f) else Color.Transparent,
-                                        shape = RoundedCornerShape(10.dp)
+                                        width = if (isSettingsFocused) 1.5.dp else 0.dp,
+                                        color = if (isSettingsFocused) Color.White.copy(alpha = 0.8f) else Color.Transparent,
+                                        shape = CircleShape
                                     )
-                                    .clickable { viewModel.selectTab(tab) }
-                                    .tvFocusEffect(
-                                        shape = RoundedCornerShape(10.dp),
-                                        focusedBorderColor = Color.White,
-                                        unfocusedBorderColor = Color.Transparent,
-                                        scaleAmount = 1.03f
-                                    )
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    .clickable { viewModel.selectTab(AppTab.SETTINGS) },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Settings,
+                                    contentDescription = "Settings Icon Toggle",
+                                    tint = if (isSettingsFocused) Color.White else Color.White.copy(alpha = 0.75f),
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .graphicsLayer {
+                                            rotationZ = settingsRotation
+                                        }
+                                )
+                            }
+                        }
+
+                        // Digital Clock displaying 12-hour AM/PM format
+                        Text(
+                            text = timeString,
+                            color = Color.White,
+                            fontSize = if (isWideLayout) 12.sp else 10.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            },
+            bottomBar = {
+                if (!isWideLayout) {
+                    NavigationBar(
+                        containerColor = Color.Black.copy(alpha = 0.85f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(20.dp)),
+                        tonalElevation = 8.dp
+                    ) {
+                        AppTab.values().forEach { tab ->
+                            val isSelected = viewModel.currentTab == tab
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = { viewModel.selectTab(tab) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color.Black,
+                                    selectedTextColor = Color.White,
+                                    indicatorColor = Color.White,
+                                    unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                                    unselectedTextColor = Color.White.copy(alpha = 0.5f)
+                                ),
+                                icon = {
                                     Icon(
                                         imageVector = when (tab) {
                                             AppTab.HOME -> Icons.Filled.Home
@@ -230,74 +353,25 @@ fun LuminaAppShell(
                                             AppTab.SETTINGS -> Icons.Filled.Settings
                                         },
                                         contentDescription = tab.label,
-                                        tint = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
-
+                                },
+                                label = {
+                                    val labelStr = when (tab) {
+                                        AppTab.HOME -> "Home"
+                                        AppTab.WATCHLIST -> "Favoritos"
+                                        AppTab.TV -> "TV"
+                                        AppTab.RADIO -> "Radio"
+                                        AppTab.SETTINGS -> "Ajustes"
+                                    }
                                     Text(
-                                        text = tab.label,
-                                        color = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected || isTabFocused) FontWeight.ExtraBold else FontWeight.Medium,
-                                        letterSpacing = 0.5.sp
+                                        text = labelStr,
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     )
                                 }
-                            }
-                        }
-                    }
-
-                    // Right Node: Live Clock and Configuration quick icon
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        var isSettingsFocused by remember { mutableStateOf(false) }
-                        val settingsRotation by animateFloatAsState(
-                            targetValue = if (isSettingsFocused) 180f else 0f,
-                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 350, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-                            label = "settings_rotation"
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .onFocusChanged { isSettingsFocused = it.isFocused || it.hasFocus }
-                                .focusable()
-                                .background(
-                                    color = if (isSettingsFocused) Color.White.copy(alpha = 0.22f) else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                                .border(
-                                    width = if (isSettingsFocused) 1.5.dp else 0.dp,
-                                    color = if (isSettingsFocused) Color.White.copy(alpha = 0.8f) else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                                .clickable { viewModel.selectTab(AppTab.SETTINGS) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Settings,
-                                contentDescription = "Settings Icon Toggle",
-                                tint = if (isSettingsFocused) Color.White else Color.White.copy(alpha = 0.75f),
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .graphicsLayer {
-                                        rotationZ = settingsRotation
-                                    }
                             )
                         }
-
-                        // Digital Clock displaying 12-hour AM/PM format
-                        Text(
-                            text = timeString,
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
                     }
                 }
             }
