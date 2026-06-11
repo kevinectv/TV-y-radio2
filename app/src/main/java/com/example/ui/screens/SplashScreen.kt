@@ -59,16 +59,16 @@ fun SplashScreen(
         delay(100)
         startAnimations = true
 
-        // Smooth virtual progress tracking (total splash duration: ~2.8 seconds)
-        val steps = 100
-        val stepDuration = 24L // ~2.4 seconds to fill 100%
+        // Faster virtual progress tracking (total splash duration: ~1.0 second)
+        val steps = 50
+        val stepDuration = 16L // ~0.8 seconds to fill 100%
         for (i in 1..steps) {
             delay(stepDuration)
-            progressVal = i / 100f
+            progressVal = i / 50f
         }
         
         // Brief final delay to let user see full progress, then transition
-        delay(200)
+        delay(100)
         onSplashFinished()
     }
 
@@ -239,79 +239,174 @@ fun SplashScreen(
                     )
                 }
 
-                // High fidelity vector prism lines
+                // High fidelity TV vector graphic representing the premium LUMINA Entertainment Hub
                 Canvas(
                     modifier = Modifier
-                        .fillMaxSize(0.72f)
+                        .fillMaxSize(0.75f)
                 ) {
                     val w = size.width
                     val h = size.height
-                    
-                    // Path for beautiful outer diamond shield representing Lumina Aperture
-                    val outerPath = Path().apply {
-                        moveTo(w * 0.5f, 0f)
-                        lineTo(w, h * 0.5f)
-                        lineTo(w * 0.5f, h)
-                        lineTo(0f, h * 0.5f)
-                        close()
+
+                    // 1. Sleek Futuristic TV Antennas with glowing endpoints
+                    val leftAntennaPath = Path().apply {
+                        moveTo(w * 0.42f, h * 0.12f)
+                        lineTo(w * 0.25f, -h * 0.1f)
+                    }
+                    val rightAntennaPath = Path().apply {
+                        moveTo(w * 0.58f, h * 0.12f)
+                        lineTo(w * 0.75f, -h * 0.1f)
                     }
 
-                    // Stroke glow using subtle dual gradient
                     drawPath(
-                        path = outerPath,
+                        path = leftAntennaPath,
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    drawPath(
+                        path = rightAntennaPath,
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // Small glowing neon beads on top of the antennas
+                    drawCircle(
+                        color = Color.White,
+                        radius = 4.dp.toPx(),
+                        center = Offset(w * 0.25f, -h * 0.1f)
+                    )
+                    drawCircle(
+                        color = Color.White,
+                        radius = 4.dp.toPx(),
+                        center = Offset(w * 0.75f, -h * 0.1f)
+                    )
+
+                    // 2. Beautiful Streaming Radar / Broadcast Waves around the TV
+                    val waveGlowAlpha = 0.35f
+                    drawArc(
+                        color = Color.White.copy(alpha = waveGlowAlpha * 0.5f),
+                        startAngle = 140f,
+                        sweepAngle = 80f,
+                        useCenter = false,
+                        topLeft = Offset(-w * 0.18f, h * 0.05f),
+                        size = Size(w * 1.36f, h * 0.8f),
+                        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
+                    drawArc(
+                        color = Color.White.copy(alpha = waveGlowAlpha * 0.8f),
+                        startAngle = 150f,
+                        sweepAngle = 60f,
+                        useCenter = false,
+                        topLeft = Offset(-w * 0.08f, h * 0.1f),
+                        size = Size(w * 1.16f, h * 0.7f),
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // 3. Curved TV Cabinet Stand / Footing Base
+                    val standPath = Path().apply {
+                        moveTo(w * 0.44f, h * 0.78f)
+                        quadraticTo(w * 0.45f, h * 0.9f, w * 0.30f, h * 0.94f)
+                        lineTo(w * 0.70f, h * 0.94f)
+                        quadraticTo(w * 0.55f, h * 0.9f, w * 0.56f, h * 0.78f)
+                        close()
+                    }
+                    drawPath(
+                        path = standPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.4f),
+                                Color.White.copy(alpha = 0.12f)
+                            )
+                        )
+                    )
+                    drawPath(
+                        path = standPath,
+                        color = Color.White.copy(alpha = 0.5f),
+                        style = Stroke(width = 1.5.dp.toPx(), join = StrokeJoin.Round)
+                    )
+
+                    // 4. Outer Beveled TV Screen Frame with premium rounded edges
+                    val outerTvRect = androidx.compose.ui.geometry.RoundRect(
+                        left = w * 0.08f,
+                        top = h * 0.12f,
+                        right = w * 0.92f,
+                        bottom = h * 0.78f,
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+                    )
+                    val tvPath = Path().apply {
+                        addRoundRect(outerTvRect)
+                    }
+
+                    // Draw solid backlight inner screen wash
+                    drawPath(
+                        path = tvPath,
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.12f),
+                                Color.Transparent
+                            ),
+                            center = Offset(w * 0.5f, h * 0.45f),
+                            radius = w * 0.5f
+                        )
+                    )
+
+                    // Stroke for outer TV casing
+                    drawPath(
+                        path = tvPath,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.85f),
-                                Color.White.copy(alpha = 0.2f),
-                                Color.White.copy(alpha = 0.7f)
+                                Color.White.copy(alpha = 0.95f),
+                                Color.White.copy(alpha = 0.25f),
+                                Color.White.copy(alpha = 0.8f)
                             ),
-                            start = Offset(0f, 0f),
-                            end = Offset(w, h)
+                            start = Offset(w * 0.1f, h * 0.15f),
+                            end = Offset(w * 0.9f, h * 0.75f)
                         ),
                         style = Stroke(width = 3.dp.toPx(), join = StrokeJoin.Round)
                     )
 
-                    // Path for internal floating visual laser line (prism facet)
-                    val innerPath = Path().apply {
-                        moveTo(w * 0.5f, h * 0.2f)
-                        lineTo(w * 0.8f, h * 0.5f)
-                        lineTo(w * 0.5f, h * 0.8f)
-                        lineTo(w * 0.2f, h * 0.5f)
-                        close()
+                    // 5. Inner screen bezel boundary
+                    val innerTvRect = androidx.compose.ui.geometry.RoundRect(
+                        left = w * 0.13f,
+                        top = h * 0.17f,
+                        right = w * 0.87f,
+                        bottom = h * 0.73f,
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(11.dp.toPx())
+                    )
+                    val innerTvPath = Path().apply {
+                        addRoundRect(innerTvRect)
                     }
-
                     drawPath(
-                        path = innerPath,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.15f),
-                                Color.White.copy(alpha = 0.6f),
-                                Color.White.copy(alpha = 0.15f)
-                            ),
-                            start = Offset(0f, h),
-                            end = Offset(w, 0f)
-                        ),
-                        style = Stroke(width = 1.5.dp.toPx(), join = StrokeJoin.Round)
+                        path = innerTvPath,
+                        color = Color.White.copy(alpha = 0.18f),
+                        style = Stroke(width = 1.dp.toPx())
                     )
 
-                    // Draw stylized sleek letter mark representation "L" (laser solid bar) and central focal node
-                    val linePath = Path().apply {
-                        moveTo(w * 0.42f, h * 0.35f)
-                        lineTo(w * 0.42f, h * 0.65f)
-                        lineTo(w * 0.62f, h * 0.65f)
+                    // 6. Styled sleek laser letter mark "L" inside the widescreen TV display safely centered
+                    val brandLPath = Path().apply {
+                        moveTo(w * 0.40f, h * 0.32f)
+                        lineTo(w * 0.40f, h * 0.58f)
+                        lineTo(w * 0.62f, h * 0.58f)
                     }
 
+                    // 6a. Giant fuzzy neon glow underlying the "L"
                     drawPath(
-                        path = linePath,
+                        path = brandLPath,
+                        color = Color.White.copy(alpha = 0.28f),
+                        style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
+                    
+                    // 6b. Solid sharp high-intensity white core laser "L"
+                    drawPath(
+                        path = brandLPath,
                         color = Color.White,
                         style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                     )
 
-                    // Subtle central core beacon (a small filled glowing focal point circle)
+                    // 6c. Central luminous focal highlight node at the turn point
                     drawCircle(
                         color = Color.White,
-                        radius = 2.5.dp.toPx(),
-                        center = Offset(w * 0.42f, h * 0.65f)
+                        radius = 3.5.dp.toPx(),
+                        center = Offset(w * 0.40f, h * 0.58f)
                     )
                 }
             }
