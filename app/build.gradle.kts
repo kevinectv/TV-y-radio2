@@ -163,16 +163,29 @@ tasks.register("copyApkToOutputFolders") {
             val visApk = File(destVisibleDir, "app-debug.apk")
             val hidApk = File(destHiddenDir, "app-debug.apk")
             
-            // Copy to visible 'build-outputs' folder
-            apkSource.copyTo(visApk, overwrite = true)
+            // Legacy / Cached URL support targets
+            val legacyNames = listOf(
+                "Lumina_IPTV_Latest.apk",
+                "Lumina_IPTV_v2.0.2.apk",
+                "Lumina_IPTV_v2.0.1.apk",
+                "Lumina_IPTV_v2.0.0.apk"
+            )
             
-            // Copy to hidden '.build-outputs' folder (as the platform sometimes expects)
+            // Copy default targets
+            apkSource.copyTo(visApk, overwrite = true)
             apkSource.copyTo(hidApk, overwrite = true)
+            
+            // Copy legacy/cached targets to ensure no dead links on user's devices
+            for (name in legacyNames) {
+                apkSource.copyTo(File(destVisibleDir, name), overwrite = true)
+                apkSource.copyTo(File(destHiddenDir, name), overwrite = true)
+            }
             
             println("--- APK COPY SUCCESSFUL ---")
             println("Source size: ${apkSource.length()} bytes")
             println("Copied visible APK to: ${visApk.absolutePath} (${visApk.length()} bytes)")
             println("Copied hidden APK to: ${hidApk.absolutePath} (${hidApk.length()} bytes)")
+            println("And populated legacy/cached names: ${legacyNames.joinToString(", ")}")
             println("----------------------------")
         } else {
             println("--- APK COPY FAILED: Source file not found ---")
