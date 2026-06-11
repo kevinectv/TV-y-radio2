@@ -120,40 +120,37 @@ dependencies {
   "ksp"(libs.moshi.kotlin.codegen)
 }
 
-tasks.register<Copy>("copyApkToVisibleFolder") {
-    from(layout.buildDirectory.dir("outputs/apk/debug"))
-    into(layout.projectDirectory.dir("../build-outputs"))
-    include("app-debug.apk")
-}
-
-tasks.register<Copy>("copyApkToHiddenFolder") {
-    from(layout.buildDirectory.dir("outputs/apk/debug"))
-    into(layout.projectDirectory.dir("../.build-outputs"))
-    include("app-debug.apk")
-}
-
-tasks.register<Copy>("copyApkWithVersionToVisibleFolder") {
+tasks.register("copyApkToOutputFolders") {
     val appVersion = android.defaultConfig.versionName ?: "2.0.0"
-    from(layout.buildDirectory.dir("outputs/apk/debug"))
-    into(layout.projectDirectory.dir("../build-outputs"))
-    include("app-debug.apk")
-    rename { "Lumina_IPTV_v${appVersion}.apk" }
-}
-
-tasks.register<Copy>("copyApkWithVersionToHiddenFolder") {
-    val appVersion = android.defaultConfig.versionName ?: "2.0.0"
-    from(layout.buildDirectory.dir("outputs/apk/debug"))
-    into(layout.projectDirectory.dir("../.build-outputs"))
-    include("app-debug.apk")
-    rename { "Lumina_IPTV_v${appVersion}.apk" }
+    val buildDir = layout.buildDirectory
+    val projectDir = layout.projectDirectory
+    
+    inputs.file(buildDir.file("outputs/apk/debug/app-debug.apk"))
+    outputs.dir(projectDir.dir("../build-outputs"))
+    outputs.dir(projectDir.dir("../.build-outputs"))
+    
+    doLast {
+        val apkSource = buildDir.file("outputs/apk/debug/app-debug.apk").get().asFile
+        if (apkSource.exists()) {
+            val destVisibleDir = projectDir.dir("../build-outputs").asFile
+            val destHiddenDir = projectDir.dir("../.build-outputs").asFile
+            
+            // Create directories if they do not exist
+            destVisibleDir.mkdirs()
+            destHiddenDir.mkdirs()
+            
+            // Copy to visible 'build-outputs' folder
+            apkSource.copyTo(File(destVisibleDir, "app-debug.apk"), overwrite = true)
+            apkSource.copyTo(File(destVisibleDir, "Lumina_IPTV_v${appVersion}.apk"), overwrite = true)
+            
+            // Copy to hidden '.build-outputs' folder (as the platform sometimes expects)
+            apkSource.copyTo(File(destHiddenDir, "app-debug.apk"), overwrite = true)
+            apkSource.copyTo(File(destHiddenDir, "Lumina_IPTV_v${appVersion}.apk"), overwrite = true)
+        }
+    }
 }
 
 afterEvaluate {
-    tasks.findByName("assembleDebug")?.finalizedBy(
-        "copyApkToVisibleFolder",
-        "copyApkToHiddenFolder",
-        "copyApkWithVersionToVisibleFolder",
-        "copyApkWithVersionToHiddenFolder"
-    )
+    tasks.findByName("assembleDebug")?.finalizedBy("copyApkToOutputFolders")
 }
 
