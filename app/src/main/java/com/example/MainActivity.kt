@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
         val factory = MediaViewModelFactory(repository, sharedPrefs)
         
         val viewModel = ViewModelProvider(this, factory)[MediaViewModel::class.java]
+        viewModel.updateManager = com.example.data.util.UpdateManager(applicationContext)
 
         setContent {
             MyApplicationTheme(

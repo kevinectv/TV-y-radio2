@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
+import kotlinx.coroutines.launch
+import com.example.BuildConfig
 import com.example.ui.components.CharacterAvatar
 import com.example.data.database.ProfileEntity
 
@@ -282,7 +284,7 @@ fun SettingsWorkspace(
                                     )
                                 }
                                 SettingCategory.ABOUT -> {
-                                    AboutPaneContent()
+                                    AboutPaneContent(viewModel)
                                 }
                             }
                         }
@@ -448,7 +450,7 @@ fun SettingsWorkspace(
                                 )
                             }
                             SettingCategory.ABOUT -> {
-                                AboutPaneContent()
+                                AboutPaneContent(viewModel)
                             }
                         }
                         // Extra bottom spacing to avoid floating tab overlaps
@@ -1605,7 +1607,11 @@ fun BackupPaneContent(
 }
 
 @Composable
-fun AboutPaneContent() {
+fun AboutPaneContent(viewModel: MediaViewModel) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val updateState = viewModel.updateManager?.updateState?.collectAsState(initial = com.example.data.util.UpdateState.Idle)?.value ?: com.example.data.util.UpdateState.Idle
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1638,7 +1644,7 @@ fun AboutPaneContent() {
             )
 
             Text(
-                text = "Versión 3.8.2-PRO",
+                text = "Versión ${BuildConfig.VERSION_NAME}",
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
@@ -1654,6 +1660,412 @@ fun AboutPaneContent() {
                 lineHeight = 15.sp,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ----------------------------------------
+            // APP UPDATE DOWNLOADER AND CHECKER
+            // ----------------------------------------
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.SystemUpdate,
+                                contentDescription = null,
+                                tint = Color(0xFF64B5F6),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Actualizaciones de la App",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        Box(
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "Instalado: v${BuildConfig.VERSION_NAME}",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    when (updateState) {
+                        is com.example.data.util.UpdateState.Idle -> {
+                            Text(
+                                text = "Verifica si hay una nueva versión oficial de Lumina disponible en el servidor.",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 10.5.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(bottom = 10.dp)
+                            )
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            viewModel.updateManager?.checkForUpdates(forceSimulation = false)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                ) {
+                                    Text("Buscar Actualización", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                
+                                OutlinedButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            viewModel.updateManager?.checkForUpdates(forceSimulation = true)
+                                        }
+                                    },
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                ) {
+                                    Text("Simular Demo", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                                }
+                            }
+                        }
+                        is com.example.data.util.UpdateState.Checking -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xFF64B5F6),
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Conectando al servidor...",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        is com.example.data.util.UpdateState.UpToDate -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF81C784),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "¡La aplicación está al día!",
+                                    color = Color(0xFF81C784),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Dispones de la última versión oficial de Lumina.",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = { viewModel.updateManager?.resetState() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                ) {
+                                    Text("Entendido", color = Color.White, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                        is com.example.data.util.UpdateState.UpdateAvailable -> {
+                            val info = updateState.info
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "¡Nueva versión: v${info.versionName}!",
+                                            color = Color(0xFFFFB74D),
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Publicación: ${info.releaseDate}",
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            fontSize = 9.5.sp
+                                        )
+                                    }
+                                    
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0xFFE65100), RoundedCornerShape(4.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "UPDATE",
+                                            color = Color.White,
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.Black
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(6.dp))
+                                        .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Novedades:",
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    )
+                                    Text(
+                                        text = info.changelog,
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = 9.5.sp,
+                                        lineHeight = 12.5.sp
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                viewModel.updateManager?.downloadUpdate(info)
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.weight(1.3f).tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(13.dp), tint = Color.White)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Descargar e Instalar", color = Color.White, fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                    
+                                    Button(
+                                        onClick = { viewModel.updateManager?.resetState() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.weight(0.7f).tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                    ) {
+                                        Text("Cancelar", color = Color.White.copy(alpha = 0.7f), fontSize = 10.5.sp)
+                                    }
+                                }
+                            }
+                        }
+                        is com.example.data.util.UpdateState.Downloading -> {
+                            val progress = updateState.progress
+                            val downloaded = updateState.bytesDownloaded
+                            val total = updateState.totalBytes
+                            val percentText = "${(progress * 100).toInt()}%"
+                            
+                            val downloadedFormatted = com.example.data.util.UpdateManager.formatFileSize(downloaded)
+                            val totalFormatted = com.example.data.util.UpdateManager.formatFileSize(total)
+                            
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Descargando actualización...",
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = percentText,
+                                        color = Color(0xFF64B5F6),
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(6.dp))
+                                
+                                LinearProgressIndicator(
+                                    progress = { progress },
+                                    color = Color(0xFF64B5F6),
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                )
+                                
+                                Spacer(modifier = Modifier.height(6.dp))
+                                
+                                Text(
+                                    text = if (total > 0) "$downloadedFormatted / $totalFormatted" else "Descargado: $downloadedFormatted",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 9.5.sp
+                                )
+                            }
+                        }
+                        is com.example.data.util.UpdateState.DownloadFinished -> {
+                            val apkFile = updateState.apkFile
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CloudDone,
+                                    contentDescription = null,
+                                    tint = Color(0xFF81C784),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "¡Descarga completada con éxito!",
+                                    color = Color(0xFF81C784),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Confirma e instala la actualización para continuar.",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 9.5.sp,
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                                
+                                Spacer(modifier = Modifier.height(10.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = { viewModel.updateManager?.installApk(apkFile) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.weight(12f).tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                    ) {
+                                        Text("Instalar Ahora", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    
+                                    Button(
+                                        onClick = { viewModel.updateManager?.resetState() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.weight(10f).tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                    ) {
+                                        Text("Resetear Estado", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                        is com.example.data.util.UpdateState.Error -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ErrorOutline,
+                                    contentDescription = null,
+                                    tint = Color(0xFFE57373),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Error al comprobar actualizaciones",
+                                    color = Color(0xFFE57373),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = (updateState as com.example.data.util.UpdateState.Error).message,
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 9.5.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                viewModel.updateManager?.checkForUpdates(forceSimulation = false)
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                    ) {
+                                        Text("Reintentar", color = Color.White, fontSize = 10.sp)
+                                    }
+                                    Button(
+                                        onClick = { viewModel.updateManager?.resetState() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                                    ) {
+                                        Text("Cerrar", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(14.dp))
             Divider(color = Color.White.copy(alpha = 0.06f))

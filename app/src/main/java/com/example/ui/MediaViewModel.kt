@@ -38,6 +38,9 @@ class MediaViewModel(
     private val sharedPreferences: android.content.SharedPreferences? = null
 ) : ViewModel() {
 
+    // In-app Update Manager (Assigned on Activity creation)
+    var updateManager: com.example.data.util.UpdateManager? = null
+
     // Selected App Tab
     var currentTab by mutableStateOf(AppTab.HOME)
         private set
