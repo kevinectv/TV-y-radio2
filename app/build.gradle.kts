@@ -11,14 +11,15 @@ plugins {
 // Decode debug.keystore from base64 if it is missing
 val keystoreFile = file("${rootDir}/debug.keystore")
 val base64File = file("${rootDir}/debug.keystore.base64")
+println("--- KEYSTORE DIAGNOSTICS: keystoreFile exists = ${keystoreFile.exists()}, base64File exists = ${base64File.exists()}, absolute path = ${keystoreFile.absolutePath} ---")
 if (!keystoreFile.exists() && base64File.exists()) {
     try {
         val base64Content = base64File.readText().replace("\\s".toRegex(), "")
         val decodedBytes = Base64.getDecoder().decode(base64Content)
         keystoreFile.writeBytes(decodedBytes)
-        logger.lifecycle("--- DECODED DEBUG KEYSTORE TO ROOT SUCCESSFULLY ---")
+        println("--- DECODED DEBUG KEYSTORE TO ROOT SUCCESSFULLY ---")
     } catch (e: Exception) {
-        logger.lifecycle("--- FAILED TO DECODE KEYSTORE: ${e.message} ---")
+        println("--- FAILED TO DECODE KEYSTORE: ${e.message} ---")
     }
 }
 
@@ -161,16 +162,20 @@ tasks.register("copyApkToOutputFolders") {
             
             val visApk1 = File(destVisibleDir, "app-debug.apk")
             val visApk2 = File(destVisibleDir, "Lumina_IPTV_v${appVersion}.apk")
+            val visApkLatest = File(destVisibleDir, "Lumina_IPTV_Latest.apk")
             val hidApk1 = File(destHiddenDir, "app-debug.apk")
             val hidApk2 = File(destHiddenDir, "Lumina_IPTV_v${appVersion}.apk")
+            val hidApkLatest = File(destHiddenDir, "Lumina_IPTV_Latest.apk")
             
             // Copy to visible 'build-outputs' folder
             apkSource.copyTo(visApk1, overwrite = true)
             apkSource.copyTo(visApk2, overwrite = true)
+            apkSource.copyTo(visApkLatest, overwrite = true)
             
             // Copy to hidden '.build-outputs' folder (as the platform sometimes expects)
             apkSource.copyTo(hidApk1, overwrite = true)
             apkSource.copyTo(hidApk2, overwrite = true)
+            apkSource.copyTo(hidApkLatest, overwrite = true)
             
             println("--- APK COPY SUCCESSFUL ---")
             println("Source size: ${apkSource.length()} bytes")
