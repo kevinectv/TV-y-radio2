@@ -27,7 +27,7 @@ android {
   compileSdk = 35
 
   defaultConfig {
-    applicationId = "com.aistudio.lumina.iptv.vpxwqr"
+    applicationId = "com.aistudio.luminaplay.iptv.vpxwqr"
     minSdk = 21
     targetSdk = 34
     versionCode = 2
