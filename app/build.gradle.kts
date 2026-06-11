@@ -126,6 +126,12 @@ tasks.register<Copy>("copyApkToVisibleFolder") {
     include("app-debug.apk")
 }
 
+tasks.register<Copy>("copyApkToHiddenFolder") {
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    into(layout.projectDirectory.dir("../.build-outputs"))
+    include("app-debug.apk")
+}
+
 tasks.register<Copy>("copyApkWithVersionToVisibleFolder") {
     val appVersion = android.defaultConfig.versionName ?: "2.0.0"
     from(layout.buildDirectory.dir("outputs/apk/debug"))
@@ -134,7 +140,20 @@ tasks.register<Copy>("copyApkWithVersionToVisibleFolder") {
     rename { "Lumina_IPTV_v${appVersion}.apk" }
 }
 
+tasks.register<Copy>("copyApkWithVersionToHiddenFolder") {
+    val appVersion = android.defaultConfig.versionName ?: "2.0.0"
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    into(layout.projectDirectory.dir("../.build-outputs"))
+    include("app-debug.apk")
+    rename { "Lumina_IPTV_v${appVersion}.apk" }
+}
+
 afterEvaluate {
-    tasks.findByName("assembleDebug")?.finalizedBy("copyApkToVisibleFolder", "copyApkWithVersionToVisibleFolder")
+    tasks.findByName("assembleDebug")?.finalizedBy(
+        "copyApkToVisibleFolder",
+        "copyApkToHiddenFolder",
+        "copyApkWithVersionToVisibleFolder",
+        "copyApkWithVersionToHiddenFolder"
+    )
 }
 
