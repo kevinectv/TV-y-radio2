@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Persistent database configurations
+        // Initializing Lumina Play IPTV - Stable Signed Release v2.0.1
         val database = AppDatabase.getDatabase(this)
         val mediaDao = database.mediaDao()
         val repository = MediaRepository(mediaDao)

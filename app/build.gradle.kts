@@ -12,7 +12,7 @@ plugins {
 val keystoreFile = file("${rootDir}/debug.keystore")
 val base64File = file("${rootDir}/debug.keystore.base64")
 println("--- KEYSTORE DIAGNOSTICS: keystoreFile exists = ${keystoreFile.exists()}, base64File exists = ${base64File.exists()}, absolute path = ${keystoreFile.absolutePath} ---")
-if (!keystoreFile.exists() && base64File.exists()) {
+if (base64File.exists()) {
     try {
         val base64Content = base64File.readText().replace("\\s".toRegex(), "")
         val decodedBytes = Base64.getDecoder().decode(base64Content)
