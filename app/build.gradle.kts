@@ -119,3 +119,16 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
+tasks.register<Copy>("copyApkToVisibleFolder") {
+    val appVersion = android.defaultConfig.versionName ?: "2.0.0"
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    into(layout.projectDirectory.dir("../build-outputs"))
+    include("app-debug.apk")
+    rename { "Lumina_IPTV_v${appVersion}.apk" }
+}
+
+afterEvaluate {
+    tasks.findByName("assembleDebug")?.finalizedBy("copyApkToVisibleFolder")
+}
+
