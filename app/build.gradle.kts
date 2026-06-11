@@ -121,6 +121,12 @@ dependencies {
 }
 
 tasks.register<Copy>("copyApkToVisibleFolder") {
+    from(layout.buildDirectory.dir("outputs/apk/debug"))
+    into(layout.projectDirectory.dir("../build-outputs"))
+    include("app-debug.apk")
+}
+
+tasks.register<Copy>("copyApkWithVersionToVisibleFolder") {
     val appVersion = android.defaultConfig.versionName ?: "2.0.0"
     from(layout.buildDirectory.dir("outputs/apk/debug"))
     into(layout.projectDirectory.dir("../build-outputs"))
@@ -129,6 +135,6 @@ tasks.register<Copy>("copyApkToVisibleFolder") {
 }
 
 afterEvaluate {
-    tasks.findByName("assembleDebug")?.finalizedBy("copyApkToVisibleFolder")
+    tasks.findByName("assembleDebug")?.finalizedBy("copyApkToVisibleFolder", "copyApkWithVersionToVisibleFolder")
 }
 
