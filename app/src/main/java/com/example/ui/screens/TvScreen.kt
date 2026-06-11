@@ -266,27 +266,43 @@ fun TvScreen(
                                             }
                                         },
                                         update = { videoView ->
-                                            val streamUrl = viewModel.selectedChannel.streamUrl
-                                            if (videoView.tag != streamUrl && streamUrl.isNotEmpty()) {
-                                                videoView.tag = streamUrl
+                                            if (viewModel.isFullscreenPlayerActive) {
                                                 try {
                                                     videoView.stopPlayback()
-                                                    videoView.setVideoPath(streamUrl)
-                                                    videoView.setOnPreparedListener { mp ->
-                                                        mp.isLooping = true
-                                                        try {
-                                                            mp.setVolume(viewModel.tvVolume, viewModel.tvVolume)
-                                                        } catch (e: Exception) {
-                                                            e.printStackTrace()
-                                                        }
-                                                        videoView.start()
-                                                    }
-                                                    videoView.setOnErrorListener { _, _, _ ->
-                                                        true
-                                                    }
+                                                    videoView.tag = null
                                                 } catch (e: Exception) {
                                                     e.printStackTrace()
                                                 }
+                                            } else {
+                                                val streamUrl = viewModel.selectedChannel.streamUrl
+                                                if (videoView.tag != streamUrl && streamUrl.isNotEmpty()) {
+                                                    videoView.tag = streamUrl
+                                                    try {
+                                                        videoView.stopPlayback()
+                                                        videoView.setVideoPath(streamUrl)
+                                                        videoView.setOnPreparedListener { mp ->
+                                                            mp.isLooping = true
+                                                            try {
+                                                                mp.setVolume(viewModel.tvVolume, viewModel.tvVolume)
+                                                            } catch (e: Exception) {
+                                                                e.printStackTrace()
+                                                            }
+                                                            videoView.start()
+                                                        }
+                                                        videoView.setOnErrorListener { _, _, _ ->
+                                                            true
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onRelease = { videoView ->
+                                            try {
+                                                videoView.stopPlayback()
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
                                             }
                                         },
                                         modifier = Modifier.fillMaxSize()

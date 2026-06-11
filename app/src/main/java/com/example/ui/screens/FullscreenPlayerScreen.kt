@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,6 +57,11 @@ fun FullscreenPlayerScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+
+    val miniEpgFocusRequester = remember { FocusRequester() }
+    val upcomingFocusRequester = remember { FocusRequester() }
+    val quickChannelGridFocusRequester = remember { FocusRequester() }
+    val quickActionsFocusRequester = remember { FocusRequester() }
     
     // Panel expansion states
     var showMiniEpg by remember { mutableStateOf(false) }
@@ -63,6 +69,51 @@ fun FullscreenPlayerScreen(
     var showUpcomingPanel by remember { mutableStateOf(false) }
     var showQuickChannelGrid by remember { mutableStateOf(false) }
     var showQuickActions by remember { mutableStateOf(false) }
+
+    // Panel Expansion Focused Auto-Leaping trigger logic
+    LaunchedEffect(showMiniEpg) {
+        if (showMiniEpg) {
+            try {
+                delay(60)
+                miniEpgFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    LaunchedEffect(showUpcomingPanel) {
+        if (showUpcomingPanel) {
+            try {
+                delay(60)
+                upcomingFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    LaunchedEffect(showQuickChannelGrid) {
+        if (showQuickChannelGrid) {
+            try {
+                delay(60)
+                quickChannelGridFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    LaunchedEffect(showQuickActions) {
+        if (showQuickActions) {
+            try {
+                delay(60)
+                quickActionsFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
     
     // HUD overlay (touch-accessible options for phone)
     var showTouchHUD by remember { mutableStateOf(false) }
@@ -161,53 +212,54 @@ fun FullscreenPlayerScreen(
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     pinInteraction()
+                    val anyPanelOpen = showMiniEpg || showUpcomingPanel || showQuickChannelGrid || showQuickActions
                     when (keyEvent.key) {
                         Key.DirectionLeft -> {
-                            if (!showMiniEpg && !showUpcomingPanel && !showQuickChannelGrid && !showQuickActions) {
+                            if (!anyPanelOpen) {
                                 dismissAllPanels()
                                 showMiniEpg = true
                                 true
-                            } else if (showMiniEpg) {
-                                false
-                            } else {
-                                dismissAllPanels()
+                            } else if (showUpcomingPanel) {
+                                showUpcomingPanel = false
                                 true
+                            } else {
+                                false
                             }
                         }
                         Key.DirectionRight -> {
-                            if (!showUpcomingPanel && !showMiniEpg && !showQuickChannelGrid && !showQuickActions) {
+                            if (!anyPanelOpen) {
                                 dismissAllPanels()
                                 showUpcomingPanel = true
                                 true
-                            } else if (showUpcomingPanel) {
-                                false
-                            } else {
-                                dismissAllPanels()
+                            } else if (showMiniEpg) {
+                                showMiniEpg = false
                                 true
+                            } else {
+                                false
                             }
                         }
                         Key.DirectionUp -> {
-                            if (!showQuickChannelGrid && !showMiniEpg && !showUpcomingPanel && !showQuickActions) {
+                            if (!anyPanelOpen) {
                                 dismissAllPanels()
                                 showQuickChannelGrid = true
                                 true
-                            } else if (showQuickChannelGrid) {
-                                false
-                            } else {
-                                dismissAllPanels()
+                            } else if (showQuickActions) {
+                                showQuickActions = false
                                 true
+                            } else {
+                                false
                             }
                         }
                         Key.DirectionDown -> {
-                            if (!showQuickActions && !showMiniEpg && !showUpcomingPanel && !showQuickChannelGrid) {
+                            if (!anyPanelOpen) {
                                 dismissAllPanels()
                                 showQuickActions = true
                                 true
-                            } else if (showQuickActions) {
-                                false
-                            } else {
-                                dismissAllPanels()
+                            } else if (showQuickChannelGrid) {
+                                showQuickChannelGrid = false
                                 true
+                            } else {
+                                false
                             }
                         }
                         Key.DirectionCenter, Key.Enter -> {
@@ -294,6 +346,13 @@ fun FullscreenPlayerScreen(
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
+                        }
+                    },
+                    onRelease = { videoView ->
+                        try {
+                            videoView.stopPlayback()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     },
                     modifier = videoModifier
@@ -490,8 +549,9 @@ fun FullscreenPlayerScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(allChannels) { channel ->
+                    itemsIndexed(allChannels) { index, channel ->
                         val isSel = channel.id == currentChannel.id
+                        val isFocusTarget = if (allChannels.any { it.id == currentChannel.id }) isSel else index == 0
                         val programs = viewModel.getProgramsForChannel(channel.id)
                         val runningProg = programs.find { it.isActiveAt(currentTimeDecimal) }
                         
@@ -506,6 +566,7 @@ fun FullscreenPlayerScreen(
                                     color = if (isSel) Color.White else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp)
                                 )
+                                .then(if (isFocusTarget) Modifier.focusRequester(miniEpgFocusRequester) else Modifier)
                                 .clickable {
                                     pinInteraction()
                                     viewModel.selectChannel(channel)
@@ -612,12 +673,19 @@ fun FullscreenPlayerScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(upcomingPrograms) { program ->
+                    itemsIndexed(upcomingPrograms) { index, program ->
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .then(if (index == 0) Modifier.focusRequester(upcomingFocusRequester) else Modifier)
+                                .focusable()
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(8.dp),
+                                    focusedBorderColor = Color.White.copy(alpha = 0.8f),
+                                    borderWidth = 2.dp,
+                                    scaleAmount = 1.02f
+                                )
                                 .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
-                                .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(8.dp))
                                 .padding(10.dp)
                         ) {
                             Row(
@@ -693,8 +761,9 @@ fun FullscreenPlayerScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(allChannels) { channel ->
+                    itemsIndexed(allChannels) { index, channel ->
                         val isSelected = channel.id == currentChannel.id
+                        val isFocusTarget = if (allChannels.any { it.id == currentChannel.id }) isSelected else index == 0
                         Column(
                             modifier = Modifier
                                 .width(96.dp)
@@ -705,6 +774,7 @@ fun FullscreenPlayerScreen(
                                     color = if (isSelected) Color.White else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp)
                                 )
+                                .then(if (isFocusTarget) Modifier.focusRequester(quickChannelGridFocusRequester) else Modifier)
                                 .clickable {
                                     pinInteraction()
                                     viewModel.selectChannel(channel)
@@ -948,6 +1018,7 @@ fun FullscreenPlayerScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = if (isFav.value) Color(0xFFFF4081) else Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .weight(1f)
+                            .focusRequester(quickActionsFocusRequester)
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
