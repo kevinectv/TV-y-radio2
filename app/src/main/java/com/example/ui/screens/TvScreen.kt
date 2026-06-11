@@ -239,7 +239,18 @@ fun TvScreen(
                             modifier = Modifier
                                 .aspectRatio(16f / 9f)
                                 .fillMaxHeight()
-                                .border(1.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
+                                .border(1.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                                .clickable {
+                                    if (viewModel.selectedChannel.id != "no_channel") {
+                                        viewModel.isFullscreenPlayerActive = true
+                                    }
+                                }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(12.dp),
+                                    focusedBorderColor = Color.White,
+                                    borderWidth = 3.dp,
+                                    scaleAmount = 1.05f
+                                ),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.Black)
                         ) {
@@ -650,6 +661,7 @@ fun TvScreen(
                                         if (running != null) {
                                             viewModel.selectEpgProgram(running)
                                         }
+                                        viewModel.isFullscreenPlayerActive = true
                                     }
                                     .tvFocusEffect(
                                         shape = RoundedCornerShape(8.dp),
@@ -739,6 +751,7 @@ fun TvScreen(
                                                     if (matchedChannel != null) {
                                                         viewModel.selectChannel(matchedChannel)
                                                     }
+                                                    viewModel.isFullscreenPlayerActive = true
                                                 }
                                                 .onFocusChanged { focusState ->
                                                     if (focusState.isFocused) {

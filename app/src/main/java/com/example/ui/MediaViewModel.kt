@@ -175,6 +175,7 @@ class MediaViewModel(
     }
 
     // Interactive Media States - TV
+    var isFullscreenPlayerActive by mutableStateOf(false)
     var selectedChannel by mutableStateOf<Channel>(DefaultChannel)
         private set
     var isTvPlaying by mutableStateOf(true)

@@ -1,7 +1,7 @@
 package com.example.ui
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -398,6 +399,18 @@ fun LuminaAppShell(
                     AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                 }
             }
+        }
+
+        // 4. TRANSICIÓN ULTRA-ELEGANTE AL REPRODUCTOR EN PANTALLA COMPLETA INTEGRADO
+        AnimatedVisibility(
+            visible = viewModel.isFullscreenPlayerActive,
+            enter = fadeIn(animationSpec = tween(350)) + scaleIn(initialScale = 0.95f),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.95f),
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(100f)
+        ) {
+            FullscreenPlayerScreen(viewModel = viewModel)
         }
     }
 }
