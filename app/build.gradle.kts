@@ -13,7 +13,7 @@ val keystoreFile = file("${rootDir}/debug.keystore")
 val base64File = file("${rootDir}/debug.keystore.base64")
 if (!keystoreFile.exists() && base64File.exists()) {
     try {
-        val base64Content = base64File.readText().trim()
+        val base64Content = base64File.readText().replace("\\s".toRegex(), "")
         val decodedBytes = Base64.getDecoder().decode(base64Content)
         keystoreFile.writeBytes(decodedBytes)
         logger.lifecycle("--- DECODED DEBUG KEYSTORE TO ROOT SUCCESSFULLY ---")
@@ -43,12 +43,16 @@ android {
       storePassword = System.getenv("STORE_PASSWORD")
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
+      isV1SigningEnabled = true
+      isV2SigningEnabled = true
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
       storePassword = "android"
       keyAlias = "androiddebugkey"
       keyPassword = "android"
+      isV1SigningEnabled = true
+      isV2SigningEnabled = true
     }
   }
 
