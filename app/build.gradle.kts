@@ -24,11 +24,11 @@ if (!keystoreFile.exists() && base64File.exists()) {
 
 android {
   namespace = "com.example"
-  compileSdk = 36
+  compileSdk = 35
 
   defaultConfig {
     applicationId = "com.aistudio.lumina.iptv.vpxwqr"
-    minSdk = 23
+    minSdk = 21
     targetSdk = 34
     versionCode = 2
     versionName = "2.0.0"
