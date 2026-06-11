@@ -1,3 +1,5 @@
+import java.util.Base64
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -6,14 +8,28 @@ plugins {
   alias(libs.plugins.secrets)
 }
 
+// Decode debug.keystore from base64 if it is missing
+val keystoreFile = file("${rootDir}/debug.keystore")
+val base64File = file("${rootDir}/debug.keystore.base64")
+if (!keystoreFile.exists() && base64File.exists()) {
+    try {
+        val base64Content = base64File.readText().trim()
+        val decodedBytes = Base64.getDecoder().decode(base64Content)
+        keystoreFile.writeBytes(decodedBytes)
+        logger.lifecycle("--- DECODED DEBUG KEYSTORE TO ROOT SUCCESSFULLY ---")
+    } catch (e: Exception) {
+        logger.lifecycle("--- FAILED TO DECODE KEYSTORE: ${e.message} ---")
+    }
+}
+
 android {
   namespace = "com.example"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.aistudio.lumina.iptv.vpxwqr"
     minSdk = 24
-    targetSdk = 36
+    targetSdk = 34
     versionCode = 2
     versionName = "2.0.0"
 
