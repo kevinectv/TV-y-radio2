@@ -160,27 +160,19 @@ tasks.register("copyApkToOutputFolders") {
             destVisibleDir.mkdirs()
             destHiddenDir.mkdirs()
             
-            val visApk1 = File(destVisibleDir, "app-debug.apk")
-            val visApk2 = File(destVisibleDir, "Lumina_IPTV_v${appVersion}.apk")
-            val visApkLatest = File(destVisibleDir, "Lumina_IPTV_Latest.apk")
-            val hidApk1 = File(destHiddenDir, "app-debug.apk")
-            val hidApk2 = File(destHiddenDir, "Lumina_IPTV_v${appVersion}.apk")
-            val hidApkLatest = File(destHiddenDir, "Lumina_IPTV_Latest.apk")
+            val visApk = File(destVisibleDir, "app-debug.apk")
+            val hidApk = File(destHiddenDir, "app-debug.apk")
             
             // Copy to visible 'build-outputs' folder
-            apkSource.copyTo(visApk1, overwrite = true)
-            apkSource.copyTo(visApk2, overwrite = true)
-            apkSource.copyTo(visApkLatest, overwrite = true)
+            apkSource.copyTo(visApk, overwrite = true)
             
             // Copy to hidden '.build-outputs' folder (as the platform sometimes expects)
-            apkSource.copyTo(hidApk1, overwrite = true)
-            apkSource.copyTo(hidApk2, overwrite = true)
-            apkSource.copyTo(hidApkLatest, overwrite = true)
+            apkSource.copyTo(hidApk, overwrite = true)
             
             println("--- APK COPY SUCCESSFUL ---")
             println("Source size: ${apkSource.length()} bytes")
-            println("Copied visible APKs to: ${destVisibleDir.absolutePath} (${visApk2.length()} bytes)")
-            println("Copied hidden APKs to: ${destHiddenDir.absolutePath} (${hidApk2.length()} bytes)")
+            println("Copied visible APK to: ${visApk.absolutePath} (${visApk.length()} bytes)")
+            println("Copied hidden APK to: ${hidApk.absolutePath} (${hidApk.length()} bytes)")
             println("----------------------------")
         } else {
             println("--- APK COPY FAILED: Source file not found ---")
