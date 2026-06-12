@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <!-- Guard against grey/white system layout flashes prior to first layout pass by initializing windows as solid dark -->
+        <item name="android:windowBackground">#020202</item>
+    </style>
 </resources>

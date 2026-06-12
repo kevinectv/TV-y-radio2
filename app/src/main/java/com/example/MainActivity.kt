@@ -20,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import com.example.ui.screens.ProfileSelectionScreen
 import com.example.ui.screens.SplashScreen
@@ -47,7 +49,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 var showSplash by remember { mutableStateOf(true) }
 
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().background(Color(0xFF020202))) {
                     if (viewModel.showProfileSelector) {
                         ProfileSelectionScreen(viewModel = viewModel)
                     } else {
