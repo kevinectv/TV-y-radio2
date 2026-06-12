@@ -262,6 +262,28 @@ class UpdateManager(private val context: Context) {
         try {
             if (!apkFile.exists()) return
 
+            // Check and prompt modern Android side-loading permission (Android 8.0 / API 26+)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    try {
+                        val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        try {
+                            val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(intent)
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                        }
+                    }
+                }
+            }
+
             val authority = "${context.packageName}.provider"
             val uri: Uri = FileProvider.getUriForFile(context, authority, apkFile)
 
