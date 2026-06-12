@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -83,6 +85,19 @@ fun TvScreen(
 
     // Synchronized horizontal scroll state for EPG grid
     val horizontalScrollState = rememberScrollState()
+
+    val selectedChannelFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(viewModel.isFullscreenPlayerActive) {
+        if (!viewModel.isFullscreenPlayerActive) {
+            try {
+                // Focus the currently selected channel logo box to prevent focus locking/freezing
+                selectedChannelFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     val allChannels by viewModel.allChannels.collectAsState()
 
@@ -656,6 +671,7 @@ fun TvScreen(
                         ) {
                             // COLUMNA FIJA DE CANAL (Solo logo alineado)
                             val isChannelSelected = viewModel.selectedChannel.id == channel.id
+                            val optionalFocus = if (isChannelSelected) Modifier.focusRequester(selectedChannelFocusRequester) else Modifier
                             Box(
                                 modifier = Modifier
                                     .width(115.dp)
@@ -683,7 +699,8 @@ fun TvScreen(
                                         shape = RoundedCornerShape(8.dp),
                                         focusedBorderColor = Color.White,
                                         borderWidth = 3.dp,
-                                        scaleAmount = 1.05f
+                                        scaleAmount = 1.05f,
+                                        focusRequester = if (isChannelSelected) selectedChannelFocusRequester else null
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {

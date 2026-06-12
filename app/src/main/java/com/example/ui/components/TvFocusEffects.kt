@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -30,7 +32,8 @@ fun Modifier.tvFocusEffect(
     focusedBorderColor: Color = Color.White,
     unfocusedBorderColor: Color = Color.Transparent,
     borderWidth: Dp = 3.dp,
-    scaleAmount: Float = 1.02f
+    scaleAmount: Float = 1.02f,
+    focusRequester: FocusRequester? = null
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "tvFocusEffect"
@@ -54,7 +57,7 @@ fun Modifier.tvFocusEffect(
         label = "tv_focus_bg_overlay"
     )
 
-    this
+    val baseModifier = this
         .onFocusChanged { focusState ->
             isFocused = focusState.isFocused || focusState.hasFocus
         }
@@ -75,4 +78,10 @@ fun Modifier.tvFocusEffect(
             color = if (isFocused) focusedBorderColor else unfocusedBorderColor,
             shape = shape
         )
+
+    if (focusRequester != null) {
+        baseModifier.focusRequester(focusRequester)
+    } else {
+        baseModifier
+    }
 }
