@@ -177,6 +177,19 @@ fun FullscreenPlayerScreen(
         }
     }
 
+    // Reclaim focus to the main video player container when all panels are closed to prevent focus from getting stuck
+    val anyPanelOpen = showMiniEpg || showUpcomingPanel || showQuickChannelGrid || showQuickActions || showInfoPanel || showTouchHUD
+    LaunchedEffect(anyPanelOpen) {
+        if (!anyPanelOpen) {
+            try {
+                delay(120) // Let animations settle slightly
+                focusRequester.requestFocus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     // Capture interaction to reset timeout
     fun pinInteraction() {
         userInteractionCounter++
@@ -567,9 +580,11 @@ fun FullscreenPlayerScreen(
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .then(if (isFocusTarget) Modifier.focusRequester(miniEpgFocusRequester) else Modifier)
+                                .onFocusChanged { if (it.isFocused) pinInteraction() }
                                 .clickable {
                                     pinInteraction()
                                     viewModel.selectChannel(channel)
+                                    showMiniEpg = false
                                 }
                                 .tvFocusEffect(
                                     shape = RoundedCornerShape(10.dp),
@@ -678,6 +693,7 @@ fun FullscreenPlayerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(if (index == 0) Modifier.focusRequester(upcomingFocusRequester) else Modifier)
+                                .onFocusChanged { if (it.isFocused) pinInteraction() }
                                 .focusable()
                                 .tvFocusEffect(
                                     shape = RoundedCornerShape(8.dp),
@@ -775,9 +791,11 @@ fun FullscreenPlayerScreen(
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .then(if (isFocusTarget) Modifier.focusRequester(quickChannelGridFocusRequester) else Modifier)
+                                .onFocusChanged { if (it.isFocused) pinInteraction() }
                                 .clickable {
                                     pinInteraction()
                                     viewModel.selectChannel(channel)
+                                    showQuickChannelGrid = false
                                 }
                                 .tvFocusEffect(
                                     shape = RoundedCornerShape(10.dp),
@@ -1019,6 +1037,7 @@ fun FullscreenPlayerScreen(
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(quickActionsFocusRequester)
+                            .onFocusChanged { if (it.isFocused) pinInteraction() }
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1042,6 +1061,7 @@ fun FullscreenPlayerScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .weight(1f)
+                            .onFocusChanged { if (it.isFocused) pinInteraction() }
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1066,6 +1086,7 @@ fun FullscreenPlayerScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .weight(1f)
+                            .onFocusChanged { if (it.isFocused) pinInteraction() }
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1088,6 +1109,7 @@ fun FullscreenPlayerScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
                         modifier = Modifier
                             .weight(1f)
+                            .onFocusChanged { if (it.isFocused) pinInteraction() }
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1106,6 +1128,7 @@ fun FullscreenPlayerScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.15f)),
                         modifier = Modifier
                             .weight(1f)
+                            .onFocusChanged { if (it.isFocused) pinInteraction() }
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
