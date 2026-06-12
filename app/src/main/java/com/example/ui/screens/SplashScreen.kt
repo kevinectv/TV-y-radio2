@@ -3,10 +3,15 @@ package com.example.ui.screens
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import com.example.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,17 +32,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-// Represents a tiny light particle drifting in the background for a cinematic bokeh effect
-private data class LightParticle(
-    val id: Int,
-    val initialX: Float,
-    val initialY: Float,
-    val speedY: Float,
-    val amplitude: Float,
-    val frequency: Float,
-    val maxAlpha: Float,
-    val radius: Float
-)
+
 
 @Composable
 fun SplashScreen(
@@ -114,32 +109,7 @@ fun SplashScreen(
         label = "glow_intensity"
     )
 
-    // Cinematic particle clock for drifting movement
-    val particleTime by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 40000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "particle_time"
-    )
 
-    // Stable client-side particle models
-    val particles = remember {
-        List(25) { index ->
-            LightParticle(
-                id = index,
-                initialX = Random.nextFloat(),
-                initialY = Random.nextFloat(),
-                speedY = 0.05f + Random.nextFloat() * 0.08f,
-                amplitude = 0.02f + Random.nextFloat() * 0.04f,
-                frequency = 0.5f + Random.nextFloat() * 1.5f,
-                maxAlpha = 0.15f + Random.nextFloat() * 0.35f,
-                radius = 3.dp.value + Random.nextFloat() * 5.dp.value
-            )
-        }
-    }
 
     Box(
         modifier = modifier
@@ -148,61 +118,23 @@ fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         
-        // 1. DUST CHRONICLE CANVAS: Premium moving background lights and soft drift particles
+        // 1. BACKLIGHT GLOW CANVAS: Subtle background radial gradient glow in deep cyan/purple tones to match the logo
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
 
-            // 1a. Core Radial Underlight Background Glow (Atmospheric Center Backlight)
+            // Core Radial Underlight Background Glow (Atmospheric Center Backlight in deep blue/cyan/purple tones)
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFFFFFFF).copy(alpha = 0.08f * glowIntensity),
-                        Color(0xFF040406).copy(alpha = 0.4f),
+                        Color(0xFF0F172A).copy(alpha = 0.35f * glowIntensity), // Subtle premium deep slate/blue backlight glow
+                        Color(0xFF080C14).copy(alpha = 0.6f),
                         Color(0xFF020202)
                     ),
                     center = Offset(width * 0.5f, height * 0.45f),
                     radius = if (isTvOrWide) width * 0.6f else width * 1.0f
                 )
             )
-
-            // 1b. Drifting soft-glow cinematic light particles
-            particles.forEach { p ->
-                val elapsedSeconds = particleTime
-                // Drift upwards vertically
-                var yPercentage = p.initialY - (p.speedY * elapsedSeconds * 0.05f)
-                yPercentage = (yPercentage % 1.0f + 1.0f) % 1.0f // Keep bounds safe [0..1]
-                
-                // Drift slightly horizontally in a wave pattern
-                val xOffset = p.amplitude * kotlin.math.sin(elapsedSeconds * p.frequency * 0.1f)
-                var xPercentage = p.initialX + xOffset
-                xPercentage = (xPercentage % 1.0f + 1.0f) % 1.0f
-
-                val drawX = xPercentage * width
-                val drawY = yPercentage * height
-
-                // Fade out near vertical edges for natural bokeh
-                val edgeFade = if (yPercentage < 0.15f) {
-                    yPercentage / 0.15f
-                } else if (yPercentage > 0.85f) {
-                    (1.0f - yPercentage) / 0.15f
-                } else {
-                    1.0f
-                }
-
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = p.maxAlpha * edgeFade * brandingAlpha),
-                            Color.White.copy(alpha = 0.0f)
-                        ),
-                        center = Offset(drawX, drawY),
-                        radius = p.radius * 3f
-                    ),
-                    center = Offset(drawX, drawY),
-                    radius = p.radius * 3f
-                )
-            }
         }
 
         // 2. MAIN LOGO & BRAND TEXT WRAPPER
@@ -215,200 +147,38 @@ fun SplashScreen(
                 .alpha(brandingAlpha)
         ) {
             
-            // 2a. LOGO SYMBOL: Procedural glow diamond / prism with custom ambient aura
+            // 2a. LOGO SYMBOL: Our custom generated premium luxury glass play-logo
             Box(
                 modifier = Modifier
-                    .size(if (isTvOrWide) 160.dp else 110.dp)
+                    .size(if (isTvOrWide) 180.dp else 130.dp)
                     .padding(bottom = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Backlight Halo glow effect behind the logo symbol
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val r = size.minDimension / 2f
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.22f * glowIntensity),
-                                Color.White.copy(alpha = 0.04f * glowIntensity),
-                                Color.Transparent
-                            ),
-                            center = center,
-                            radius = r * 1.5f
-                        ),
-                        radius = r * 1.5f
-                    )
-                }
-
-                // High fidelity TV vector graphic representing the premium LUMINA Entertainment Hub
-                Canvas(
+                // Backlight ambient glowing shadow behind our custom image logo
+                Box(
                     modifier = Modifier
-                        .fillMaxSize(0.75f)
-                ) {
-                    val w = size.width
-                    val h = size.height
-
-                    // 1. Sleek Futuristic TV Antennas with glowing endpoints
-                    val leftAntennaPath = Path().apply {
-                        moveTo(w * 0.42f, h * 0.12f)
-                        lineTo(w * 0.25f, -h * 0.1f)
-                    }
-                    val rightAntennaPath = Path().apply {
-                        moveTo(w * 0.58f, h * 0.12f)
-                        lineTo(w * 0.75f, -h * 0.1f)
-                    }
-
-                    drawPath(
-                        path = leftAntennaPath,
-                        color = Color.White.copy(alpha = 0.6f),
-                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    drawPath(
-                        path = rightAntennaPath,
-                        color = Color.White.copy(alpha = 0.6f),
-                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    // Small glowing neon beads on top of the antennas
-                    drawCircle(
-                        color = Color.White,
-                        radius = 4.dp.toPx(),
-                        center = Offset(w * 0.25f, -h * 0.1f)
-                    )
-                    drawCircle(
-                        color = Color.White,
-                        radius = 4.dp.toPx(),
-                        center = Offset(w * 0.75f, -h * 0.1f)
-                    )
-
-                    // 2. Beautiful Streaming Radar / Broadcast Waves around the TV
-                    val waveGlowAlpha = 0.35f
-                    drawArc(
-                        color = Color.White.copy(alpha = waveGlowAlpha * 0.5f),
-                        startAngle = 140f,
-                        sweepAngle = 80f,
-                        useCenter = false,
-                        topLeft = Offset(-w * 0.18f, h * 0.05f),
-                        size = Size(w * 1.36f, h * 0.8f),
-                        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    drawArc(
-                        color = Color.White.copy(alpha = waveGlowAlpha * 0.8f),
-                        startAngle = 150f,
-                        sweepAngle = 60f,
-                        useCenter = false,
-                        topLeft = Offset(-w * 0.08f, h * 0.1f),
-                        size = Size(w * 1.16f, h * 0.7f),
-                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    // 3. Curved TV Cabinet Stand / Footing Base
-                    val standPath = Path().apply {
-                        moveTo(w * 0.44f, h * 0.78f)
-                        quadraticTo(w * 0.45f, h * 0.9f, w * 0.30f, h * 0.94f)
-                        lineTo(w * 0.70f, h * 0.94f)
-                        quadraticTo(w * 0.55f, h * 0.9f, w * 0.56f, h * 0.78f)
-                        close()
-                    }
-                    drawPath(
-                        path = standPath,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.4f),
-                                Color.White.copy(alpha = 0.12f)
-                            )
-                        )
-                    )
-                    drawPath(
-                        path = standPath,
-                        color = Color.White.copy(alpha = 0.5f),
-                        style = Stroke(width = 1.5.dp.toPx(), join = StrokeJoin.Round)
-                    )
-
-                    // 4. Outer Beveled TV Screen Frame with premium rounded edges
-                    val outerTvRect = androidx.compose.ui.geometry.RoundRect(
-                        left = w * 0.08f,
-                        top = h * 0.12f,
-                        right = w * 0.92f,
-                        bottom = h * 0.78f,
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
-                    )
-                    val tvPath = Path().apply {
-                        addRoundRect(outerTvRect)
-                    }
-
-                    // Draw solid backlight inner screen wash
-                    drawPath(
-                        path = tvPath,
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.12f),
-                                Color.Transparent
+                        .size(if (isTvOrWide) 150.dp else 105.dp)
+                        .scale(1.05f)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFF00D2FF).copy(alpha = 0.18f * glowIntensity), // Cyan neon aura
+                                    Color(0xFF9D00FF).copy(alpha = 0.10f * glowIntensity), // Purple neon aura
+                                    Color.Transparent
+                                )
                             ),
-                            center = Offset(w * 0.5f, h * 0.45f),
-                            radius = w * 0.5f
+                            shape = RoundedCornerShape(26.dp)
                         )
-                    )
+                )
 
-                    // Stroke for outer TV casing
-                    drawPath(
-                        path = tvPath,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.95f),
-                                Color.White.copy(alpha = 0.25f),
-                                Color.White.copy(alpha = 0.8f)
-                            ),
-                            start = Offset(w * 0.1f, h * 0.15f),
-                            end = Offset(w * 0.9f, h * 0.75f)
-                        ),
-                        style = Stroke(width = 3.dp.toPx(), join = StrokeJoin.Round)
-                    )
-
-                    // 5. Inner screen bezel boundary
-                    val innerTvRect = androidx.compose.ui.geometry.RoundRect(
-                        left = w * 0.13f,
-                        top = h * 0.17f,
-                        right = w * 0.87f,
-                        bottom = h * 0.73f,
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(11.dp.toPx())
-                    )
-                    val innerTvPath = Path().apply {
-                        addRoundRect(innerTvRect)
-                    }
-                    drawPath(
-                        path = innerTvPath,
-                        color = Color.White.copy(alpha = 0.18f),
-                        style = Stroke(width = 1.dp.toPx())
-                    )
-
-                    // 6. Styled sleek laser letter mark "L" inside the widescreen TV display safely centered
-                    val brandLPath = Path().apply {
-                        moveTo(w * 0.40f, h * 0.32f)
-                        lineTo(w * 0.40f, h * 0.58f)
-                        lineTo(w * 0.62f, h * 0.58f)
-                    }
-
-                    // 6a. Giant fuzzy neon glow underlying the "L"
-                    drawPath(
-                        path = brandLPath,
-                        color = Color.White.copy(alpha = 0.28f),
-                        style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                    )
-                    
-                    // 6b. Solid sharp high-intensity white core laser "L"
-                    drawPath(
-                        path = brandLPath,
-                        color = Color.White,
-                        style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                    )
-
-                    // 6c. Central luminous focal highlight node at the turn point
-                    drawCircle(
-                        color = Color.White,
-                        radius = 3.5.dp.toPx(),
-                        center = Offset(w * 0.40f, h * 0.58f)
-                    )
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.img_lumina_logo),
+                    contentDescription = "Lumina Logo",
+                    modifier = Modifier
+                        .size(if (isTvOrWide) 140.dp else 100.dp)
+                        .clip(RoundedCornerShape(22.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
