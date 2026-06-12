@@ -91,6 +91,8 @@ fun TvScreen(
     LaunchedEffect(viewModel.isFullscreenPlayerActive) {
         if (!viewModel.isFullscreenPlayerActive) {
             try {
+                // Pequeño retardo de seguridad para asegurar que la vista esté acoplada antes de solicitar foco
+                kotlinx.coroutines.delay(100)
                 // Focus the currently selected channel logo box to prevent focus locking/freezing
                 selectedChannelFocusRequester.requestFocus()
             } catch (e: Exception) {
@@ -100,6 +102,17 @@ fun TvScreen(
     }
 
     val allChannels by viewModel.allChannels.collectAsState()
+
+    var showMiniPlayerVideo by remember { mutableStateOf(false) }
+    LaunchedEffect(viewModel.isFullscreenPlayerActive, viewModel.isTvPlaying, viewModel.selectedChannel) {
+        if (!viewModel.isFullscreenPlayerActive && viewModel.isTvPlaying && viewModel.selectedChannel.id != "no_channel") {
+            // Un pequeño retardo para permitir que el reproductor de pantalla completa se libere completamente
+            kotlinx.coroutines.delay(400)
+            showMiniPlayerVideo = true
+        } else {
+            showMiniPlayerVideo = false
+        }
+    }
 
     // Filter channels list dynamically based on category selection AND search query
     val filteredChannels = remember(allChannels, selectedCategoryFilter, searchQuery) {
@@ -270,7 +283,7 @@ fun TvScreen(
                             colors = CardDefaults.cardColors(containerColor = Color.Black)
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                if (viewModel.isTvPlaying && viewModel.selectedChannel.streamUrl.isNotEmpty() && viewModel.selectedChannel.id != "no_channel" && !viewModel.isFullscreenPlayerActive) {
+                                if (showMiniPlayerVideo) {
                                     androidx.compose.ui.viewinterop.AndroidView(
                                         factory = { ctx ->
                                             android.widget.VideoView(ctx).apply {
@@ -685,6 +698,7 @@ fun TvScreen(
                                         color = if (isChannelSelected) Color.White else Color.White.copy(alpha = 0.15f),
                                         shape = RoundedCornerShape(8.dp)
                                     )
+                                    .then(optionalFocus)
                                     .clickable {
                                         viewModel.selectChannel(channel)
                                         val running = viewModel.getProgramsForChannel(channel.id).find {
@@ -699,8 +713,7 @@ fun TvScreen(
                                         shape = RoundedCornerShape(8.dp),
                                         focusedBorderColor = Color.White,
                                         borderWidth = 3.dp,
-                                        scaleAmount = 1.05f,
-                                        focusRequester = if (isChannelSelected) selectedChannelFocusRequester else null
+                                        scaleAmount = 1.05f
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {

@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.widget.VideoView
 import android.view.ViewGroup
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -207,6 +208,15 @@ fun FullscreenPlayerScreen(
         return dismissedSomething
     }
 
+    val isAnyPanelOpen = showMiniEpg || showInfoPanel || showUpcomingPanel || showQuickChannelGrid || showQuickActions
+    BackHandler(enabled = viewModel.isFullscreenPlayerActive) {
+        if (isAnyPanelOpen) {
+            dismissAllPanels()
+        } else {
+            viewModel.isFullscreenPlayerActive = false
+        }
+    }
+
     // Helper to change channel (Up is previous, Down is next)
     fun changeChannel(next: Boolean) {
         if (allChannels.isEmpty()) return
@@ -331,7 +341,7 @@ fun FullscreenPlayerScreen(
                 else -> Modifier.fillMaxSize() // Stretch / default
             }
 
-            if (isPlaying && currentChannel.id != "no_channel") {
+            if (isPlaying && currentChannel.id != "no_channel" && viewModel.isFullscreenPlayerActive) {
                 AndroidView(
                     factory = { ctx ->
                         VideoView(ctx).apply {
