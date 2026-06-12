@@ -148,7 +148,7 @@ fun TvScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(265.dp) // Proporcionado para estilo Android TV de alta gama
+                    .height(195.dp) // Reducido para dar más espacio vertical a la guía EPG inferior
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -255,7 +255,7 @@ fun TvScreen(
                             colors = CardDefaults.cardColors(containerColor = Color.Black)
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                if (viewModel.isTvPlaying && viewModel.selectedChannel.streamUrl.isNotEmpty() && viewModel.selectedChannel.id != "no_channel") {
+                                if (viewModel.isTvPlaying && viewModel.selectedChannel.streamUrl.isNotEmpty() && viewModel.selectedChannel.id != "no_channel" && !viewModel.isFullscreenPlayerActive) {
                                     androidx.compose.ui.viewinterop.AndroidView(
                                         factory = { ctx ->
                                             android.widget.VideoView(ctx).apply {
@@ -513,14 +513,14 @@ fun TvScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)
-                    .background(Color(0xFF090F1B)) // Color de la barra de la línea de tiempo
+                    .background(Color(0xFF13131A)) // Color de la barra de la línea de tiempo integrado con la aplicación
             ) {
                 // Espacio fijo para alinearse con la columna de los logos
                 Box(
                     modifier = Modifier
                         .width(115.dp)
                         .fillMaxHeight()
-                        .background(Color(0xFF080D1A)),
+                        .background(Color(0xFF0C0C12)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -660,10 +660,10 @@ fun TvScreen(
                                 modifier = Modifier
                                     .width(115.dp)
                                     .fillMaxHeight()
-                                    .background(Color(0xFF080D1A))
+                                    .background(Color(0xFF0C0C12))
                                     .padding(horizontal = 8.dp, vertical = 6.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isChannelSelected) Color(0xFF2C313C) else Color(0xFF1E222A))
+                                    .background(if (isChannelSelected) Color(0xFF2C2C38) else Color(0xFF16161E))
                                     .border(
                                         width = if (isChannelSelected) 3.dp else 1.dp,
                                         color = if (isChannelSelected) Color.White else Color.White.copy(alpha = 0.15f),
@@ -741,7 +741,7 @@ fun TvScreen(
 
                                         // Animaciones fluidas para enfocar y seleccionar
                                         val blockBgColor by animateColorAsState(
-                                            targetValue = if (isSelectedInDetails) Color.White else Color(0xFF242730), // Blanco vs Gris oscuro
+                                            targetValue = if (isSelectedInDetails) Color.White else Color(0xFF16161E), // Blanco vs Grafito oscuro
                                             animationSpec = tween(durationMillis = 200),
                                             label = "bg_color"
                                         )
