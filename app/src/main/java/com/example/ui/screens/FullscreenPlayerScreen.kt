@@ -207,6 +207,25 @@ fun FullscreenPlayerScreen(
         return dismissedSomething
     }
 
+    // Helper to change channel (Up is previous, Down is next)
+    fun changeChannel(next: Boolean) {
+        if (allChannels.isEmpty()) return
+        val currentIndex = allChannels.indexOfFirst { it.id == currentChannel.id }
+        if (currentIndex == -1) {
+            viewModel.selectChannel(allChannels.first())
+        } else {
+            val targetIndex = if (next) {
+                (currentIndex + 1) % allChannels.size
+            } else {
+                (currentIndex - 1 + allChannels.size) % allChannels.size
+            }
+            viewModel.selectChannel(allChannels[targetIndex])
+        }
+        // Auto-show the info panel with new channel details and trigger timer refresh
+        showInfoPanel = true
+        pinInteraction()
+    }
+
     // Request initial focus on load so Dpad captures key inputs immediately
     LaunchedEffect(Unit) {
         try {
@@ -225,58 +244,42 @@ fun FullscreenPlayerScreen(
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     pinInteraction()
-                    val anyPanelOpen = showMiniEpg || showUpcomingPanel || showQuickChannelGrid || showQuickActions
+                    val heavyPanelOpen = showMiniEpg || showUpcomingPanel || showQuickChannelGrid || showQuickActions
                     when (keyEvent.key) {
                         Key.DirectionLeft -> {
-                            if (!anyPanelOpen) {
-                                dismissAllPanels()
-                                showMiniEpg = true
-                                true
-                            } else if (showUpcomingPanel) {
-                                showUpcomingPanel = false
+                            if (!heavyPanelOpen) {
+                                // Do nothing, consume key to prevent accidental focus loss
                                 true
                             } else {
                                 false
                             }
                         }
                         Key.DirectionRight -> {
-                            if (!anyPanelOpen) {
-                                dismissAllPanels()
-                                showUpcomingPanel = true
-                                true
-                            } else if (showMiniEpg) {
-                                showMiniEpg = false
+                            if (!heavyPanelOpen) {
+                                // Do nothing, consume key to prevent accidental focus loss
                                 true
                             } else {
                                 false
                             }
                         }
                         Key.DirectionUp -> {
-                            if (!anyPanelOpen) {
-                                dismissAllPanels()
-                                showQuickChannelGrid = true
-                                true
-                            } else if (showQuickActions) {
-                                showQuickActions = false
+                            if (!heavyPanelOpen) {
+                                changeChannel(next = false) // Previous channel
                                 true
                             } else {
                                 false
                             }
                         }
                         Key.DirectionDown -> {
-                            if (!anyPanelOpen) {
-                                dismissAllPanels()
-                                showQuickActions = true
-                                true
-                            } else if (showQuickChannelGrid) {
-                                showQuickChannelGrid = false
+                            if (!heavyPanelOpen) {
+                                changeChannel(next = true) // Next channel
                                 true
                             } else {
                                 false
                             }
                         }
                         Key.DirectionCenter, Key.Enter -> {
-                            if (!showMiniEpg && !showUpcomingPanel && !showQuickChannelGrid && !showQuickActions) {
+                            if (!heavyPanelOpen) {
                                 showInfoPanel = !showInfoPanel
                                 true
                             } else {
@@ -284,10 +287,11 @@ fun FullscreenPlayerScreen(
                             }
                         }
                         Key.Back, Key.Escape -> {
-                            if (dismissAllPanels()) {
+                            if (heavyPanelOpen) {
+                                dismissAllPanels()
                                 true
                             } else {
-                                // Default option: Return to prior screens
+                                // Default option: Return to prior screens instantly without getting stuck/frozen
                                 viewModel.isFullscreenPlayerActive = false
                                 true
                             }
