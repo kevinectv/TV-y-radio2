@@ -71,8 +71,7 @@ fun LuminaAppShell(
         }
     }
 
-    // Professional Search Center overlay trigger
-    var showSearchCenter by remember { mutableStateOf(false) }
+
 
     // Dynamic background matching the current channel or radio selection color hex
     val backgroundAccent = remember(viewModel.currentTab, viewModel.selectedRadioStation) {
@@ -141,50 +140,14 @@ fun LuminaAppShell(
                             }
                         }
 
-                        // App Title only on mobile to look elegant
-                        if (!isWideLayout) {
-                            Text(
-                                text = "LUMINA",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.2.sp
-                            )
-                        }
-
-                        // Quick and professional pill button for triggering the search center modal
-                        Button(
-                            onClick = { showSearchCenter = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White.copy(alpha = 0.08f),
-                                contentColor = Color.White
-                            ),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-                            modifier = Modifier
-                                .height(36.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(18.dp))
-                                .semantics { testTag = "search_button" },
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(18.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Search Icon",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = Color.White
-                                )
-                                Text(
-                                    text = "Buscar",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
-                                )
-                            }
-                        }
+                        // App Title always shown as a clean branded anchor
+                        Text(
+                            text = "LUMINA",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.2.sp
+                        )
                     }
 
                     // Central Node: Main Navigation Tabs Row - ONLY on Wide Screens
@@ -237,6 +200,7 @@ fun LuminaAppShell(
                                                 AppTab.WATCHLIST -> Icons.Filled.Favorite
                                                 AppTab.TV -> Icons.Filled.Tv
                                                 AppTab.RADIO -> Icons.Filled.Radio
+                                                AppTab.SEARCH -> Icons.Filled.Search
                                                 AppTab.SETTINGS -> Icons.Filled.Settings
                                             },
                                             contentDescription = tab.label,
@@ -345,6 +309,7 @@ fun LuminaAppShell(
                                             AppTab.WATCHLIST -> Icons.Filled.Favorite
                                             AppTab.TV -> Icons.Filled.Tv
                                             AppTab.RADIO -> Icons.Filled.Radio
+                                            AppTab.SEARCH -> Icons.Filled.Search
                                             AppTab.SETTINGS -> Icons.Filled.Settings
                                         },
                                         contentDescription = tab.label,
@@ -357,6 +322,7 @@ fun LuminaAppShell(
                                         AppTab.WATCHLIST -> "Favoritos"
                                         AppTab.TV -> "TV"
                                         AppTab.RADIO -> "Radio"
+                                        AppTab.SEARCH -> "Buscar"
                                         AppTab.SETTINGS -> "Ajustes"
                                     }
                                     Text(
@@ -390,6 +356,7 @@ fun LuminaAppShell(
                     AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
                     AppTab.TV -> TvScreen(viewModel = viewModel)
                     AppTab.RADIO -> RadioScreen(viewModel = viewModel)
+                    AppTab.SEARCH -> SearchScreen(viewModel = viewModel)
                     AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                 }
             }
@@ -407,20 +374,7 @@ fun LuminaAppShell(
             FullscreenPlayerScreen(viewModel = viewModel)
         }
 
-        // 5. INTELIGENTE CENTRO DE BÚSQUEDA GLOBAL / MODAL DE BÚSQUEDA PROFESIONAL
-        AnimatedVisibility(
-            visible = showSearchCenter,
-            enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.96f),
-            exit = fadeOut(animationSpec = tween(250)) + scaleOut(targetScale = 0.96f),
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(99f)
-        ) {
-            SearchCenterOverlay(
-                viewModel = viewModel,
-                onDismiss = { showSearchCenter = false }
-            )
-        }
+
     }
 }
 

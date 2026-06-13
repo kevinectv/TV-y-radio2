@@ -31,6 +31,7 @@ enum class AppTab(val label: String) {
     WATCHLIST("Watchlist"),
     TV("IPTV TV"),
     RADIO("Radio"),
+    SEARCH("Buscar"),
     SETTINGS("Settings")
 }
 
