@@ -73,4 +73,14 @@ interface MediaDao {
 
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteChannelsByPlaylist(playlistId: String)
+
+    // Radio Station Queries
+    @Query("SELECT * FROM radio_stations ORDER BY name ASC")
+    fun getAllRadioStations(): Flow<List<RadioStationEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRadioStation(station: RadioStationEntity)
+
+    @Query("DELETE FROM radio_stations WHERE id = :id")
+    suspend fun deleteRadioStation(id: String)
 }

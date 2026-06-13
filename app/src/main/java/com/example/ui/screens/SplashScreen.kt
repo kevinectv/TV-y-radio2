@@ -118,21 +118,20 @@ fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         
-        // 1. BACKLIGHT GLOW CANVAS: Subtle background radial gradient glow in deep cyan/purple tones to match the logo
+        // 1. BACKLIGHT GLOW CANVAS: Pristine base with a very subtle and elegant center soft focus underlight (no ugly blue or purple tints)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
 
-            // Core Radial Underlight Background Glow (Atmospheric Center Backlight in deep blue/cyan/purple tones)
+            // Core Radial Underlight Background Glow (atmospheric light wash to add depth)
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF0F172A).copy(alpha = 0.35f * glowIntensity), // Subtle premium deep slate/blue backlight glow
-                        Color(0xFF080C14).copy(alpha = 0.6f),
+                        Color(0xFF222533).copy(alpha = 0.08f * glowIntensity), // Extremely subtle dark slate touch
                         Color(0xFF020202)
                     ),
                     center = Offset(width * 0.5f, height * 0.45f),
-                    radius = if (isTvOrWide) width * 0.6f else width * 1.0f
+                    radius = if (isTvOrWide) width * 0.5f else width * 0.8f
                 )
             )
         }
@@ -154,19 +153,13 @@ fun SplashScreen(
                     .padding(bottom = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Backlight ambient glowing shadow behind our custom image logo
+                // Gentle backdrop accent to lift the solid container from deep black (no heavy color bleeds)
                 Box(
                     modifier = Modifier
                         .size(if (isTvOrWide) 150.dp else 105.dp)
-                        .scale(1.05f)
+                        .scale(1.04f)
                         .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0xFF00D2FF).copy(alpha = 0.18f * glowIntensity), // Cyan neon aura
-                                    Color(0xFF9D00FF).copy(alpha = 0.10f * glowIntensity), // Purple neon aura
-                                    Color.Transparent
-                                )
-                            ),
+                            color = Color(0xFF101014).copy(alpha = 0.25f),
                             shape = RoundedCornerShape(26.dp)
                         )
                 )

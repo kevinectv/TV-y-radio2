@@ -36,6 +36,9 @@ import kotlinx.coroutines.launch
 import com.example.BuildConfig
 import com.example.ui.components.CharacterAvatar
 import com.example.data.database.ProfileEntity
+import com.example.data.database.RadioStationEntity
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 /**
  * All configurable categories in settings.
@@ -221,6 +224,7 @@ fun SettingsWorkspace(
                                 }
                                 SettingCategory.RADIO -> {
                                     RadioPaneContent(
+                                        viewModel = viewModel,
                                         bufferLatency = bufferLatency,
                                         onBufferLatencyChange = { bufferLatency = it }
                                     )
@@ -387,6 +391,7 @@ fun SettingsWorkspace(
                             }
                             SettingCategory.RADIO -> {
                                 RadioPaneContent(
+                                    viewModel = viewModel,
                                     bufferLatency = bufferLatency,
                                     onBufferLatencyChange = { bufferLatency = it }
                                 )
@@ -1018,79 +1023,444 @@ fun EpgPaneContent(
 
 @Composable
 fun RadioPaneContent(
+    viewModel: MediaViewModel,
     bufferLatency: Boolean,
     onBufferLatencyChange: (Boolean) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "OPTIMIZACIÓN DE EMISIÓN DE RADIO",
-                color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
+    val context = LocalContext.current
+    var showAddStationDialog by remember { mutableStateOf(false) }
+    val radioStations by viewModel.allRadioStations.collectAsState()
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Baja Latencia de Espectro", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
-                    Text("Reduce el buffer para transmisiones acústicas en vivo.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                }
-                Switch(
-                    checked = bufferLatency,
-                    onCheckedChange = onBufferLatencyChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color.White.copy(alpha = 0.4f)
-                    )
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Optimization Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "OPTIMIZACIÓN DE EMISIÓN DE RADIO",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(bottom = 10.dp)
                 )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Divider(color = Color.White.copy(alpha = 0.06f))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text("PREAJUSTES DE ECUALIZACIÓN", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            
-            Spacer(modifier = Modifier.height(6.dp))
-
-            val presets = listOf("Plano", "Voz Clara", "Premium Bass", "Estándar")
-            var selectedPreset by remember { mutableStateOf("Estándar") }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                presets.forEach { preset ->
-                    val isSelected = selectedPreset == preset
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(34.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
-                            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                            .clickable { selectedPreset = preset }
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = preset,
-                            color = if (isSelected) Color.Black else Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Baja Latencia de Espectro", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                        Text("Reduce el buffer para transmisiones acústicas en vivo.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                    }
+                    Switch(
+                        checked = bufferLatency,
+                        onCheckedChange = onBufferLatencyChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color.White.copy(alpha = 0.4f)
                         )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider(color = Color.White.copy(alpha = 0.06f))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text("PREAJUSTES DE ECUALIZACIÓN", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                
+                Spacer(modifier = Modifier.height(6.dp))
+
+                val presets = listOf("Plano", "Voz Clara", "Premium Bass", "Estándar")
+                var selectedPreset by remember { mutableStateOf("Estándar") }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    presets.forEach { preset ->
+                        val isSelected = selectedPreset == preset
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(34.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
+                                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
+                                .clickable { selectedPreset = preset }
+                                .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = preset,
+                                color = if (isSelected) Color.Black else Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
         }
+
+        // Custom Radio Station Manager Section
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "EMISORAS DE RADIO PERSONALIZADAS",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    text = "Administra tus propias estaciones de transmisión en vivo",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 11.sp
+                )
+            }
+
+            Button(
+                onClick = { showAddStationDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B4EFE), contentColor = Color.White),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .height(34.dp)
+                    .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(15.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Añadir Estación", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        // List of Stations inside Settings
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.06f))
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (radioStations.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No hay estaciones cargadas", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
+                    }
+                } else {
+                    radioStations.forEach { rad ->
+                        val isCustom = rad.id.startsWith("custom_")
+                        val stationColor = remember(rad.themeColorHex) {
+                            try {
+                                Color(android.graphics.Color.parseColor(rad.themeColorHex))
+                            } catch (e: Exception) {
+                                Color(0xFF6B4EFE)
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(8.dp))
+                                .border(1.dp, Color.White.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Logo
+                            AsyncImage(
+                                model = rad.logoUrl,
+                                contentDescription = rad.name,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .border(1.dp, stationColor.copy(alpha = 0.6f), RoundedCornerShape(6.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            // Details
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = rad.name,
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (isCustom) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "PERSONALIZADA",
+                                            color = Color.Black,
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            modifier = Modifier
+                                                .background(stationColor, RoundedCornerShape(3.dp))
+                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "${rad.frequency} | ${rad.genre.uppercase()}",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            // Actions
+                            if (isCustom) {
+                                IconButton(
+                                    onClick = { 
+                                        viewModel.removeRadioStation(rad.id)
+                                        Toast.makeText(context, "${rad.name} eliminada con éxito", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Eliminar",
+                                        tint = Color(0xFFE53935),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = "SISTEMA",
+                                    color = Color.White.copy(alpha = 0.3f),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Add Dynamic Radio Station Dialog
+    if (showAddStationDialog) {
+        val radioColors = listOf(
+            "#6B4EFE" to "Violeta Premium",
+            "#00E676" to "Ecología Neon",
+            "#00E5FF" to "Cian Eléctrico",
+            "#FF1744" to "Rojo Escarlata",
+            "#FF9100" to "Naranja Atardecer"
+        )
+
+        var name by remember { mutableStateOf("") }
+        var streamUrl by remember { mutableStateOf("") }
+        var logoUrl by remember { mutableStateOf("") }
+        var genre by remember { mutableStateOf("") }
+        var frequency by remember { mutableStateOf("") }
+        var selectedColorHex by remember { mutableStateOf("#6B4EFE") }
+
+        var hasErrorName by remember { mutableStateOf(false) }
+        var hasErrorUrl by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showAddStationDialog = false },
+            title = {
+                Text(
+                    text = "Añadir Emisora de Radio",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            containerColor = Color(0xFF0F1524),
+            tonalElevation = 6.dp,
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                            hasErrorName = false
+                        },
+                        label = { Text("Nombre de la Estación") },
+                        isError = hasErrorName,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.White,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            focusedLabelColor = Color.White,
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = streamUrl,
+                        onValueChange = {
+                            streamUrl = it
+                            hasErrorUrl = false
+                        },
+                        label = { Text("URL de Transmisión (AAC / MP3 / M3U8)") },
+                        isError = hasErrorUrl,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.White,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            focusedLabelColor = Color.White,
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = logoUrl,
+                        onValueChange = { logoUrl = it },
+                        label = { Text("URL de Logotipo (Opcional)") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.White,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            focusedLabelColor = Color.White,
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = genre,
+                            onValueChange = { genre = it },
+                            label = { Text("Género") },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.White,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                                focusedLabelColor = Color.White,
+                                unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        OutlinedTextField(
+                            value = frequency,
+                            onValueChange = { frequency = it },
+                            label = { Text("Frecuencia (p. ej., 94.5 FM)") },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.White,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                                focusedLabelColor = Color.White,
+                                unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // Theme Color Selection
+                    Column {
+                        Text(
+                            text = "COLOR TEMÁTICO DE ESTACIÓN",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            radioColors.forEach { (colorHex, descriptor) ->
+                                val rgbColor = Color(android.graphics.Color.parseColor(colorHex))
+                                val isSelected = selectedColorHex == colorHex
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(rgbColor)
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = if (isSelected) Color.White else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { selectedColorHex = colorHex },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = if (colorHex == "#FFEB3B") Color.Black else Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        hasErrorName = name.trim().isEmpty()
+                        hasErrorUrl = streamUrl.trim().isEmpty()
+
+                        if (!hasErrorName && !hasErrorUrl) {
+                            val newStation = RadioStationEntity(
+                                id = "custom_${System.currentTimeMillis()}",
+                                name = name.trim(),
+                                streamUrl = streamUrl.trim(),
+                                logoUrl = logoUrl.trim().ifEmpty { "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300" },
+                                genre = genre.trim().ifEmpty { "General" },
+                                frequency = frequency.trim().ifEmpty { "99.9 FM" },
+                                themeColorHex = selectedColorHex,
+                                isLive = true
+                            )
+                            viewModel.addRadioStation(newStation)
+                            showAddStationDialog = false
+                            Toast.makeText(context, "${name.trim()} añadida con éxito", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                ) {
+                    Text("Aceptar", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddStationDialog = false }) {
+                    Text("Cancelar", color = Color.White.copy(alpha = 0.6f))
+                }
+            }
+        )
     }
 }
 

@@ -13,6 +13,7 @@ import com.example.data.model.EPGProgram
 import com.example.data.model.RadioStation
 import com.example.data.database.PlaylistEntity
 import com.example.data.database.EpgSourceEntity
+import com.example.data.database.RadioStationEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -245,6 +246,13 @@ class MediaViewModel(
     }
 
     // Media States - Radio
+    val allRadioStations: StateFlow<List<RadioStation>> = repository.getAllRadioStationsFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = repository.radioStationsList
+        )
+
     var selectedRadioStation by mutableStateOf<RadioStation>(repository.radioStationsList.first())
         private set
     var isRadioPlaying by mutableStateOf(false)
@@ -272,7 +280,8 @@ class MediaViewModel(
     }
 
     fun selectNextRadio() {
-        val list = repository.radioStationsList
+        val list = allRadioStations.value
+        if (list.isEmpty()) return
         val index = list.indexOfFirst { it.id == selectedRadioStation.id }
         if (index != -1) {
             val nextIndex = (index + 1) % list.size
@@ -281,11 +290,31 @@ class MediaViewModel(
     }
 
     fun selectPrevRadio() {
-        val list = repository.radioStationsList
+        val list = allRadioStations.value
+        if (list.isEmpty()) return
         val index = list.indexOfFirst { it.id == selectedRadioStation.id }
         if (index != -1) {
             val prevIndex = if (index - 1 < 0) list.size - 1 else index - 1
             selectRadioStation(list[prevIndex])
+        }
+    }
+
+    fun addRadioStation(station: RadioStationEntity) {
+        viewModelScope.launch {
+            repository.insertRadioStation(station)
+        }
+    }
+
+    fun removeRadioStation(id: String) {
+        viewModelScope.launch {
+            repository.deleteRadioStation(id)
+            // If deleting the currently playing/selected radio station, switch to another
+            if (selectedRadioStation.id == id) {
+                val list = allRadioStations.value.filter { it.id != id }
+                if (list.isNotEmpty()) {
+                    selectRadioStation(list.first())
+                }
+            }
         }
     }
 
@@ -437,6 +466,14 @@ class MediaViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        viewModelScope.launch {
+            allRadioStations.collect { stations ->
+                if (stations.isNotEmpty() && !stations.any { it.id == selectedRadioStation.id }) {
+                    selectedRadioStation = stations.first()
+                }
+            }
+        }
+
         viewModelScope.launch {
             try {
                 val currentPlaylists = repository.getAllPlaylists().first()

@@ -7,6 +7,7 @@ import com.example.data.database.PlaylistEntity
 import com.example.data.database.ProfileEntity
 import com.example.data.database.EpgSourceEntity
 import com.example.data.database.ChannelEntity
+import com.example.data.database.RadioStationEntity
 import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
 import com.example.data.model.RadioStation
@@ -371,4 +372,26 @@ class MediaRepository(private val mediaDao: MediaDao) {
     fun getAllEpgSources(): Flow<List<EpgSourceEntity>> = mediaDao.getAllEpgSources()
     suspend fun insertEpgSource(source: EpgSourceEntity) = mediaDao.insertEpgSource(source)
     suspend fun deleteEpgSource(id: String) = mediaDao.deleteEpgSource(id)
+
+    // Dynamic Radio Stations Flow & Mutations
+    fun getAllRadioStationsFlow(): Flow<List<RadioStation>> {
+        return mediaDao.getAllRadioStations().map { entities ->
+            val dynamicList = entities.map { entity ->
+                RadioStation(
+                    id = entity.id,
+                    name = entity.name,
+                    streamUrl = entity.streamUrl,
+                    logoUrl = entity.logoUrl.ifEmpty { "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300" },
+                    genre = entity.genre.ifEmpty { "General" },
+                    frequency = entity.frequency.ifEmpty { "100.0 FM" },
+                    themeColorHex = entity.themeColorHex,
+                    isLive = entity.isLive
+                )
+            }
+            radioStationsList + dynamicList
+        }
+    }
+
+    suspend fun insertRadioStation(station: RadioStationEntity) = mediaDao.insertRadioStation(station)
+    suspend fun deleteRadioStation(id: String) = mediaDao.deleteRadioStation(id)
 }
