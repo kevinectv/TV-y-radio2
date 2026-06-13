@@ -120,81 +120,45 @@ fun RadioScreen(
                 } else false
             }
     ) {
-        val isWide = maxWidth >= 580.dp
+        val isWide = maxWidth >= 650.dp
 
         // Dynamic Background blurred ambient light matches current station theme color
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .blur(80.dp)
+                .blur(90.dp)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(baseColor.copy(alpha = 0.15f), Color.Transparent),
-                        radius = 900f
+                        colors = listOf(baseColor.copy(alpha = 0.18f), Color.Transparent),
+                        radius = minOf(maxWidth, maxHeight).value * 1.5f
                     )
                 )
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Screen Header Section
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        if (isWide) {
+            // HIGH-FIDELITY HORIZONTAL SPLIT LAYOUT FOR TV / WIDESCREEN (Perfect fit, no vertical overflow)
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "REPRODUCTOR RADIO EN VIVO",
-                    color = Color.White.copy(alpha = 0.4f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
+                // LEFT COLUMN: Visualizer, Logo & Info (Weight 4.2f)
+                Column(
                     modifier = Modifier
-                        .background(baseColor, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .weight(4.2f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(Color.Black, CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "LIVE SPECTRA",
-                        color = Color.Black,
-                        fontSize = 8.5.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-            }
-
-            // Adaptive Body Section
-            if (isWide) {
-                // Dual Column Screen Layout (TV and Landscape Tablet mode)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    // Left Cover Art Column
+                    // Logo & Mini Visualizer Box
                     Box(
                         contentAlignment = Alignment.BottomCenter,
                         modifier = Modifier
-                            .size(200.dp)
+                            .size(220.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .border(2.dp, baseColor.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                            .border(2.5.dp, baseColor.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
                             .background(Color.Black)
                     ) {
                         AsyncImage(
@@ -204,12 +168,12 @@ fun RadioScreen(
                             contentScale = ContentScale.Crop
                         )
 
-                        // Bottom glass panel displaying genre information
+                        // Bottom panel with Genre name and frequency
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(46.dp)
-                                .background(Color.Black.copy(alpha = 0.7f))
+                                .background(Color.Black.copy(alpha = 0.75f))
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -229,18 +193,18 @@ fun RadioScreen(
                                     modifier = Modifier.height(14.dp)
                                 ) {
                                     repeat(4) { idx ->
-                                        val barVal = rememberInfiniteTransition(label = "wave_mini").animateFloat(
+                                        val barVal = rememberInfiniteTransition(label = "wave_mini_tv").animateFloat(
                                             initialValue = 2f,
-                                            targetValue = 12f,
+                                            targetValue = 14f,
                                             animationSpec = infiniteRepeatable(
                                                 animation = tween(200 + (idx * 60), easing = EaseInOutSine),
                                                 repeatMode = RepeatMode.Reverse
                                             ),
-                                            label = "miniv_$idx"
+                                            label = "miniv_tv_$idx"
                                         )
                                         Box(
                                             modifier = Modifier
-                                                .width(2.dp)
+                                                .width(2.5.dp)
                                                 .height(barVal.value.dp)
                                                 .background(baseColor)
                                         )
@@ -250,88 +214,377 @@ fun RadioScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(36.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Right station metadata & visualization controls
-                    Column(
-                        modifier = Modifier.widthIn(max = 320.dp),
-                        horizontalAlignment = Alignment.Start
+                    // Station Name, Genre & Favorite
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Text(
+                            text = station.name,
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { viewModel.toggleRadioFavorite(station.id) },
+                            modifier = Modifier.size(36.dp)
                         ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = "Favorito",
+                                tint = if (isFavorite) Color.Red else Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = station.genre.uppercase(),
+                        color = baseColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Equalizer Canvas visualizer
+                    Canvas(
+                        modifier = Modifier
+                            .width(220.dp)
+                            .height(30.dp)
+                    ) {
+                        val canvasWidth = size.width
+                        val canvasHeight = size.height
+                        val totalBars = waveHeights.size
+                        val spacing = 5.dp.toPx()
+                        val barWidth = (canvasWidth - (spacing * (totalBars - 1))) / totalBars
+
+                        for (i in 0 until totalBars) {
+                            val h = waveHeights[i].value * canvasHeight
+                            drawRoundRect(
+                                color = baseColor,
+                                topLeft = Offset(i * (barWidth + spacing), canvasHeight - h),
+                                size = Size(barWidth, h),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                            )
+                        }
+                    }
+                }
+
+                // RIGHT COLUMN: Media Controls, Live Volume, Available Stations List (Weight 5.8f)
+                Column(
+                    modifier = Modifier
+                        .weight(5.8f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Header Status
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "LUMINA LIVE TRANSMISIÓN",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .background(baseColor, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .background(Color.Black, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = station.genre.uppercase(),
+                                text = "LIVE",
                                 color = Color.Black,
                                 fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier
-                                    .background(baseColor, RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                fontWeight = FontWeight.ExtraBold
                             )
+                        }
+                    }
 
+                    // Content Middle part containing Controls & Volume slider
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        // Play/Pause / Previous / Next Row
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
                             IconButton(
-                                onClick = { viewModel.toggleRadioFavorite(station.id) },
-                                modifier = Modifier.size(32.dp)
+                                onClick = { viewModel.selectPrevRadio() },
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .background(Color.White.copy(alpha = 0.05f), CircleShape)
+                                    .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+                                    .tvFocusEffect(shape = CircleShape)
                             ) {
                                 Icon(
-                                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                                    contentDescription = "Favorito",
-                                    tint = if (isFavorite) Color.Red else Color.White,
-                                    modifier = Modifier.size(20.dp)
+                                    imageVector = Icons.Filled.SkipPrevious,
+                                    contentDescription = "Anterior",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.radialGradient(
+                                            colors = listOf(baseColor, baseColor.copy(alpha = 0.35f)),
+                                            radius = 140f
+                                        )
+                                    )
+                                    .clickable { viewModel.toggleRadioPlay() }
+                                    .tvFocusEffect(shape = CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (viewModel.isRadioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                    contentDescription = "Play/Pausa",
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(38.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.selectNextRadio() },
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .background(Color.White.copy(alpha = 0.05f), CircleShape)
+                                    .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape)
+                                    .tvFocusEffect(shape = CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.SkipNext,
+                                    contentDescription = "Siguiente",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text = station.name,
-                            color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "Transmisión oficial de ${station.name} (${station.frequency}). Sonido digital multiplexado para máxima definición estéreo.",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Live reactive audio equalizer visualizer bars
-                        Canvas(
+                        // High fidelity D-pad responsive volume row (fixes tv controls issue)
+                        var volumeFocused by remember { mutableStateOf(false) }
+                        Row(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(32.dp)
-                        ) {
-                            val canvasWidth = size.width
-                            val canvasHeight = size.height
-                            val totalBars = waveHeights.size
-                            val spacing = 6.dp.toPx()
-                            val barWidth = (canvasWidth - (spacing * (totalBars - 1))) / totalBars
-
-                            for (i in 0 until totalBars) {
-                                val h = waveHeights[i].value * canvasHeight
-                                drawRoundRect(
-                                    color = baseColor,
-                                    topLeft = Offset(i * (barWidth + spacing), canvasHeight - h),
-                                    size = Size(barWidth, h),
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                                .fillMaxWidth(0.95f)
+                                .background(
+                                    if (volumeFocused) baseColor.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.03f),
+                                    RoundedCornerShape(20.dp)
                                 )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (volumeFocused) baseColor else Color.White.copy(alpha = 0.06f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .onFocusChanged { volumeFocused = it.isFocused }
+                                .focusable()
+                                .onKeyEvent { keyEvent ->
+                                    if (keyEvent.type == KeyEventType.KeyDown) {
+                                        when (keyEvent.key) {
+                                            Key.DirectionLeft -> {
+                                                viewModel.setRadioVolumeLevel(viewModel.radioVolume - 0.05f)
+                                                true
+                                            }
+                                            Key.DirectionRight -> {
+                                                viewModel.setRadioVolumeLevel(viewModel.radioVolume + 0.05f)
+                                                true
+                                            }
+                                            else -> false
+                                        }
+                                    } else false
+                                }
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (viewModel.radioVolume > 0.5f) Icons.Default.VolumeUp else if (viewModel.radioVolume > 0f) Icons.Default.VolumeDown else Icons.Default.VolumeMute,
+                                contentDescription = "Volume",
+                                tint = if (volumeFocused) baseColor else Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+
+                            Slider(
+                                value = viewModel.radioVolume,
+                                onValueChange = { viewModel.setRadioVolumeLevel(it) },
+                                modifier = Modifier.weight(1f),
+                                colors = SliderDefaults.colors(
+                                    activeTrackColor = baseColor,
+                                    inactiveTrackColor = Color.White.copy(alpha = 0.15f),
+                                    thumbColor = if (volumeFocused) baseColor else Color.White
+                                )
+                            )
+
+                            Text(
+                                text = "${(viewModel.radioVolume * 100).toInt()}%",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(32.dp)
+                            )
+                        }
+                    }
+
+                    // Bottom horizontal select list
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp)
+                    ) {
+                        Text(
+                            text = "EMISORAS DISPONIBLES",
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(radioStations) { rad ->
+                                val isCurrent = rad.id == station.id
+                                val activeRadColor = try {
+                                    Color(android.graphics.Color.parseColor(rad.themeColorHex))
+                                } catch (e: Exception) {
+                                    baseColor
+                                }
+
+                                Card(
+                                    modifier = Modifier
+                                        .width(140.dp)
+                                        .height(58.dp)
+                                        .tvFocusEffect(shape = RoundedCornerShape(10.dp))
+                                        .clickable { viewModel.selectRadioStation(rad) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isCurrent) activeRadColor.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.04f)
+                                    ),
+                                    border = BorderStroke(
+                                        width = if (isCurrent) 1.5.dp else 1.dp,
+                                        color = if (isCurrent) activeRadColor else Color.White.copy(alpha = 0.08f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        AsyncImage(
+                                            model = rad.logoUrl,
+                                            contentDescription = rad.name,
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .border(1.dp, activeRadColor.copy(alpha = 0.3f), RoundedCornerShape(6.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = rad.name,
+                                                color = Color.White,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = rad.frequency,
+                                                color = Color.White.copy(alpha = 0.5f),
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            } else {
-                // Vertical responsive structure (Optimal for mobile phone dimensions)
+            }
+        } else {
+            // Vertical responsive structure (Optimal for mobile phone dimensions)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Screen Header Section
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "REPRODUCTOR RADIO EN VIVO",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .background(baseColor, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color.Black, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "LIVE SPECTRA",
+                            color = Color.Black,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+
+                // Vertical responsive body for phone
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -467,216 +720,216 @@ fun RadioScreen(
                         }
                     }
                 }
-            }
 
-            // Visualizer Media & Volume Control elements
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                // Interactive playback skip and play controls Row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    IconButton(
-                        onClick = { viewModel.selectPrevRadio() },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color.White.copy(alpha = 0.06f), CircleShape)
-                            .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                            .tvFocusEffect(shape = CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.SkipPrevious,
-                            contentDescription = "Anterior",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    // Large Glowing Play/Pause Circle
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(baseColor, baseColor.copy(alpha = 0.40f)),
-                                    radius = 120f
-                                )
-                            )
-                            .clickable { viewModel.toggleRadioPlay() }
-                            .tvFocusEffect(shape = CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (viewModel.isRadioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = "Play/Pausa",
-                            tint = Color.Black,
-                            modifier = Modifier.size(34.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { viewModel.selectNextRadio() },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color.White.copy(alpha = 0.06f), CircleShape)
-                            .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                            .tvFocusEffect(shape = CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.SkipNext,
-                            contentDescription = "Siguiente",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // High fidelity D-pad responsive volume row (fixes tv controls issue)
-                var volumeFocused by remember { mutableStateOf(false) }
-                Row(
+                // Visualizer Media & Volume Control elements
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
-                        .widthIn(max = 350.dp)
-                        .background(
-                            if (volumeFocused) baseColor.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f),
-                            RoundedCornerShape(20.dp)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (volumeFocused) baseColor else Color.White.copy(alpha = 0.06f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .onFocusChanged { volumeFocused = it.isFocused }
-                        .focusable()
-                        .onKeyEvent { keyEvent ->
-                            if (keyEvent.type == KeyEventType.KeyDown) {
-                                when (keyEvent.key) {
-                                    Key.DirectionLeft -> {
-                                        viewModel.setRadioVolumeLevel(viewModel.radioVolume - 0.05f)
-                                        true
-                                    }
-                                    Key.DirectionRight -> {
-                                        viewModel.setRadioVolumeLevel(viewModel.radioVolume + 0.05f)
-                                        true
-                                    }
-                                    else -> false
-                                }
-                            } else false
-                        }
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
-                    Icon(
-                        imageVector = if (viewModel.radioVolume > 0.5f) Icons.Default.VolumeUp else if (viewModel.radioVolume > 0f) Icons.Default.VolumeDown else Icons.Default.VolumeMute,
-                        contentDescription = "Volume",
-                        tint = if (volumeFocused) baseColor else Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-
-                    Slider(
-                        value = viewModel.radioVolume,
-                        onValueChange = { viewModel.setRadioVolumeLevel(it) },
-                        modifier = Modifier.weight(1f),
-                        colors = SliderDefaults.colors(
-                            activeTrackColor = baseColor,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.15f),
-                            thumbColor = if (volumeFocused) baseColor else Color.White
-                        )
-                    )
-
-                    Text(
-                        text = "${(viewModel.radioVolume * 100).toInt()}%",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.width(32.dp)
-                    )
-                }
-            }
-
-            // Quick Station selector at footer
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-            ) {
-                Text(
-                    text = "MIS EMISORAS DISPONIBLES",
-                    color = Color.White.copy(alpha = 0.4f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    modifier = Modifier.padding(start = 12.dp, bottom = 6.dp)
-                )
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(radioStations) { rad ->
-                        val isCurrent = rad.id == station.id
-                        val activeRadColor = try {
-                            Color(android.graphics.Color.parseColor(rad.themeColorHex))
-                        } catch (e: Exception) {
-                            baseColor
-                        }
-
-                        Card(
+                    // Interactive playback skip and play controls Row
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        IconButton(
+                            onClick = { viewModel.selectPrevRadio() },
                             modifier = Modifier
-                                .width(135.dp)
-                                .height(56.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(10.dp))
-                                .clickable { viewModel.selectRadioStation(rad) },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isCurrent) activeRadColor.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.04f)
-                            ),
-                            border = BorderStroke(
-                                width = if (isCurrent) 1.5.dp else 1.dp,
-                                color = if (isCurrent) activeRadColor else Color.White.copy(alpha = 0.08f)
-                            )
+                                .size(44.dp)
+                                .background(Color.White.copy(alpha = 0.06f), CircleShape)
+                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                                .tvFocusEffect(shape = CircleShape)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                AsyncImage(
-                                    model = rad.logoUrl,
-                                    contentDescription = rad.name,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .border(1.dp, activeRadColor.copy(alpha = 0.3f), RoundedCornerShape(6.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
+                            Icon(
+                                imageVector = Icons.Filled.SkipPrevious,
+                                contentDescription = "Anterior",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
 
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = rad.name,
-                                        color = Color.White,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                        // Large Glowing Play/Pause Circle
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(baseColor, baseColor.copy(alpha = 0.40f)),
+                                        radius = 120f
                                     )
-                                    Text(
-                                        text = rad.frequency,
-                                        color = Color.White.copy(alpha = 0.5f),
-                                        fontSize = 8.sp,
-                                        fontWeight = FontWeight.Bold
+                                )
+                                .clickable { viewModel.toggleRadioPlay() }
+                                .tvFocusEffect(shape = CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (viewModel.isRadioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                contentDescription = "Play/Pausa",
+                                tint = Color.Black,
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { viewModel.selectNextRadio() },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.White.copy(alpha = 0.06f), CircleShape)
+                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                                .tvFocusEffect(shape = CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.SkipNext,
+                                contentDescription = "Siguiente",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // High fidelity D-pad responsive volume row (fixes tv controls issue)
+                    var volumeFocused by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier
+                            .widthIn(max = 350.dp)
+                            .background(
+                                if (volumeFocused) baseColor.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f),
+                                RoundedCornerShape(20.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (volumeFocused) baseColor else Color.White.copy(alpha = 0.06f),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .onFocusChanged { volumeFocused = it.isFocused }
+                            .focusable()
+                            .onKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown) {
+                                    when (keyEvent.key) {
+                                        Key.DirectionLeft -> {
+                                            viewModel.setRadioVolumeLevel(viewModel.radioVolume - 0.05f)
+                                            true
+                                        }
+                                        Key.DirectionRight -> {
+                                            viewModel.setRadioVolumeLevel(viewModel.radioVolume + 0.05f)
+                                            true
+                                        }
+                                        else -> false
+                                    }
+                                } else false
+                            }
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (viewModel.radioVolume > 0.5f) Icons.Default.VolumeUp else if (viewModel.radioVolume > 0f) Icons.Default.VolumeDown else Icons.Default.VolumeMute,
+                            contentDescription = "Volume",
+                            tint = if (volumeFocused) baseColor else Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+
+                        Slider(
+                            value = viewModel.radioVolume,
+                            onValueChange = { viewModel.setRadioVolumeLevel(it) },
+                            modifier = Modifier.weight(1f),
+                            colors = SliderDefaults.colors(
+                                activeTrackColor = baseColor,
+                                inactiveTrackColor = Color.White.copy(alpha = 0.15f),
+                                thumbColor = if (volumeFocused) baseColor else Color.White
+                            )
+                        )
+
+                        Text(
+                            text = "${(viewModel.radioVolume * 100).toInt()}%",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.width(32.dp)
+                        )
+                    }
+                }
+
+                // Quick Station selector at footer
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp)
+                ) {
+                    Text(
+                        text = "MIS EMISORAS DISPONIBLES",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(start = 12.dp, bottom = 6.dp)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(radioStations) { rad ->
+                            val isCurrent = rad.id == station.id
+                            val activeRadColor = try {
+                                Color(android.graphics.Color.parseColor(rad.themeColorHex))
+                            } catch (e: Exception) {
+                                baseColor
+                            }
+
+                            Card(
+                                modifier = Modifier
+                                    .width(135.dp)
+                                    .height(56.dp)
+                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp))
+                                    .clickable { viewModel.selectRadioStation(rad) },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isCurrent) activeRadColor.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.04f)
+                                ),
+                                border = BorderStroke(
+                                    width = if (isCurrent) 1.5.dp else 1.dp,
+                                    color = if (isCurrent) activeRadColor else Color.White.copy(alpha = 0.08f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    AsyncImage(
+                                        model = rad.logoUrl,
+                                        contentDescription = rad.name,
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .border(1.dp, activeRadColor.copy(alpha = 0.3f), RoundedCornerShape(6.dp)),
+                                        contentScale = ContentScale.Crop
                                     )
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = rad.name,
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = rad.frequency,
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
