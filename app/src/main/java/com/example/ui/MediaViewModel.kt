@@ -104,68 +104,9 @@ class MediaViewModel(
             )
             repository.insertProfile(newProfile)
             
-            // If it's the first profile, load default demo lists and auto-select it!
+            // If it's the first profile, auto-select it!
             val currentProfiles = repository.getProfiles().first()
             if (currentProfiles.isEmpty() || currentProfiles.size == 1) {
-                try {
-                    repository.insertPlaylist(
-                        PlaylistEntity(
-                            id = "${id}_pluto_es",
-                            profileId = id,
-                            name = "Pluto TV España",
-                            type = "M3U URL",
-                            url = "https://i.mjh.nz/PlutoTV/es.json",
-                            channelsCount = 84,
-                            groupsCount = 12,
-                            isEnabled = true,
-                            lastSynced = System.currentTimeMillis() - 3600000L * 3, // 3 hours ago
-                            syncStatus = "Success"
-                        )
-                    )
-                    repository.insertPlaylist(
-                        PlaylistEntity(
-                            id = "${id}_samsung_latam",
-                            profileId = id,
-                            name = "Samsung TV Plus LATAM",
-                            type = "M3U8 URL",
-                            url = "https://example.com/samsung_latam.m3u8",
-                            channelsCount = 120,
-                            groupsCount = 15,
-                            isEnabled = true,
-                            lastSynced = System.currentTimeMillis() - 3600000L * 24, // 24 hours ago
-                            syncStatus = "Success"
-                        )
-                    )
-                    repository.insertPlaylist(
-                        PlaylistEntity(
-                            id = "${id}_xtream_demo",
-                            profileId = id,
-                            name = "Lumina Premium Xtream",
-                            type = "Xtream Codes",
-                            url = "http://premium-iptv.dns.to:8080",
-                            username = "lumina_guest",
-                            password = "••••••••••••",
-                            channelsCount = 1850,
-                            groupsCount = 42,
-                            isEnabled = false,
-                            lastSynced = System.currentTimeMillis() - 3600000L * 48,
-                            syncStatus = "Error"
-                        )
-                    )
-                    repository.insertEpgSource(
-                        EpgSourceEntity(
-                            id = "${id}_epg_es",
-                            profileId = id,
-                            name = "EPG Oficial España XML",
-                            url = "https://i.mjh.nz/PlutoTV/es.xml",
-                            lastSynced = System.currentTimeMillis() - 3600000L * 2,
-                            syncStatus = "Success",
-                            isEnabled = true
-                        )
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
                 selectProfile(newProfile)
             }
         }
@@ -569,7 +510,8 @@ class MediaViewModel(
 
     fun updatePlaylist(playlist: PlaylistEntity) {
         viewModelScope.launch {
-            repository.insertPlaylist(playlist)
+            val pId = playlist.profileId.ifEmpty { activeProfile?.id ?: "" }
+            repository.insertPlaylist(playlist.copy(profileId = pId))
         }
     }
 
@@ -589,34 +531,38 @@ class MediaViewModel(
 
     fun toggleEpgSource(source: EpgSourceEntity) {
         viewModelScope.launch {
-            repository.insertEpgSource(source.copy(isEnabled = !source.isEnabled))
+            val pId = source.profileId.ifEmpty { activeProfile?.id ?: "" }
+            repository.insertEpgSource(source.copy(profileId = pId, isEnabled = !source.isEnabled))
         }
     }
 
     fun updateEpgSource(source: EpgSourceEntity) {
         viewModelScope.launch {
-            repository.insertEpgSource(source)
+            val pId = source.profileId.ifEmpty { activeProfile?.id ?: "" }
+            repository.insertEpgSource(source.copy(profileId = pId))
         }
     }
 
     fun syncPlaylist(playlist: PlaylistEntity, onComplete: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
+            val pId = playlist.profileId.ifEmpty { activeProfile?.id ?: "" }
+            val playlistWithProfile = playlist.copy(profileId = pId)
             try {
-                repository.insertPlaylist(playlist.copy(syncStatus = "Syncing..."))
-                val finalUrl = if (playlist.type.equals("Xtream Codes", ignoreCase = true)) {
-                    val baseUrl = playlist.url.removeSuffix("/")
-                    "${baseUrl}/get.php?username=${playlist.username}&password=${playlist.password}&output=ts"
+                repository.insertPlaylist(playlistWithProfile.copy(syncStatus = "Syncing..."))
+                val finalUrl = if (playlistWithProfile.type.equals("Xtream Codes", ignoreCase = true)) {
+                    val baseUrl = playlistWithProfile.url.removeSuffix("/")
+                    "${baseUrl}/get.php?username=${playlistWithProfile.username}&password=${playlistWithProfile.password}&output=ts"
                 } else {
-                    playlist.url
+                    playlistWithProfile.url
                 }
                 
-                val success = repository.syncPlaylistChannels(playlist.id, finalUrl, playlist.type)
+                val success = repository.syncPlaylistChannels(playlistWithProfile.id, finalUrl, playlistWithProfile.type)
                 
                 if (success) {
-                    val channelsCount = repository.getChannelsCountForPlaylist(playlist.id)
-                    val groupsCount = repository.getGroupsCountForPlaylist(playlist.id)
+                    val channelsCount = repository.getChannelsCountForPlaylist(playlistWithProfile.id)
+                    val groupsCount = repository.getGroupsCountForPlaylist(playlistWithProfile.id)
                     repository.insertPlaylist(
-                        playlist.copy(
+                        playlistWithProfile.copy(
                             syncStatus = "Success",
                             lastSynced = System.currentTimeMillis(),
                             channelsCount = channelsCount,
@@ -625,11 +571,11 @@ class MediaViewModel(
                     )
                     onComplete(true)
                 } else {
-                    repository.insertPlaylist(playlist.copy(syncStatus = "Error"))
+                    repository.insertPlaylist(playlistWithProfile.copy(syncStatus = "Error"))
                     onComplete(false)
                 }
             } catch (e: Exception) {
-                repository.insertPlaylist(playlist.copy(syncStatus = "Error"))
+                repository.insertPlaylist(playlistWithProfile.copy(syncStatus = "Error"))
                 onComplete(false)
             }
         }
