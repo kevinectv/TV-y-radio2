@@ -44,7 +44,7 @@ class UpdateManager(private val context: Context) {
     val updateState: StateFlow<UpdateState> = _updateState
 
     // Standard public URL where of updates can be hosted
-    var customUpdateUrl: String = "https://raw.githubusercontent.com/jairitojose497/Lumina-IPTV-Player/main/update.json"
+    var customUpdateUrl: String = "https://raw.githubusercontent.com/kevinectv/spot-tv-updates/main/update.json"
 
     // Default update info to use as a fallback/simulation if the remote URL is unavailable
     val fallbackUpdateInfo = UpdateInfo(
@@ -52,7 +52,7 @@ class UpdateManager(private val context: Context) {
         versionName = "${BuildConfig.VERSION_NAME}-RELEASE",
         releaseDate = "12 de Junio de 2026",
         changelog = "• Súper optimización en el renderizado de vídeo de TV en directo\n• Soporte DPAD perfeccionado para mandos de Smart TV\n• Transición rápida entre canales de radio en segundo plano\n• Gestor de actualizaciones directas en la app",
-        downloadUrl = "https://raw.githubusercontent.com/jairitojose497/Lumina-IPTV-Player/main/build-outputs/app-debug.apk"
+        downloadUrl = "https://raw.githubusercontent.com/kevinectv/spot-tv-updates/main/build-outputs/app-debug.apk"
     )
 
     /**

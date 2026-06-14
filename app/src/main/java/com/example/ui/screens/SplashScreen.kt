@@ -109,6 +109,28 @@ fun SplashScreen(
         label = "glow_intensity"
     )
 
+    // Ultra-smooth lag-free floating offset animation (running strictly on graphicsLayer)
+    val floatY by infiniteTransition.animateFloat(
+        initialValue = -12f,
+        targetValue = 12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logo_float_y"
+    )
+
+    // Gentle premium logo angle sway animation (running strictly on graphicsLayer)
+    val logoSway by infiniteTransition.animateFloat(
+        initialValue = -3.5f,
+        targetValue = 3.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3600, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logo_rotation"
+    )
+
 
 
     Box(
@@ -149,18 +171,22 @@ fun SplashScreen(
             // 2a. LOGO SYMBOL: Our custom generated premium luxury glass play-logo
             Box(
                 modifier = Modifier
-                    .size(if (isTvOrWide) 180.dp else 130.dp)
-                    .padding(bottom = 12.dp),
+                    .size(if (isTvOrWide) 235.dp else 175.dp)
+                    .padding(bottom = 12.dp)
+                    .graphicsLayer {
+                        translationY = floatY
+                        rotationZ = logoSway
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 // Gentle backdrop accent to lift the solid container from deep black (no heavy color bleeds)
                 Box(
                     modifier = Modifier
-                        .size(if (isTvOrWide) 150.dp else 105.dp)
+                        .size(if (isTvOrWide) 195.dp else 145.dp)
                         .scale(1.04f)
                         .background(
                             color = Color(0xFF101014).copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(26.dp)
+                            shape = RoundedCornerShape(32.dp)
                         )
                 )
 
@@ -168,8 +194,8 @@ fun SplashScreen(
                     painter = painterResource(id = R.drawable.img_lumina_logo),
                     contentDescription = "Lumina Logo",
                     modifier = Modifier
-                        .size(if (isTvOrWide) 140.dp else 100.dp)
-                        .clip(RoundedCornerShape(22.dp)),
+                        .size(if (isTvOrWide) 190.dp else 140.dp)
+                        .clip(RoundedCornerShape(28.dp)),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             }
