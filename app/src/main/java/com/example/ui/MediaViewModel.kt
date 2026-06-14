@@ -216,6 +216,16 @@ class MediaViewModel(
         isTvPlaying = !isTvPlaying
     }
 
+    fun restartTvPlay() {
+        val currentChannel = selectedChannel
+        isTvPlaying = false
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(200)
+            selectedChannel = currentChannel
+            isTvPlaying = true
+        }
+    }
+
     fun setTvVolumeLevel(level: Float) {
         tvVolume = level.coerceIn(0f, 1f)
     }

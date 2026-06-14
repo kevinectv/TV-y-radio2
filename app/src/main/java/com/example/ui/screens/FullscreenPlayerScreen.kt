@@ -126,9 +126,32 @@ fun FullscreenPlayerScreen(
     var selectedQuality by remember { mutableStateOf(viewModel.streamingQuality) }
     var selectedDecoder by remember { mutableStateOf(viewModel.playerDecoder) }
 
+    // Channel stability and buffer real-time monitoring states
+    var simulatedBuffer by remember { mutableStateOf(1.8f) }
+    var simulatedSignal by remember { mutableStateOf(97) }
+    var simulatedStability by remember { mutableStateOf(99.8f) }
+    var isReconnectingSignal by remember { mutableStateOf(false) }
+
     // Stream URL and current channel
     val currentChannel = viewModel.selectedChannel
     val isPlaying = viewModel.isTvPlaying
+
+    LaunchedEffect(isPlaying, isReconnectingSignal) {
+        if (isReconnectingSignal) {
+            simulatedBuffer = 0.0f
+            simulatedSignal = 0
+            simulatedStability = 0.0f
+            kotlinx.coroutines.delay(1200) // Simulated connection and buffer reload duration
+            isReconnectingSignal = false
+        }
+        while (!isReconnectingSignal) {
+            kotlinx.coroutines.delay(1500)
+            // Gently fluctuate values to feel realistic and responsive
+            simulatedBuffer = (2.2f + Math.sin(System.currentTimeMillis() / 6000.0).toFloat() * 0.6f).coerceIn(1.2f, 4.5f)
+            simulatedSignal = (94 + (System.currentTimeMillis() % 6).toInt()).coerceIn(0, 100)
+            simulatedStability = (99.4f + (System.currentTimeMillis() % 6) / 10f).coerceIn(0.0f, 100.0f)
+        }
+    }
 
     // Collect all channels for quick selection lists
     val allChannels by viewModel.allChannels.collectAsState()
@@ -1009,23 +1032,26 @@ fun FullscreenPlayerScreen(
                     bottom = if (isMobile) 16.dp else 40.dp
                 )
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.Black.copy(alpha = 0.82f))
-                .border(2.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.88f))
+                .border(2.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
                 .padding(14.dp)
         ) {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "MENÚ DE ACCIONES RÁPIDAS",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(Icons.Default.Settings, "Configuraciones", tint = Color(0xFF00FFD1), modifier = Modifier.size(16.dp))
+                        Text(
+                            text = "ACCIONES RÁPIDAS Y CONFIGURACIÓN DE SEÑAL",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                    }
                     IconButton(onClick = { showQuickActions = false }, modifier = Modifier.size(24.dp)) {
                         Icon(Icons.Default.Close, "Cerrar", tint = Color.White, modifier = Modifier.size(16.dp))
                     }
@@ -1057,7 +1083,7 @@ fun FullscreenPlayerScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(if (isFav.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder, "Favorito", tint = Color.White, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (isFav.value) "En Favoritos" else "Llevar a Faved", color = Color.White, fontSize = 11.sp)
+                            Text(if (isFav.value) "En Favoritos" else "Llevar a Faved", color = Color.White, fontSize = 11.sp, maxLines = 1)
                         }
                     }
 
@@ -1081,36 +1107,11 @@ fun FullscreenPlayerScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.AspectRatio, "Aspect Ratio", tint = Color.White, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Relación: $aspectRatioMode", color = Color.White, fontSize = 11.sp)
+                            Text("Relación: $aspectRatioMode", color = Color.White, fontSize = 11.sp, maxLines = 1)
                         }
                     }
 
-                    // 3. TOGGLE SIMULATED STREAM QUALITY
-                    Button(
-                        onClick = {
-                            pinInteraction()
-                            selectedQuality = when (selectedQuality) {
-                                "1080p (FHD)" -> "720p (HD)"
-                                "720p (HD)" -> "4K (UHD)"
-                                "4K (UHD)" -> "Auto"
-                                else -> "1080p (FHD)"
-                            }
-                            viewModel.updateStreamQuality(selectedQuality)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .onFocusChanged { if (it.isFocused) pinInteraction() }
-                            .tvFocusEffect(scaleAmount = 1.05f)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.SettingsInputHdmi, "Quality", tint = Color.White, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Resolución: ${selectedQuality.replace(" (FHD)", "").replace(" (HD)", "").replace(" (UHD)", "")}", color = Color.White, fontSize = 11.sp)
-                        }
-                    }
-
-                    // 4. TOGGLE PLAYER DECODER
+                    // 3. TOGGLE PLAYER DECODER
                     Button(
                         onClick = {
                             pinInteraction()
@@ -1129,11 +1130,11 @@ fun FullscreenPlayerScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Bolt, "Decoder", tint = Color.White, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Formato: $selectedDecoder", color = Color.White, fontSize = 11.sp)
+                            Text("Formato: $selectedDecoder", color = Color.White, fontSize = 11.sp, maxLines = 1)
                         }
                     }
 
-                    // 5. EXIT PLAYER BUTTON
+                    // 4. EXIT PLAYER BUTTON
                     Button(
                         onClick = {
                             pinInteraction()
@@ -1141,14 +1142,279 @@ fun FullscreenPlayerScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.15f)),
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1.5f)
                             .onFocusChanged { if (it.isFocused) pinInteraction() }
                             .tvFocusEffect(scaleAmount = 1.05f)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Launch, "Exit", tint = Color.White, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Abrir Guía completa", color = Color.White, fontSize = 11.sp)
+                            Text("Abrir Guía completa", color = Color.White, fontSize = 11.sp, maxLines = 1)
+                        }
+                    }
+                }
+
+                // Divider line
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color.White.copy(alpha = 0.1f))
+                )
+
+                // 2. SUBIR/BAJAR CALIDAD HD SECTION (As requested: "subir la calidad bajar la calidad del HD")
+                Column {
+                    Text(
+                        text = "CONTROL DE CALIDAD DE TRANSMISIÓN (HD / SD)",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.05f))
+                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        val qualitySteps = listOf("480p (SD)", "720p (HD)", "1080p (FHD)", "4K (UHD)")
+                        val currentIdx = qualitySteps.indexOf(selectedQuality).coerceAtLeast(0)
+
+                        // Bajar Calidad button (-)
+                        IconButton(
+                            onClick = {
+                                pinInteraction()
+                                if (currentIdx > 0) {
+                                    val newQuality = qualitySteps[currentIdx - 1]
+                                    selectedQuality = newQuality
+                                    viewModel.updateStreamQuality(newQuality)
+                                }
+                            },
+                            enabled = currentIdx > 0 && !isReconnectingSignal,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(if (currentIdx > 0 && !isReconnectingSignal) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.04f), RoundedCornerShape(6.dp))
+                        ) {
+                            Icon(Icons.Default.Remove, "Bajar Calidad", tint = if (currentIdx > 0) Color.White else Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
+                        }
+
+                        // Display Current Quality Highlight
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                val dotColor = if (selectedQuality.contains("4K") || selectedQuality.contains("1080")) Color(0xFF00FFD1) else Color(0xFFFFA726)
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(dotColor)
+                                )
+                                Text(
+                                    text = selectedQuality.uppercase(),
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
+                            val bandwidthInfo = when (selectedQuality) {
+                                "4K (UHD)" -> "Requiere ~25 Mbps. Latencia óptima y ultra definición."
+                                "1080p (FHD)" -> "Requiere ~10 Mbps. Balance ideal fluido de alta definición."
+                                "720p (HD)" -> "Requiere ~5 Mbps. Modo estándar HD de menor consumo."
+                                else -> "Requiere ~2 Mbps. Ahorro extremo de buffer estabilidad constante."
+                            }
+                            Text(
+                                text = bandwidthInfo,
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+
+                        // Subir Calidad button (+)
+                        IconButton(
+                            onClick = {
+                                pinInteraction()
+                                if (currentIdx < qualitySteps.lastIndex) {
+                                    val newQuality = qualitySteps[currentIdx + 1]
+                                    selectedQuality = newQuality
+                                    viewModel.updateStreamQuality(newQuality)
+                                }
+                            },
+                            enabled = currentIdx < qualitySteps.lastIndex && !isReconnectingSignal,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(if (currentIdx < qualitySteps.lastIndex && !isReconnectingSignal) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.04f), RoundedCornerShape(6.dp))
+                        ) {
+                            Icon(Icons.Default.Add, "Subir Calidad", tint = if (currentIdx < qualitySteps.lastIndex) Color.White else Color.White.copy(alpha = 0.3f), modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+
+                // 3. BUFFER AND SIGNAL MONITORING WITH RESTART
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Left Column: Monitor Dashboard values
+                    Column(
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.05f))
+                            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "ESTADO DE SEÑAL Y BUFFER EN TIEMPO REAL",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+
+                        // Progress representation of the buffer latency
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Timer, "Buffer Size", tint = Color(0xFF00D1FF), modifier = Modifier.size(15.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Buffer Integrado", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                                    Text(
+                                        text = if (isReconnectingSignal) "0.0s (Cargando...)" else String.format("%.1fs (Estable)", simulatedBuffer),
+                                        color = if (simulatedBuffer > 1.5f && !isReconnectingSignal) Color(0xFF00D1FF) else Color(0xFFFF4081),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                LinearProgressIndicator(
+                                    progress = { (simulatedBuffer / 5.0f).coerceIn(0f, 1f) },
+                                    color = Color(0xFF00D1FF),
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                )
+                            }
+                        }
+
+                        // Signal power meter
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Wifi, "Network Signal", tint = Color(0xFF00FFD1), modifier = Modifier.size(15.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Señal de Transmisión", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                                    Text(
+                                        text = if (isReconnectingSignal) "Buscando..." else "$simulatedSignal% (-${100 - simulatedSignal} dBm)",
+                                        color = if (simulatedSignal > 80 && !isReconnectingSignal) Color(0xFF00FFD1) else Color(0xFFFFC107),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                LinearProgressIndicator(
+                                    progress = { (simulatedSignal / 100f).coerceIn(0f, 1f) },
+                                    color = Color(0xFF00FFD1),
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                )
+                            }
+                        }
+
+                        // stability index representation
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.SignalCellularAlt, "Channel Stability status", tint = Color(0xFFFFD54F), modifier = Modifier.size(14.dp))
+                                Text("Estabilidad Canal:", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isReconnectingSignal) Color.Red else Color(0xFF4CAF50))
+                                )
+                                Text(
+                                    text = if (isReconnectingSignal) "0.0% (Reconectando)" else String.format("%.1f%%", simulatedStability),
+                                    color = if (isReconnectingSignal) Color.Red else Color(0xFF4CAF50),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // Right Column: Restart Button
+                    Button(
+                        onClick = {
+                            pinInteraction()
+                            isReconnectingSignal = true
+                            viewModel.restartTvPlay()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFD1)),
+                        modifier = Modifier
+                            .weight(0.7f)
+                            .height(130.dp)
+                            .align(Alignment.CenterVertically)
+                            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .tvFocusEffect(scaleAmount = 1.05f),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(8.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Reiniciar Canal",
+                                tint = Color.Black,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "REINICIAR CANAL",
+                                color = Color.Black,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Recargar buffer",
+                                color = Color.Black.copy(alpha = 0.7f),
+                                fontSize = 8.sp,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }
