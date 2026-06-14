@@ -104,9 +104,68 @@ class MediaViewModel(
             )
             repository.insertProfile(newProfile)
             
-            // If it's the first profile, auto-select it!
+            // If it's the first profile, load default demo lists and auto-select it!
             val currentProfiles = repository.getProfiles().first()
             if (currentProfiles.isEmpty() || currentProfiles.size == 1) {
+                try {
+                    repository.insertPlaylist(
+                        PlaylistEntity(
+                            id = "${id}_pluto_es",
+                            profileId = id,
+                            name = "Pluto TV España",
+                            type = "M3U URL",
+                            url = "https://i.mjh.nz/PlutoTV/es.json",
+                            channelsCount = 84,
+                            groupsCount = 12,
+                            isEnabled = true,
+                            lastSynced = System.currentTimeMillis() - 3600000L * 3, // 3 hours ago
+                            syncStatus = "Success"
+                        )
+                    )
+                    repository.insertPlaylist(
+                        PlaylistEntity(
+                            id = "${id}_samsung_latam",
+                            profileId = id,
+                            name = "Samsung TV Plus LATAM",
+                            type = "M3U8 URL",
+                            url = "https://example.com/samsung_latam.m3u8",
+                            channelsCount = 120,
+                            groupsCount = 15,
+                            isEnabled = true,
+                            lastSynced = System.currentTimeMillis() - 3600000L * 24, // 24 hours ago
+                            syncStatus = "Success"
+                        )
+                    )
+                    repository.insertPlaylist(
+                        PlaylistEntity(
+                            id = "${id}_xtream_demo",
+                            profileId = id,
+                            name = "Lumina Premium Xtream",
+                            type = "Xtream Codes",
+                            url = "http://premium-iptv.dns.to:8080",
+                            username = "lumina_guest",
+                            password = "••••••••••••",
+                            channelsCount = 1850,
+                            groupsCount = 42,
+                            isEnabled = false,
+                            lastSynced = System.currentTimeMillis() - 3600000L * 48,
+                            syncStatus = "Error"
+                        )
+                    )
+                    repository.insertEpgSource(
+                        EpgSourceEntity(
+                            id = "${id}_epg_es",
+                            profileId = id,
+                            name = "EPG Oficial España XML",
+                            url = "https://i.mjh.nz/PlutoTV/es.xml",
+                            lastSynced = System.currentTimeMillis() - 3600000L * 2,
+                            syncStatus = "Success",
+                            isEnabled = true
+                        )
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 selectProfile(newProfile)
             }
         }
@@ -380,13 +439,17 @@ class MediaViewModel(
     }
 
     // Reactive Watchlist, Favorites, and Recents Combine flows
-    val allChannels: StateFlow<List<Channel>> = repository.getAllChannelsFlow()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), repository.channelsList)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val allChannels: StateFlow<List<Channel>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getAllChannelsFlow(pId)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val favoriteChannels: StateFlow<List<Channel>> = activeProfileIdFlow
         .flatMapLatest { pId ->
-            repository.getFavorites(pId).combine(repository.getAllChannelsFlow()) { favEntities, allChans ->
+            repository.getFavorites(pId).combine(repository.getAllChannelsFlow(pId)) { favEntities, allChans ->
                 val favIds = favEntities.filter { it.type == "channel" }.map { it.itemId }.toSet()
                 allChans.filter { it.id in favIds }
             }
@@ -404,7 +467,7 @@ class MediaViewModel(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val recentChannels: StateFlow<List<Channel>> = activeProfileIdFlow
         .flatMapLatest { pId ->
-            repository.getRecents(pId).combine(repository.getAllChannelsFlow()) { recentEntities, allChans ->
+            repository.getRecents(pId).combine(repository.getAllChannelsFlow(pId)) { recentEntities, allChans ->
                 val recentIds = recentEntities.filter { it.type == "channel" }.map { it.itemId }
                 recentIds.mapNotNull { id -> allChans.find { it.id == id } }
             }
@@ -460,10 +523,18 @@ class MediaViewModel(
     }
 
     // IPTV sources / EPG manager persistent streams
-    val playlists: StateFlow<List<PlaylistEntity>> = repository.getAllPlaylists()
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val playlists: StateFlow<List<PlaylistEntity>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getPlaylistsForProfile(pId)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val epgSources: StateFlow<List<EpgSourceEntity>> = repository.getAllEpgSources()
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val epgSources: StateFlow<List<EpgSourceEntity>> = activeProfileIdFlow
+        .flatMapLatest { pId ->
+            repository.getEpgSourcesForProfile(pId)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -474,93 +545,13 @@ class MediaViewModel(
                 }
             }
         }
-
-        viewModelScope.launch {
-            try {
-                val currentPlaylists = repository.getAllPlaylists().first()
-                if (currentPlaylists.isEmpty()) {
-                    repository.insertPlaylist(
-                        PlaylistEntity(
-                            id = "pluto_es",
-                            name = "Pluto TV España",
-                            type = "M3U URL",
-                            url = "https://i.mjh.nz/PlutoTV/es.json",
-                            channelsCount = 84,
-                            groupsCount = 12,
-                            isEnabled = true,
-                            lastSynced = System.currentTimeMillis() - 3600000L * 3, // 3 hours ago
-                            syncStatus = "Success"
-                        )
-                    )
-                    repository.insertPlaylist(
-                        PlaylistEntity(
-                            id = "samsung_latam",
-                            name = "Samsung TV Plus LATAM",
-                            type = "M3U8 URL",
-                            url = "https://example.com/samsung_latam.m3u8",
-                            channelsCount = 120,
-                            groupsCount = 15,
-                            isEnabled = true,
-                            lastSynced = System.currentTimeMillis() - 3600000L * 24, // 24 hours ago
-                            syncStatus = "Success"
-                        )
-                    )
-                    repository.insertPlaylist(
-                        PlaylistEntity(
-                            id = "xtream_demo",
-                            name = "Lumina Premium Xtream",
-                            type = "Xtream Codes",
-                            url = "http://premium-iptv.dns.to:8080",
-                            username = "lumina_guest",
-                            password = "••••••••••••",
-                            channelsCount = 1850,
-                            groupsCount = 42,
-                            isEnabled = false,
-                            lastSynced = System.currentTimeMillis() - 3600000L * 48,
-                            syncStatus = "Error"
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                // Ignore initialization failures
-            }
-        }
-
-        viewModelScope.launch {
-            try {
-                val currentEpg = repository.getAllEpgSources().first()
-                if (currentEpg.isEmpty()) {
-                    repository.insertEpgSource(
-                        EpgSourceEntity(
-                            id = "epg_es",
-                            name = "EPG Oficial España XML",
-                            url = "https://i.mjh.nz/PlutoTV/es.xml",
-                            lastSynced = System.currentTimeMillis() - 3600000L * 2,
-                            syncStatus = "Success",
-                            isEnabled = true
-                        )
-                    )
-                    repository.insertEpgSource(
-                        EpgSourceEntity(
-                            id = "epg_global",
-                            name = "EPG Global Backup",
-                            url = "https://example.com/epg/global.xml.gz",
-                            lastSynced = System.currentTimeMillis() - 3600000L * 12,
-                            syncStatus = "Success",
-                            isEnabled = false
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                // Ignore initialization failures
-            }
-        }
     }
 
     // IPTV Database CRUD handlers
     fun addPlaylist(playlist: PlaylistEntity) {
         viewModelScope.launch {
-            repository.insertPlaylist(playlist)
+            val pId = activeProfile?.id ?: ""
+            repository.insertPlaylist(playlist.copy(profileId = pId))
         }
     }
 
@@ -585,7 +576,8 @@ class MediaViewModel(
     // EPG Database CRUD handlers
     fun addEpgSource(source: EpgSourceEntity) {
         viewModelScope.launch {
-            repository.insertEpgSource(source)
+            val pId = activeProfile?.id ?: ""
+            repository.insertEpgSource(source.copy(profileId = pId))
         }
     }
 

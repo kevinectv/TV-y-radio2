@@ -14,6 +14,18 @@ interface MediaDao {
     @Query("DELETE FROM profiles WHERE id = :id")
     suspend fun deleteProfile(id: String)
 
+    @Query("DELETE FROM playlists WHERE profileId = :profileId")
+    suspend fun deletePlaylistsByProfile(profileId: String)
+
+    @Query("DELETE FROM channels WHERE playlistId IN (SELECT id FROM playlists WHERE profileId = :profileId)")
+    suspend fun deleteChannelsByProfile(profileId: String)
+
+    @Query("DELETE FROM epg_sources WHERE profileId = :profileId")
+    suspend fun deleteEpgSourcesByProfile(profileId: String)
+
+    @Query("DELETE FROM favorites WHERE profileId = :profileId")
+    suspend fun deleteFavoritesByProfile(profileId: String)
+
     @Query("SELECT * FROM favorites WHERE profileId = :profileId ORDER BY addedAt DESC")
     fun getFavorites(profileId: String): Flow<List<FavoriteEntity>>
 
@@ -42,6 +54,9 @@ interface MediaDao {
     @Query("SELECT * FROM playlists ORDER BY name ASC")
     fun getAllPlaylists(): Flow<List<PlaylistEntity>>
 
+    @Query("SELECT * FROM playlists WHERE profileId = :profileId ORDER BY name ASC")
+    fun getPlaylistsForProfile(profileId: String): Flow<List<PlaylistEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlaylist(playlist: PlaylistEntity)
 
@@ -54,6 +69,9 @@ interface MediaDao {
     // EPG Sources Queries
     @Query("SELECT * FROM epg_sources ORDER BY name ASC")
     fun getAllEpgSources(): Flow<List<EpgSourceEntity>>
+
+    @Query("SELECT * FROM epg_sources WHERE profileId = :profileId ORDER BY name ASC")
+    fun getEpgSourcesForProfile(profileId: String): Flow<List<EpgSourceEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEpgSource(source: EpgSourceEntity)

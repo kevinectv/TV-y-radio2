@@ -151,7 +151,14 @@ class MediaRepository(private val mediaDao: MediaDao) {
     // Reactive streams from the DB
     fun getProfiles(): Flow<List<ProfileEntity>> = mediaDao.getProfiles()
     suspend fun insertProfile(profile: ProfileEntity) = mediaDao.insertProfile(profile)
-    suspend fun deleteProfile(id: String) = mediaDao.deleteProfile(id)
+    suspend fun deleteProfile(id: String) {
+        mediaDao.deleteChannelsByProfile(id)
+        mediaDao.deletePlaylistsByProfile(id)
+        mediaDao.deleteEpgSourcesByProfile(id)
+        mediaDao.deleteFavoritesByProfile(id)
+        mediaDao.clearRecents(id)
+        mediaDao.deleteProfile(id)
+    }
 
     fun getFavorites(profileId: String): Flow<List<FavoriteEntity>> = mediaDao.getFavorites(profileId)
     fun getRecents(profileId: String): Flow<List<RecentEntity>> = mediaDao.getRecents(profileId)
@@ -180,8 +187,8 @@ class MediaRepository(private val mediaDao: MediaDao) {
         mediaDao.clearRecents(profileId)
     }
 
-    fun getAllChannelsFlow(): Flow<List<Channel>> {
-        return mediaDao.getAllChannelEntities().combine(mediaDao.getAllPlaylists()) { dbChans, playlists ->
+    fun getAllChannelsFlow(profileId: String): Flow<List<Channel>> {
+        return mediaDao.getAllChannelEntities().combine(mediaDao.getPlaylistsForProfile(profileId)) { dbChans, playlists ->
             val enabledPlaylistIds = playlists.filter { it.isEnabled }.map { it.id }.toSet()
             val dynamicList = dbChans.filter { it.playlistId in enabledPlaylistIds }.map { entity ->
                 Channel(
@@ -360,6 +367,7 @@ class MediaRepository(private val mediaDao: MediaDao) {
 
     // Playlist & EPG Manager actions
     fun getAllPlaylists(): Flow<List<PlaylistEntity>> = mediaDao.getAllPlaylists()
+    fun getPlaylistsForProfile(profileId: String): Flow<List<PlaylistEntity>> = mediaDao.getPlaylistsForProfile(profileId)
     suspend fun insertPlaylist(playlist: PlaylistEntity) = mediaDao.insertPlaylist(playlist)
     
     suspend fun deletePlaylist(id: String) {
@@ -370,6 +378,7 @@ class MediaRepository(private val mediaDao: MediaDao) {
     suspend fun getPlaylistById(id: String): PlaylistEntity? = mediaDao.getPlaylistById(id)
 
     fun getAllEpgSources(): Flow<List<EpgSourceEntity>> = mediaDao.getAllEpgSources()
+    fun getEpgSourcesForProfile(profileId: String): Flow<List<EpgSourceEntity>> = mediaDao.getEpgSourcesForProfile(profileId)
     suspend fun insertEpgSource(source: EpgSourceEntity) = mediaDao.insertEpgSource(source)
     suspend fun deleteEpgSource(id: String) = mediaDao.deleteEpgSource(id)
 
