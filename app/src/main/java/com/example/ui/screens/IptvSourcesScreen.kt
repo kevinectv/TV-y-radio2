@@ -254,115 +254,239 @@ fun IptvSourcesScreen(
 
         // CONTROL CONTROL PANEL (SYNC ALL BUTTONS)
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Button(
-                    onClick = { triggerSyncAll() },
-                    enabled = !isSyncingAll,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                        .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4A89FF),
-                        contentColor = Color.White,
-                        disabledContainerColor = Color.White.copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+            val isMobile = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 580
+            if (isMobile) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Actualizar Todo",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                    Button(
+                        onClick = { triggerSyncAll() },
+                        enabled = !isSyncingAll,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4A89FF),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Actualizar Todo",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            isSyncingAll = true
-                            syncProgress = 0.2f
-                            syncStatusText = "Sincronizando playlists..."
-                            playlists.forEach { triggerSyncPlaylist(it) }
-                            delay(1500)
-                            syncProgress = 1.0f
-                            syncStatusText = "Playlists sincronizadas."
-                            delay(800)
-                            isSyncingAll = false
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    isSyncingAll = true
+                                    syncProgress = 0.2f
+                                    syncStatusText = "Sincronizando playlists..."
+                                    playlists.forEach { triggerSyncPlaylist(it) }
+                                    delay(1500)
+                                    syncProgress = 1.0f
+                                    syncStatusText = "Playlists sincronizadas."
+                                    delay(800)
+                                    isSyncingAll = false
+                                }
+                            },
+                            enabled = !isSyncingAll,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White.copy(alpha = 0.06f),
+                                contentColor = Color.White,
+                                disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                            ),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlaylistPlay,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Playlists",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
-                    },
-                    enabled = !isSyncingAll,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                        .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.06f),
-                        contentColor = Color.White,
-                        disabledContainerColor = Color.White.copy(alpha = 0.1f)
-                    ),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlaylistPlay,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Actualizar Playlists",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            isSyncingAll = true
-                            syncProgress = 0.3f
-                            syncStatusText = "Descargando XML EPG..."
-                            epgSources.forEach { triggerSyncEpg(it) }
-                            delay(1500)
-                            syncProgress = 1.0f
-                            syncStatusText = "Guía de canales actualizada."
-                            delay(800)
-                            isSyncingAll = false
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    isSyncingAll = true
+                                    syncProgress = 0.3f
+                                    syncStatusText = "Descargando XML EPG..."
+                                    epgSources.forEach { triggerSyncEpg(it) }
+                                    delay(1500)
+                                    syncProgress = 1.0f
+                                    syncStatusText = "Guía de canales actualizada."
+                                    delay(800)
+                                    isSyncingAll = false
+                                }
+                            },
+                            enabled = !isSyncingAll,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White.copy(alpha = 0.06f),
+                                contentColor = Color.White,
+                                disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                            ),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Guía EPG",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
-                    },
-                    enabled = !isSyncingAll,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                        .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.06f),
-                        contentColor = Color.White,
-                        disabledContainerColor = Color.White.copy(alpha = 0.1f)
-                    ),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                    shape = RoundedCornerShape(8.dp)
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Actualizar EPG",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Button(
+                        onClick = { triggerSyncAll() },
+                        enabled = !isSyncingAll,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4A89FF),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Actualizar Todo",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isSyncingAll = true
+                                syncProgress = 0.2f
+                                syncStatusText = "Sincronizando playlists..."
+                                playlists.forEach { triggerSyncPlaylist(it) }
+                                delay(1500)
+                                syncProgress = 1.0f
+                                syncStatusText = "Playlists sincronizadas."
+                                delay(800)
+                                isSyncingAll = false
+                            }
+                        },
+                        enabled = !isSyncingAll,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.06f),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                        ),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlaylistPlay,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Actualizar Playlists",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isSyncingAll = true
+                                syncProgress = 0.3f
+                                syncStatusText = "Descargando XML EPG..."
+                                epgSources.forEach { triggerSyncEpg(it) }
+                                delay(1500)
+                                syncProgress = 1.0f
+                                syncStatusText = "Guía de canales actualizada."
+                                delay(800)
+                                isSyncingAll = false
+                            }
+                        },
+                        enabled = !isSyncingAll,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.06f),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color.White.copy(alpha = 0.1f)
+                        ),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Actualizar EPG",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -841,6 +965,7 @@ fun PlaylistCard(
                     text = "Sincronizar",
                     icon = syncIcon,
                     onClick = onSync,
+                    showText = !isMobile,
                     isLoadingAnimation = isActiveSyncing || playlist.syncStatus == "Syncing..."
                 )
 

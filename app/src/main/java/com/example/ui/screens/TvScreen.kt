@@ -45,6 +45,7 @@ fun TvScreen(
     val hourWidth = 240.dp
     val timelineStartDecimal = 8.0f // Starts at 08:00 AM
     val timelineEndDecimal = 24.0f  // Ends at 12:00 AM (16 hours scale)
+    val isMobile = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 580
 
     // Current live clock and timeline values (synchronized with standard system clock)
     var currentTimeDecimal by remember { mutableStateOf(13.4f) }
@@ -176,7 +177,7 @@ fun TvScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(195.dp) // Reducido para dar más espacio vertical a la guía EPG inferior
+                    .height(if (isMobile) 330.dp else 195.dp) // Ofrece amplio espacio de apilado físico en pantallas verticales
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -186,87 +187,18 @@ fun TvScreen(
                         )
                     )
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Datos del programa sobrepuestos a la izquierda
+                if (isMobile) {
                     Column(
                         modifier = Modifier
-                            .weight(1.1f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.Center
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = "PROGRAMACIÓN EN VIVO",
-                            color = Color.White, // Color de acento blanco de gran estilo
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.5.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(3.dp))
-
-                        // Nombre de canal | Nombre del programa
-                        Text(
-                            text = if (viewModel.selectedChannel.id != "no_channel") {
-                                "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
-                            } else {
-                                "Ningún Canal Cargado"
-                            },
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        // Metadatos formateados idénticamente al mockup
-                        val durationMin = (selectedProgram.durationHours * 60).toInt()
-                        val metaTimeLabel = if (viewModel.selectedChannel.id != "no_channel") {
-                            "08.06.2026 13:24 | ${selectedProgram.category.uppercase()} | $durationMin MIN. | ${selectedProgram.startTime} - ${selectedProgram.endTime}"
-                        } else {
-                            "IPTV | CARGAR LISTA M3U"
-                        }
-                        Text(
-                            text = metaTimeLabel,
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Descripción del programa (hasta 2 líneas para balancear con el reproductor widget)
-                        Text(
-                            text = if (viewModel.selectedChannel.id != "no_channel") {
-                                selectedProgram.description
-                            } else {
-                                "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
-                            },
-                            color = Color.White.copy(alpha = 0.82f),
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(24.dp))
-
-                    // REPRODUCTOR EN MINIATURA DE 16:9 INTEGRADO A LA DERECHA
-                    Box(
-                        modifier = Modifier
-                            .weight(0.9f)
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
+                        // 1. EL REPRODUCTOR EN MINIATURA DE 16:9 EN LA PARTE SUPERIOR (A TODO ANCHO)
                         Card(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .aspectRatio(16f / 9f)
-                                .fillMaxHeight()
                                 .border(1.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
                                 .clickable {
                                     if (viewModel.selectedChannel.id != "no_channel") {
@@ -359,28 +291,277 @@ fun TvScreen(
                                         ) {
                                             Column(
                                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                                modifier = Modifier.padding(16.dp)
+                                                modifier = Modifier.padding(12.dp)
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Tv,
                                                     contentDescription = "Sin lista cargada",
                                                     tint = Color.White.copy(alpha = 0.35f),
-                                                    modifier = Modifier.size(52.dp)
+                                                    modifier = Modifier.size(40.dp)
                                                 )
-                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Spacer(modifier = Modifier.height(6.dp))
                                                 Text(
                                                     text = "No hay una lista de reproducción activa",
                                                     color = Color.White.copy(alpha = 0.9f),
-                                                    fontSize = 13.sp,
+                                                    fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold
                                                 )
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = "Importa una lista M3U en la sección de 'Fuentes' para comenzar.",
-                                                    color = Color.White.copy(alpha = 0.55f),
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Medium
-                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. DATOS DEL PROGRAMA EN LA PARTE INFERIOR
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "REPRODUCCIÓN EN PORTABLE",
+                                color = Color(0xFF00FFD1),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = if (viewModel.selectedChannel.id != "no_channel") {
+                                    "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
+                                } else {
+                                    "Ningún Canal Cargado"
+                                },
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            val durationMin = (selectedProgram.durationHours * 60).toInt()
+                            val metaTimeLabel = if (viewModel.selectedChannel.id != "no_channel") {
+                                "${selectedProgram.category.uppercase()} | $durationMin MIN. | ${selectedProgram.startTime} - ${selectedProgram.endTime}"
+                            } else {
+                                "IPTV | CARGAR LISTA M3U"
+                            }
+                            Text(
+                                text = metaTimeLabel,
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = if (viewModel.selectedChannel.id != "no_channel") {
+                                    selectedProgram.description
+                                } else {
+                                    "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                                },
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 10.5.sp,
+                                lineHeight = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Datos del programa sobrepuestos a la izquierda
+                        Column(
+                            modifier = Modifier
+                                .weight(1.1f)
+                                .fillMaxHeight(),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "PROGRAMACIÓN EN VIVO",
+                                color = Color.White, // Color de acento blanco de gran estilo
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.5.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(3.dp))
+
+                            // Nombre de canal | Nombre del programa
+                            Text(
+                                text = if (viewModel.selectedChannel.id != "no_channel") {
+                                    "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
+                                } else {
+                                    "Ningún Canal Cargado"
+                                },
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            // Metadatos formateados idénticamente al mockup
+                            val durationMin = (selectedProgram.durationHours * 60).toInt()
+                            val metaTimeLabel = if (viewModel.selectedChannel.id != "no_channel") {
+                                "08.06.2026 13:24 | ${selectedProgram.category.uppercase()} | $durationMin MIN. | ${selectedProgram.startTime} - ${selectedProgram.endTime}"
+                            } else {
+                                "IPTV | CARGAR LISTA M3U"
+                            }
+                            Text(
+                                text = metaTimeLabel,
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Descripción del programa (hasta 2 líneas para balancear con el reproductor widget)
+                            Text(
+                                text = if (viewModel.selectedChannel.id != "no_channel") {
+                                    selectedProgram.description
+                                } else {
+                                    "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                                },
+                                color = Color.White.copy(alpha = 0.82f),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(24.dp))
+
+                        // REPRODUCTOR EN MINIATURA DE 16:9 INTEGRADO A LA DERECHA
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .aspectRatio(16f / 9f)
+                                    .fillMaxHeight()
+                                    .border(1.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        if (viewModel.selectedChannel.id != "no_channel") {
+                                            viewModel.isFullscreenPlayerActive = true
+                                        }
+                                    }
+                                    .tvFocusEffect(
+                                        shape = RoundedCornerShape(12.dp),
+                                        focusedBorderColor = Color.White,
+                                        borderWidth = 3.dp,
+                                        scaleAmount = 1.05f
+                                    ),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.Black)
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    if (showMiniPlayerVideo) {
+                                        androidx.compose.ui.viewinterop.AndroidView(
+                                            factory = { ctx ->
+                                                android.widget.VideoView(ctx).apply {
+                                                    layoutParams = android.view.ViewGroup.LayoutParams(
+                                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                                                    )
+                                                }
+                                            },
+                                            update = { videoView ->
+                                                if (viewModel.isFullscreenPlayerActive) {
+                                                    try {
+                                                        videoView.stopPlayback()
+                                                        videoView.tag = null
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
+                                                } else {
+                                                    val streamUrl = viewModel.selectedChannel.streamUrl
+                                                    if (videoView.tag != streamUrl && streamUrl.isNotEmpty()) {
+                                                        videoView.tag = streamUrl
+                                                        try {
+                                                            videoView.stopPlayback()
+                                                            videoView.setVideoPath(streamUrl)
+                                                            videoView.setOnPreparedListener { mp ->
+                                                                mp.isLooping = true
+                                                                try {
+                                                                    mp.setVolume(viewModel.tvVolume, viewModel.tvVolume)
+                                                                } catch (e: Exception) {
+                                                                    e.printStackTrace()
+                                                                }
+                                                                videoView.start()
+                                                            }
+                                                            videoView.setOnErrorListener { _, _, _ ->
+                                                                true
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onRelease = { videoView ->
+                                                try {
+                                                    videoView.stopPlayback()
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        if (viewModel.selectedChannel.id != "no_channel") {
+                                            AsyncImage(
+                                                model = selectedProgram.thumbnailUrl,
+                                                contentDescription = selectedProgram.title,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(
+                                                        Brush.radialGradient(
+                                                            colors = listOf(
+                                                                Color(0xFF262626),
+                                                                Color(0xFF030303)
+                                                            )
+                                                        )
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    modifier = Modifier.padding(16.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Tv,
+                                                        contentDescription = "Sin lista cargada",
+                                                        tint = Color.White.copy(alpha = 0.35f),
+                                                        modifier = Modifier.size(52.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.height(10.dp))
+                                                    Text(
+                                                        text = "No hay una lista de reproducción activa",
+                                                        color = Color.White.copy(alpha = 0.9f),
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(
+                                                        text = "Importa una lista M3U en la sección de 'Fuentes' para comenzar.",
+                                                        color = Color.White.copy(alpha = 0.55f),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -394,144 +575,296 @@ fun TvScreen(
             // ==========================================
             // 2. PANEL DE FILTROS Y BÚSQUEDA DEL TIMELINE
             // ==========================================
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Selector de fecha (Today dropdown)
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFF333842), RoundedCornerShape(8.dp))
-                            .clickable { dateMenuExpanded = true }
-                            .tvFocusEffect(
-                                shape = RoundedCornerShape(8.dp),
-                                focusedBorderColor = Color.White,
-                                borderWidth = 3.dp,
-                                scaleAmount = 1.05f
-                            )
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = selectedDate,
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Fecha opciones",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = dateMenuExpanded,
-                        onDismissRequest = { dateMenuExpanded = false },
-                        modifier = Modifier.background(Color(0xFF1F2228))
-                    ) {
-                        datesList.forEach { date ->
-                            DropdownMenuItem(
-                                text = { Text(text = date, color = Color.White, fontSize = 12.sp) },
-                                onClick = {
-                                    selectedDate = date
-                                    dateMenuExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Selector de Categoría (All channels dropdown)
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFF333842), RoundedCornerShape(8.dp))
-                            .clickable { catMenuExpanded = true }
-                            .tvFocusEffect(
-                                shape = RoundedCornerShape(8.dp),
-                                focusedBorderColor = Color.White,
-                                borderWidth = 3.dp,
-                                scaleAmount = 1.05f
-                            )
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = selectedCategoryFilter,
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Canales opciones",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = catMenuExpanded,
-                        onDismissRequest = { catMenuExpanded = false },
-                        modifier = Modifier.background(Color(0xFF1F2228))
-                    ) {
-                        val categories = remember(allChannels) {
-                            listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
-                        }
-                        categories.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(text = category, color = Color.White, fontSize = 12.sp) },
-                                onClick = {
-                                    selectedCategoryFilter = category
-                                    catMenuExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // BÚSQUEDA INTERACTIVA EN TIEMPO REAL
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Buscar canal por nombre...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+            if (isMobile) {
+                Column(
                     modifier = Modifier
-                        .width(280.dp)
-                        .height(38.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
-                        focusedContainerColor = Color(0xFF222222),
-                        unfocusedContainerColor = Color(0xFF111111),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Buscar",
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(16.dp)
-                        )
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Selector de fecha (Today dropdown)
+                        Box(modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF333842), RoundedCornerShape(8.dp))
+                                    .clickable { dateMenuExpanded = true }
+                                    .tvFocusEffect(
+                                        shape = RoundedCornerShape(8.dp),
+                                        focusedBorderColor = Color.White,
+                                        borderWidth = 3.dp,
+                                        scaleAmount = 1.05f
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = selectedDate,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Fecha opciones",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = dateMenuExpanded,
+                                onDismissRequest = { dateMenuExpanded = false },
+                                modifier = Modifier.background(Color(0xFF1F2228))
+                            ) {
+                                datesList.forEach { date ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = date, color = Color.White, fontSize = 12.sp) },
+                                        onClick = {
+                                            selectedDate = date
+                                            dateMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Selector de Categoría (All channels dropdown)
+                        Box(modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF333842), RoundedCornerShape(8.dp))
+                                    .clickable { catMenuExpanded = true }
+                                    .tvFocusEffect(
+                                        shape = RoundedCornerShape(8.dp),
+                                        focusedBorderColor = Color.White,
+                                        borderWidth = 3.dp,
+                                        scaleAmount = 1.05f
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = selectedCategoryFilter,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Canales opciones",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = catMenuExpanded,
+                                onDismissRequest = { catMenuExpanded = false },
+                                modifier = Modifier.background(Color(0xFF1F2228))
+                            ) {
+                                val categories = remember(allChannels) {
+                                    listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                                }
+                                categories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = category, color = Color.White, fontSize = 12.sp) },
+                                        onClick = {
+                                            selectedCategoryFilter = category
+                                            catMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
-                )
+
+                    // BÚSQUEDA INTERACTIVA EN TIEMPO REAL (MÓVIL A TODO ANCHO)
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Buscar canal...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(38.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.White,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                            focusedContainerColor = Color(0xFF222222),
+                            unfocusedContainerColor = Color(0xFF111111),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Buscar",
+                                tint = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Selector de fecha (Today dropdown)
+                    Box {
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFF333842), RoundedCornerShape(8.dp))
+                                .clickable { dateMenuExpanded = true }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(8.dp),
+                                    focusedBorderColor = Color.White,
+                                    borderWidth = 3.dp,
+                                    scaleAmount = 1.05f
+                                )
+                                .padding(horizontal = 16.dp, vertical = 7.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = selectedDate,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Fecha opciones",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = dateMenuExpanded,
+                            onDismissRequest = { dateMenuExpanded = false },
+                            modifier = Modifier.background(Color(0xFF1F2228))
+                        ) {
+                            datesList.forEach { date ->
+                                DropdownMenuItem(
+                                    text = { Text(text = date, color = Color.White, fontSize = 12.sp) },
+                                    onClick = {
+                                        selectedDate = date
+                                        dateMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Selector de Categoría (All channels dropdown)
+                    Box {
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFF333842), RoundedCornerShape(8.dp))
+                                .clickable { catMenuExpanded = true }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(8.dp),
+                                    focusedBorderColor = Color.White,
+                                    borderWidth = 3.dp,
+                                    scaleAmount = 1.05f
+                                )
+                                .padding(horizontal = 16.dp, vertical = 7.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = selectedCategoryFilter,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Canales opciones",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = catMenuExpanded,
+                            onDismissRequest = { catMenuExpanded = false },
+                            modifier = Modifier.background(Color(0xFF1F2228))
+                        ) {
+                            val categories = remember(allChannels) {
+                                listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                            }
+                            categories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(text = category, color = Color.White, fontSize = 12.sp) },
+                                    onClick = {
+                                        selectedCategoryFilter = category
+                                        catMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // BÚSQUEDA INTERACTIVA EN TIEMPO REAL
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Buscar canal por nombre...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                        modifier = Modifier
+                            .width(280.dp)
+                            .height(38.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.White,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                            focusedContainerColor = Color(0xFF222222),
+                            unfocusedContainerColor = Color(0xFF111111),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Buscar",
+                                tint = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
             }
 
             // ==========================================

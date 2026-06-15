@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -143,206 +144,142 @@ fun ProfileSelectionScreen(
                             verticalArrangement = Arrangement.Center,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Row of profiles
-                            Row(
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp)
-                                    .padding(vertical = 16.dp)
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                // Dynamic Database Profiles
-                                profilesList.forEachIndexed { index, profile ->
-                                    val isCurrentActive = viewModel.activeProfile?.id == profile.id
-                                    var isHovered by remember { mutableStateOf(false) }
-                                    val focusBorderColor = remember(profile.profileColor) {
-                                        try {
-                                             Color(android.graphics.Color.parseColor(profile.profileColor))
-                                        } catch (e: Exception) {
-                                             Color.White
-                                        }
-                                    }
-
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier
-                                            .width(128.dp)
-                                            .padding(vertical = 12.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(112.dp)
-                                                .tvFocusEffect(
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    focusedBorderColor = Color(0xCCECEFF8),
-                                                    unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
-                                                    borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
-                                                    scaleAmount = 1.04f
-                                                )
-                                                .focusProperties {
-                                                    down = manageButtonFocusRequester
-                                                }
-                                                .clickable {
-                                                    if (screenMode == ProfileScreenMode.SELECT) {
-                                                        viewModel.selectProfile(profile)
-                                                    } else {
-                                                        // Open Edit for this profile
-                                                        selectedProfileForEdit = profile
-                                                        tempName = profile.name
-                                                        tempStyle = profile.avatarStyle
-                                                        tempSkinColor = profile.avatarSkinColor
-                                                        tempHairColor = profile.avatarHairColor
-                                                        tempAccessory = profile.avatarAccessory
-                                                        tempExpression = profile.avatarExpression
-                                                        tempProfileColor = profile.profileColor
-                                                        tempIsKids = profile.isKids
-                                                        screenMode = ProfileScreenMode.EDIT
-                                                    }
-                                                }
-                                                .clip(RoundedCornerShape(16.dp))
+                            if (isMobile) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    val itemsCount = profilesList.size + (if (profilesList.size < 6) 1 else 0)
+                                    val rowsCount = (itemsCount + 1) / 2
+                                    
+                                    for (i in 0 until rowsCount) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                            verticalAlignment = Alignment.Top,
+                                            modifier = Modifier.padding(vertical = 4.dp)
                                         ) {
-                                            CharacterAvatar(
-                                                style = profile.avatarStyle,
-                                                skinColorHex = profile.avatarSkinColor,
-                                                hairColorHex = profile.avatarHairColor,
-                                                accessory = profile.avatarAccessory,
-                                                expression = profile.avatarExpression,
-                                                profileColorHex = profile.profileColor,
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-
-                                            // Edit mode pencil overlay
-                                            if (screenMode == ProfileScreenMode.MANAGE) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .background(Color.Black.copy(alpha = 0.6f)),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Edit,
-                                                        contentDescription = "Editar Perfil",
-                                                        tint = Color.White,
-                                                        modifier = Modifier.size(36.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.height(12.dp))
-
-                                        // Reorder arrows (Only visible in Manage mode)
-                                        if (screenMode == ProfileScreenMode.MANAGE) {
-                                            Row(
-                                                horizontalArrangement = Arrangement.Center,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                // Left/Up Arrow
-                                                if (index > 0) {
-                                                    IconButton(
-                                                        onClick = {
-                                                            // Reorder (swap with previous index)
-                                                            reorderProfiles(viewModel, profilesList, index, index - 1)
-                                                        },
-                                                        modifier = Modifier.size(24.dp)
-                                                    ) {
-                                                        Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mover izquierda", tint = Color.LightGray)
+                                            val firstIdx = i * 2
+                                            if (firstIdx < profilesList.size) {
+                                                ProfileItemView(
+                                                    profile = profilesList[firstIdx],
+                                                    index = firstIdx,
+                                                    profilesList = profilesList,
+                                                    screenMode = screenMode,
+                                                    viewModel = viewModel,
+                                                    manageButtonFocusRequester = manageButtonFocusRequester,
+                                                    onEditProfile = { p ->
+                                                        selectedProfileForEdit = p
+                                                        tempName = p.name
+                                                        tempStyle = p.avatarStyle
+                                                        tempSkinColor = p.avatarSkinColor
+                                                        tempHairColor = p.avatarHairColor
+                                                        tempAccessory = p.avatarAccessory
+                                                        tempExpression = p.avatarExpression
+                                                        tempProfileColor = p.profileColor
+                                                        tempIsKids = p.isKids
+                                                        screenMode = ProfileScreenMode.EDIT
+                                                    },
+                                                    onSelectProfile = { p ->
+                                                        viewModel.selectProfile(p)
                                                     }
-                                                }
-                                                Text(
-                                                    text = profile.name,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.White,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.padding(horizontal = 4.dp)
                                                 )
-                                                // Right/Down Arrow
-                                                if (index < profilesList.size - 1) {
-                                                    IconButton(
-                                                        onClick = {
-                                                            reorderProfiles(viewModel, profilesList, index, index + 1)
-                                                        },
-                                                        modifier = Modifier.size(24.dp)
-                                                    ) {
-                                                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mover derecha", tint = Color.LightGray)
-                                                    }
-                                                }
+                                            } else if (firstIdx == profilesList.size && profilesList.size < 6) {
+                                                AddProfileItemView(
+                                                    onAddClick = {
+                                                        tempName = ""
+                                                        randomizeAvatar()
+                                                        tempIsKids = false
+                                                        screenMode = ProfileScreenMode.CREATE
+                                                    },
+                                                    manageButtonFocusRequester = manageButtonFocusRequester
+                                                )
                                             }
-                                        } else {
-                                            Text(
-                                                text = profile.name,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.85f),
-                                                textAlign = TextAlign.Center
-                                            )
-                                        }
 
-                                        if (profile.isKids) {
-                                            Text(
-                                                text = "Infantil",
-                                                fontSize = 10.sp,
-                                                color = Color(0xFFFFB300),
-                                                fontWeight = FontWeight.ExtraBold,
-                                                modifier = Modifier
-                                                    .background(Color(0xFFFFB300).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
+                                            val secondIdx = firstIdx + 1
+                                            if (secondIdx < profilesList.size) {
+                                                ProfileItemView(
+                                                    profile = profilesList[secondIdx],
+                                                    index = secondIdx,
+                                                    profilesList = profilesList,
+                                                    screenMode = screenMode,
+                                                    viewModel = viewModel,
+                                                    manageButtonFocusRequester = manageButtonFocusRequester,
+                                                    onEditProfile = { p ->
+                                                        selectedProfileForEdit = p
+                                                        tempName = p.name
+                                                        tempStyle = p.avatarStyle
+                                                        tempSkinColor = p.avatarSkinColor
+                                                        tempHairColor = p.avatarHairColor
+                                                        tempAccessory = p.avatarAccessory
+                                                        tempExpression = p.avatarExpression
+                                                        tempProfileColor = p.profileColor
+                                                        tempIsKids = p.isKids
+                                                        screenMode = ProfileScreenMode.EDIT
+                                                    },
+                                                    onSelectProfile = { p ->
+                                                        viewModel.selectProfile(p)
+                                                    }
+                                                )
+                                            } else if (secondIdx == profilesList.size && profilesList.size < 6) {
+                                                AddProfileItemView(
+                                                    onAddClick = {
+                                                        tempName = ""
+                                                        randomizeAvatar()
+                                                        tempIsKids = false
+                                                        screenMode = ProfileScreenMode.CREATE
+                                                    },
+                                                    manageButtonFocusRequester = manageButtonFocusRequester
+                                                )
+                                            }
                                         }
                                     }
                                 }
-
-                                // 3. "ADD PROFILE" Standard Card
-                                if (profilesList.size < 6) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier
-                                            .width(128.dp)
-                                            .padding(vertical = 12.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(112.dp)
-                                                .tvFocusEffect(
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    focusedBorderColor = Color(0xCCECEFF8),
-                                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                                                    borderWidth = 1.5.dp,
-                                                    scaleAmount = 1.04f
-                                                )
-                                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-                                                .focusProperties {
-                                                    down = manageButtonFocusRequester
-                                                }
-                                                .clickable {
-                                                    // Init fields for creation
-                                                    tempName = ""
-                                                    randomizeAvatar()
-                                                    tempIsKids = false
-                                                    screenMode = ProfileScreenMode.CREATE
-                                                }
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .semantics { testTag = "add_profile_card" },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Add,
-                                                contentDescription = "Add Profile Image",
-                                                tint = Color.White.copy(alpha = 0.6f),
-                                                modifier = Modifier.size(42.dp)
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(12.dp))
-
-                                        Text(
-                                            text = "Añadir Perfil",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White.copy(alpha = 0.7f),
-                                            textAlign = TextAlign.Center
+                            } else {
+                                Row(
+                                    modifier = Modifier
+                                        .padding(horizontal = 24.dp)
+                                        .padding(vertical = 16.dp)
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    profilesList.forEachIndexed { index, profile ->
+                                        ProfileItemView(
+                                            profile = profile,
+                                            index = index,
+                                            profilesList = profilesList,
+                                            screenMode = screenMode,
+                                            viewModel = viewModel,
+                                            manageButtonFocusRequester = manageButtonFocusRequester,
+                                            onEditProfile = { p ->
+                                                selectedProfileForEdit = p
+                                                tempName = p.name
+                                                tempStyle = p.avatarStyle
+                                                tempSkinColor = p.avatarSkinColor
+                                                tempHairColor = p.avatarHairColor
+                                                tempAccessory = p.avatarAccessory
+                                                tempExpression = p.avatarExpression
+                                                tempProfileColor = p.profileColor
+                                                tempIsKids = p.isKids
+                                                screenMode = ProfileScreenMode.EDIT
+                                            },
+                                            onSelectProfile = { p ->
+                                                viewModel.selectProfile(p)
+                                            }
+                                        )
+                                    }
+                                    if (profilesList.size < 6) {
+                                        AddProfileItemView(
+                                            onAddClick = {
+                                                tempName = ""
+                                                randomizeAvatar()
+                                                tempIsKids = false
+                                                screenMode = ProfileScreenMode.CREATE
+                                            },
+                                            manageButtonFocusRequester = manageButtonFocusRequester
                                         )
                                     }
                                 }
@@ -825,6 +762,190 @@ private fun reorderProfiles(viewModel: MediaViewModel, list: List<ProfileEntity>
             expression = tempExp,
             profileColor = tempCol,
             isKids = tempKids
+        )
+    }
+}
+
+@Composable
+private fun ProfileItemView(
+    profile: ProfileEntity,
+    index: Int,
+    profilesList: List<ProfileEntity>,
+    screenMode: ProfileScreenMode,
+    viewModel: MediaViewModel,
+    manageButtonFocusRequester: FocusRequester,
+    onEditProfile: (ProfileEntity) -> Unit,
+    onSelectProfile: (ProfileEntity) -> Unit
+) {
+    val isCurrentActive = viewModel.activeProfile?.id == profile.id
+    val focusBorderColor = remember(profile.profileColor) {
+        try {
+             Color(android.graphics.Color.parseColor(profile.profileColor))
+        } catch (e: Exception) {
+             Color.White
+        }
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(128.dp)
+            .padding(vertical = 12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(112.dp)
+                .tvFocusEffect(
+                    shape = RoundedCornerShape(16.dp),
+                    focusedBorderColor = Color(0xCCECEFF8),
+                    unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
+                    borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
+                    scaleAmount = 1.04f
+                )
+                .clickable {
+                    if (screenMode == ProfileScreenMode.SELECT) {
+                        onSelectProfile(profile)
+                    } else {
+                        onEditProfile(profile)
+                    }
+                }
+                .clip(RoundedCornerShape(16.dp))
+        ) {
+            CharacterAvatar(
+                style = profile.avatarStyle,
+                skinColorHex = profile.avatarSkinColor,
+                hairColorHex = profile.avatarHairColor,
+                accessory = profile.avatarAccessory,
+                expression = profile.avatarExpression,
+                profileColorHex = profile.profileColor,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (screenMode == ProfileScreenMode.MANAGE) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar Perfil",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (screenMode == ProfileScreenMode.MANAGE) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (index > 0) {
+                    IconButton(
+                        onClick = {
+                            reorderProfiles(viewModel, profilesList, index, index - 1)
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mover izquierda", tint = Color.LightGray)
+                    }
+                }
+                Text(
+                    text = profile.name,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (index < profilesList.size - 1) {
+                    IconButton(
+                        onClick = {
+                            reorderProfiles(viewModel, profilesList, index, index + 1)
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mover derecha", tint = Color.LightGray)
+                    }
+                }
+            }
+        } else {
+            Text(
+                text = profile.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        if (profile.isKids) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Infantil",
+                fontSize = 10.sp,
+                color = Color(0xFFFFB300),
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier
+                    .background(Color(0xFFFFB300).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddProfileItemView(
+    onAddClick: () -> Unit,
+    manageButtonFocusRequester: FocusRequester
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(128.dp)
+            .padding(vertical = 12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(112.dp)
+                .tvFocusEffect(
+                    shape = RoundedCornerShape(16.dp),
+                    focusedBorderColor = Color(0xCCECEFF8),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
+                    borderWidth = 1.5.dp,
+                    scaleAmount = 1.04f
+                )
+                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                .clickable { onAddClick() }
+                .clip(RoundedCornerShape(16.dp))
+                .semantics { testTag = "add_profile_card" },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add Profile Image",
+                tint = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.size(42.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Añadir Perfil",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
         )
     }
 }
