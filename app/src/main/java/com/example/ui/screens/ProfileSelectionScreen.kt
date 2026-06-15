@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.example.data.database.ProfileEntity
 import com.example.ui.MediaViewModel
 import com.example.ui.components.CharacterAvatar
@@ -50,6 +51,9 @@ fun ProfileSelectionScreen(
     var screenMode by remember { mutableStateOf(ProfileScreenMode.SELECT) }
     var selectedProfileForEdit by remember { mutableStateOf<ProfileEntity?>(null) }
     val manageButtonFocusRequester = remember { FocusRequester() }
+
+    val configuration = LocalConfiguration.current
+    val isMobile = configuration.screenWidthDp < 580
 
     // Custom Profile Creator/Editor Temporary States
     var tempName by remember { mutableStateOf("") }
@@ -400,183 +404,131 @@ fun ProfileSelectionScreen(
                                     modifier = Modifier.padding(bottom = 20.dp)
                                 )
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                                    verticalAlignment = Alignment.Top
-                                ) {
-                                    // Left: Gorgeous Interactive Avatar Preview + Randomize button
+                                if (isMobile) {
                                     Column(
+                                        modifier = Modifier.fillMaxWidth(),
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        modifier = Modifier.width(160.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(130.dp)
-                                                .clip(RoundedCornerShape(20.dp))
-                                                .border(3.dp, Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())), RoundedCornerShape(20.dp))
-                                        ) {
-                                            CharacterAvatar(
-                                                style = tempStyle,
-                                                skinColorHex = tempSkinColor,
-                                                hairColorHex = tempHairColor,
-                                                accessory = tempAccessory,
-                                                expression = tempExpression,
-                                                profileColorHex = tempProfileColor,
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        }
-
-                                        // Randomizer button
-                                        Button(
-                                            onClick = { randomizeAvatar() },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
-                                            shape = RoundedCornerShape(10.dp),
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .tvFocusEffect(shape = RoundedCornerShape(10.dp))
-                                        ) {
-                                            Icon(Icons.Default.Refresh, contentDescription = "Aleatorio", modifier = Modifier.size(16.dp), tint = Color.White)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Aleatorio", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        }
-                                    }
-
-                                    // Right: Fields control form
-                                    Column(
-                                        modifier = Modifier.weight(1f),
                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
-                                        // Name Field
-                                        OutlinedTextField(
-                                            value = tempName,
-                                            onValueChange = { tempName = it },
-                                            label = { Text("Nombre del Perfil", color = Color.White.copy(alpha = 0.5f)) },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .semantics { testTag = "profile_name_input" },
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedTextColor = Color.White,
-                                                unfocusedTextColor = Color.White,
-                                                focusedBorderColor = Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())),
-                                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
-                                            singleLine = true
-                                        )
-
-                                        // Profile Theme Highlight Color Row
-                                        Column {
-                                            Text("Color de Perfil", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.6f))
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                items(colorPresets) { colorHex ->
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(30.dp)
-                                                            .clip(CircleShape)
-                                                            .background(Color(colorHex.toColorIntOrFallback(0xFFFFFFFF.toInt())))
-                                                            .border(
-                                                                width = if (tempProfileColor == colorHex) 2.dp else 0.dp,
-                                                                color = Color.White,
-                                                                shape = CircleShape
-                                                            )
-                                                            .clickable { tempProfileColor = colorHex }
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        // Character Style Picker
-                                        Column {
-                                            Text("Clase de Personaje", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.6f))
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                items(stylePresets) { styleName ->
-                                                    val isSelected = tempStyle == styleName
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .clip(RoundedCornerShape(8.dp))
-                                                            .background(if (isSelected) Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
-                                                            .border(
-                                                                width = 1.dp,
-                                                                color = if (isSelected) Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())) else Color.White.copy(alpha = 0.1f),
-                                                                shape = RoundedCornerShape(8.dp)
-                                                            )
-                                                            .clickable { tempStyle = styleName }
-                                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                                    ) {
-                                                        Text(
-                                                            text = styleName.capitalize(Locale.ROOT),
-                                                            fontSize = 11.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        // Hair Color Picker
-                                        Column {
-                                            Text("Color de Cabello", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.6f))
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                items(hairPresets) { hairHex ->
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(24.dp)
-                                                            .clip(CircleShape)
-                                                            .background(Color(hairHex.toColorIntOrFallback(0xFFFFFFFF.toInt())))
-                                                            .border(
-                                                                width = if (tempHairColor == hairHex) 2.dp else 0.dp,
-                                                                color = Color.White,
-                                                                shape = CircleShape
-                                                            )
-                                                            .clickable { tempHairColor = hairHex }
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        // Kids Toggles (kids/normal type)
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
-                                                .clickable { tempIsKids = !tempIsKids }
-                                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        // Left: Gorgeous Interactive Avatar Preview + Randomize button
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.width(160.dp)
                                         ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(Icons.Default.Star, contentDescription = "Kids Mode", tint = Color(0xFFFFC107))
-                                                Spacer(modifier = Modifier.width(10.dp))
-                                                Column {
-                                                    Text("Perfil Infantil (Kids)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                                    Text("Separar programación solo apta para niños", fontSize = 9.sp, color = Color.White.copy(alpha = 0.5f))
-                                                }
-                                            }
-                                            Switch(
-                                                checked = tempIsKids,
-                                                onCheckedChange = { tempIsKids = it },
-                                                colors = SwitchDefaults.colors(
-                                                    checkedThumbColor = Color(0xFFFFC107),
-                                                    checkedTrackColor = Color(0xFFFFC107).copy(alpha = 0.4f)
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(110.dp)
+                                                    .clip(RoundedCornerShape(20.dp))
+                                                    .border(3.dp, Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())), RoundedCornerShape(20.dp))
+                                            ) {
+                                                CharacterAvatar(
+                                                    style = tempStyle,
+                                                    skinColorHex = tempSkinColor,
+                                                    hairColorHex = tempHairColor,
+                                                    accessory = tempAccessory,
+                                                    expression = tempExpression,
+                                                    profileColorHex = tempProfileColor,
+                                                    modifier = Modifier.fillMaxSize()
                                                 )
-                                            )
+                                            }
+
+                                            // Randomizer button
+                                            Button(
+                                                onClick = { randomizeAvatar() },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                                                shape = RoundedCornerShape(10.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp))
+                                            ) {
+                                                Icon(Icons.Default.Refresh, contentDescription = "Aleatorio", modifier = Modifier.size(16.dp), tint = Color.White)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Aleatorio", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            }
                                         }
+
+                                        // Right: Fields control form
+                                        ProfileFormFields(
+                                            tempName = tempName,
+                                            onNameChange = { tempName = it },
+                                            tempProfileColor = tempProfileColor,
+                                            onProfileColorChange = { tempProfileColor = it },
+                                            tempStyle = tempStyle,
+                                            onStyleChange = { tempStyle = it },
+                                            tempHairColor = tempHairColor,
+                                            onHairColorChange = { tempHairColor = it },
+                                            tempIsKids = tempIsKids,
+                                            onIsKidsChange = { tempIsKids = it },
+                                            colorPresets = colorPresets,
+                                            stylePresets = stylePresets,
+                                            hairPresets = hairPresets,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                } else {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        // Left: Gorgeous Interactive Avatar Preview + Randomize button
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.width(160.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(130.dp)
+                                                    .clip(RoundedCornerShape(20.dp))
+                                                    .border(3.dp, Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())), RoundedCornerShape(20.dp))
+                                            ) {
+                                                CharacterAvatar(
+                                                    style = tempStyle,
+                                                    skinColorHex = tempSkinColor,
+                                                    hairColorHex = tempHairColor,
+                                                    accessory = tempAccessory,
+                                                    expression = tempExpression,
+                                                    profileColorHex = tempProfileColor,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            }
+
+                                            // Randomizer button
+                                            Button(
+                                                onClick = { randomizeAvatar() },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                                                shape = RoundedCornerShape(10.dp),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp))
+                                            ) {
+                                                Icon(Icons.Default.Refresh, contentDescription = "Aleatorio", modifier = Modifier.size(16.dp), tint = Color.White)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Aleatorio", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            }
+                                        }
+
+                                        // Right: Fields control form
+                                        ProfileFormFields(
+                                            tempName = tempName,
+                                            onNameChange = { tempName = it },
+                                            tempProfileColor = tempProfileColor,
+                                            onProfileColorChange = { tempProfileColor = it },
+                                            tempStyle = tempStyle,
+                                            onStyleChange = { tempStyle = it },
+                                            tempHairColor = tempHairColor,
+                                            onHairColorChange = { tempHairColor = it },
+                                            tempIsKids = tempIsKids,
+                                            onIsKidsChange = { tempIsKids = it },
+                                            colorPresets = colorPresets,
+                                            stylePresets = stylePresets,
+                                            hairPresets = hairPresets,
+                                            modifier = Modifier.weight(1f)
+                                        )
                                     }
                                 }
 
@@ -665,6 +617,158 @@ fun ProfileSelectionScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ProfileFormFields(
+    tempName: String,
+    onNameChange: (String) -> Unit,
+    tempProfileColor: String,
+    onProfileColorChange: (String) -> Unit,
+    tempStyle: String,
+    onStyleChange: (String) -> Unit,
+    tempHairColor: String,
+    onHairColorChange: (String) -> Unit,
+    tempIsKids: Boolean,
+    onIsKidsChange: (Boolean) -> Unit,
+    colorPresets: List<String>,
+    stylePresets: List<String>,
+    hairPresets: List<String>,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Name Field
+        OutlinedTextField(
+            value = tempName,
+            onValueChange = onNameChange,
+            label = { Text("Nombre del Perfil", color = Color.White.copy(alpha = 0.5f)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { testTag = "profile_name_input" },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+            ),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
+        )
+
+        // Profile Theme Highlight Color Row
+        Column {
+            Text("Color de Perfil", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.6f))
+            Spacer(modifier = Modifier.height(4.dp))
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(colorPresets) { colorHex ->
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(Color(colorHex.toColorIntOrFallback(0xFFFFFFFF.toInt())))
+                            .border(
+                                width = if (tempProfileColor == colorHex) 2.dp else 0.dp,
+                                color = Color.White,
+                                shape = CircleShape
+                            )
+                            .clickable { onProfileColorChange(colorHex) }
+                    )
+                }
+            }
+        }
+
+        // Character Style Picker
+        Column {
+            Text("Clase de Personaje", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.6f))
+            Spacer(modifier = Modifier.height(4.dp))
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(stylePresets) { styleName ->
+                    val isSelected = tempStyle == styleName
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSelected) Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f))
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) Color(tempProfileColor.toColorIntOrFallback(0xFF00E5FF.toInt())) else Color.White.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { onStyleChange(styleName) }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = styleName.capitalize(Locale.ROOT),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Hair Color Picker
+        Column {
+            Text("Color de Cabello", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.6f))
+            Spacer(modifier = Modifier.height(4.dp))
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(hairPresets) { hairHex ->
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color(hairHex.toColorIntOrFallback(0xFFFFFFFF.toInt())))
+                            .border(
+                                width = if (tempHairColor == hairHex) 2.dp else 0.dp,
+                                color = Color.White,
+                                shape = CircleShape
+                            )
+                            .clickable { onHairColorChange(hairHex) }
+                    )
+                }
+            }
+        }
+
+        // Kids Toggles (kids/normal type)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
+                .clickable { onIsKidsChange(!tempIsKids) }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = "Kids Mode", tint = Color(0xFFFFC107))
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text("Perfil Infantil (Kids)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Separar programación solo apta para niños", fontSize = 9.sp, color = Color.White.copy(alpha = 0.5f))
+                }
+            }
+            Switch(
+                checked = tempIsKids,
+                onCheckedChange = onIsKidsChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color(0xFFFFC107),
+                    checkedTrackColor = Color(0xFFFFC107).copy(alpha = 0.4f)
+                )
+            )
         }
     }
 }

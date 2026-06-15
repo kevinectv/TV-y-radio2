@@ -103,12 +103,6 @@ class MediaViewModel(
                 interfacePref = "dark"
             )
             repository.insertProfile(newProfile)
-            
-            // If it's the first profile, auto-select it!
-            val currentProfiles = repository.getProfiles().first()
-            if (currentProfiles.isEmpty() || currentProfiles.size == 1) {
-                selectProfile(newProfile)
-            }
         }
     }
 
@@ -607,20 +601,9 @@ class MediaViewModel(
                 repository.deleteProfile("p3")
                 repository.deleteProfile("p4")
 
-                val list = repository.getProfiles().first()
-                if (list.isEmpty()) {
-                    // Let the user create their own custom profile from scratch!
-                    showProfileSelector = true
-                } else {
-                    // Check if there was a saved active profile from the last session
-                    val lastActiveId = sharedPreferences?.getString("last_active_profile_id", null)
-                    val matchedProfile = list.find { it.id == lastActiveId }
-                    if (matchedProfile != null) {
-                        selectProfile(matchedProfile)
-                    } else {
-                        showProfileSelector = true
-                    }
-                }
+                // Always require explicit profile selection on app startup, as requested
+                showProfileSelector = true
+                activeProfile = null
             } catch (e: Exception) {
                 e.printStackTrace()
                 showProfileSelector = true

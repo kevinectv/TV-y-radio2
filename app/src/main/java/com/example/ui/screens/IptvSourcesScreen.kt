@@ -603,6 +603,7 @@ fun PlaylistCard(
     onDelete: () -> Unit,
     onViewDetails: () -> Unit
 ) {
+    val isMobile = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 580
     val connectionColor = when (playlist.type) {
         "M3U URL" -> Color(0xFF4A89FF)
         "M3U8 URL" -> Color(0xFF00C853)
@@ -696,59 +697,121 @@ fun PlaylistCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Summary stats counter
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Column {
-                    Text(text = "CANALES", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    Text(text = if (playlist.channelsCount > 0) "${playlist.channelsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-                }
-                Column {
-                    Text(text = "CATEGORÍAS", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    Text(text = if (playlist.groupsCount > 0) "${playlist.groupsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
-                }
-                Column {
-                    Text(text = "CONEXIÓN DE RED", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        text = if (playlist.type == "Local M3U") "Offline" else "Online API",
-                        color = if (playlist.type == "Local M3U") Color(0xFFFF9500) else Color(0xFF00E676),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            if (isMobile) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(text = "CANALES", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(text = if (playlist.channelsCount > 0) "${playlist.channelsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                        Column {
+                            Text(text = "CATEGORÍAS", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(text = if (playlist.groupsCount > 0) "${playlist.groupsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                        Column {
+                            Text(text = "CONEXIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (playlist.type == "Local M3U") "Offline" else "Online",
+                                color = if (playlist.type == "Local M3U") Color(0xFFFF9500) else Color(0xFF00E676),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Last synced and status indicator
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(text = "SINCRONIZACIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(
-                                    when (playlist.syncStatus) {
-                                        "Success" -> Color(0xFF00E676)
-                                        "Error" -> Color(0xFFE53935)
-                                        "Syncing..." -> Color(0xFF4A89FF)
-                                        else -> Color.Gray
-                                    },
-                                    CircleShape
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                    Column {
+                        Text(text = "SINCRONIZACIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(
+                                        when (playlist.syncStatus) {
+                                            "Success" -> Color(0xFF00E676)
+                                            "Error" -> Color(0xFFE53935)
+                                            "Syncing..." -> Color(0xFF4A89FF)
+                                            else -> Color.Gray
+                                        },
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = when (playlist.syncStatus) {
+                                    "Success" -> "Completada (${formatTimestamp(playlist.lastSynced)})"
+                                    "Error" -> "Error de conexión"
+                                    "Syncing..." -> "Sincronizando..."
+                                    else -> "Pendiente"
+                                },
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Column {
+                        Text(text = "CANALES", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(text = if (playlist.channelsCount > 0) "${playlist.channelsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                    }
+                    Column {
+                        Text(text = "CATEGORÍAS", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(text = if (playlist.groupsCount > 0) "${playlist.groupsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                    }
+                    Column {
+                        Text(text = "CONEXIÓN DE RED", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         Text(
-                            text = when (playlist.syncStatus) {
-                                "Success" -> "Completada (${formatTimestamp(playlist.lastSynced)})"
-                                "Error" -> "Error de conexión"
-                                "Syncing..." -> "Sincronizando..."
-                                else -> "Pendiente"
-                            },
-                            color = Color.White,
-                            fontSize = 11.sp,
+                            text = if (playlist.type == "Local M3U") "Offline" else "Online API",
+                            color = if (playlist.type == "Local M3U") Color(0xFFFF9500) else Color(0xFF00E676),
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Last synced and status indicator
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "SINCRONIZACIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(
+                                        when (playlist.syncStatus) {
+                                            "Success" -> Color(0xFF00E676)
+                                            "Error" -> Color(0xFFE53935)
+                                            "Syncing..." -> Color(0xFF4A89FF)
+                                            else -> Color.Gray
+                                        },
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = when (playlist.syncStatus) {
+                                    "Success" -> "Completada (${formatTimestamp(playlist.lastSynced)})"
+                                    "Error" -> "Error de conexión"
+                                    "Syncing..." -> "Sincronizando..."
+                                    else -> "Pendiente"
+                                },
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -763,13 +826,15 @@ fun PlaylistCard(
                 IconButtonText(
                     text = "Ver",
                     icon = Icons.Default.Visibility,
-                    onClick = onViewDetails
+                    onClick = onViewDetails,
+                    showText = !isMobile
                 )
                 
                 IconButtonText(
                     text = "Editar",
                     icon = Icons.Default.Edit,
-                    onClick = onEdit
+                    onClick = onEdit,
+                    showText = !isMobile
                 )
 
                 IconButtonText(
@@ -785,7 +850,8 @@ fun PlaylistCard(
                     text = "Eliminar",
                     icon = Icons.Default.Delete,
                     tint = Color(0xFFE53935),
-                    onClick = onDelete
+                    onClick = onDelete,
+                    showText = !isMobile
                 )
             }
         }
@@ -801,6 +867,7 @@ fun EpgCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val isMobile = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 580
     val syncIcon = if (isActiveSyncing || epg.syncStatus == "Syncing...") Icons.Default.Cached else Icons.Default.Refresh
 
     Card(
@@ -883,62 +950,132 @@ fun EpgCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(
-                            when (epg.syncStatus) {
-                                "Success" -> Color(0xFF00E676)
-                                "Error" -> Color(0xFFE53935)
-                                "Syncing..." -> Color(0xFFFF9500)
-                                else -> Color.Gray
-                            },
-                            CircleShape
+            if (isMobile) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    when (epg.syncStatus) {
+                                        "Success" -> Color(0xFF00E676)
+                                        "Error" -> Color(0xFFE53935)
+                                        "Syncing..." -> Color(0xFFFF9500)
+                                        else -> Color.Gray
+                                    },
+                                    CircleShape
+                                )
                         )
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = when (epg.syncStatus) {
-                        "Success" -> "Sincronizado: ${formatTimestamp(epg.lastSynced)}"
-                        "Error" -> "Fallo al decodificar XMLTV"
-                        "Syncing..." -> "Sincronizando..."
-                        else -> "No sincronizado"
-                    },
-                    color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(
-                        onClick = onEdit,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit EPG", tint = Color.White, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when (epg.syncStatus) {
+                                "Success" -> "Sincronizado: ${formatTimestamp(epg.lastSynced)}"
+                                "Error" -> "Fallo al decodificar XMLTV"
+                                "Syncing..." -> "Sincronizando..."
+                                else -> "No sincronizado"
+                            },
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    IconButton(
-                        onClick = onSync,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Icon(syncIcon, contentDescription = "Sync EPG", tint = Color.White, modifier = Modifier.size(14.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(
+                                onClick = onEdit,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit EPG", tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
+                            IconButton(
+                                onClick = onSync,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                            ) {
+                                Icon(syncIcon, contentDescription = "Sync EPG", tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
+                            IconButton(
+                                onClick = onDelete,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete EPG", tint = Color(0xFFE53935), modifier = Modifier.size(14.dp))
+                            }
+                        }
                     }
-                    IconButton(
-                        onClick = onDelete,
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete EPG", tint = Color(0xFFE53935), modifier = Modifier.size(14.dp))
+                            .size(6.dp)
+                            .background(
+                                when (epg.syncStatus) {
+                                    "Success" -> Color(0xFF00E676)
+                                    "Error" -> Color(0xFFE53935)
+                                    "Syncing..." -> Color(0xFFFF9500)
+                                    else -> Color.Gray
+                                },
+                                CircleShape
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = when (epg.syncStatus) {
+                            "Success" -> "Sincronizado: ${formatTimestamp(epg.lastSynced)}"
+                            "Error" -> "Fallo al decodificar XMLTV"
+                            "Syncing..." -> "Sincronizando..."
+                            else -> "No sincronizado"
+                        },
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IconButton(
+                            onClick = onEdit,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit EPG", tint = Color.White, modifier = Modifier.size(14.dp))
+                        }
+                        IconButton(
+                            onClick = onSync,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(syncIcon, contentDescription = "Sync EPG", tint = Color.White, modifier = Modifier.size(14.dp))
+                        }
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete EPG", tint = Color(0xFFE53935), modifier = Modifier.size(14.dp))
+                        }
                     }
                 }
             }
@@ -953,7 +1090,8 @@ fun IconButtonText(
     icon: ImageVector,
     onClick: () -> Unit,
     tint: Color = Color.White,
-    isLoadingAnimation: Boolean = false
+    isLoadingAnimation: Boolean = false,
+    showText: Boolean = true
 ) {
     Box(
         modifier = Modifier
@@ -962,7 +1100,7 @@ fun IconButtonText(
             .clickable { onClick() }
             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
             .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(horizontal = if (showText) 10.dp else 8.dp, vertical = 6.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -970,17 +1108,19 @@ fun IconButtonText(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = text,
                 tint = tint,
                 modifier = Modifier.size(14.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = text,
-                color = tint,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
+            if (showText) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = text,
+                    color = tint,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -1053,6 +1193,8 @@ fun PlaylistFormDialog(
 
     val types = listOf("M3U URL", "M3U8 URL", "Local M3U", "Xtream Codes")
 
+    val isMobile = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 580
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -1082,33 +1224,98 @@ fun PlaylistFormDialog(
                         letterSpacing = 0.5.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        types.forEach { type ->
-                            val isSelected = connectionType == type
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(36.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.05f))
-                                    .border(
-                                        1.dp,
-                                        if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.1f),
-                                        RoundedCornerShape(6.dp)
-                                    )
-                                    .clickable { connectionType = type }
-                                    .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
-                                contentAlignment = Alignment.Center
+                    if (isMobile) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(
-                                    text = type,
-                                    color = Color.White,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                listOf("M3U URL", "M3U8 URL").forEach { type ->
+                                    val isSelected = connectionType == type
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(36.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.05f))
+                                            .border(
+                                                1.dp,
+                                                if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.1f),
+                                                RoundedCornerShape(6.dp)
+                                            )
+                                            .clickable { connectionType = type }
+                                            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = type,
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf("Local M3U", "Xtream Codes").forEach { type ->
+                                    val isSelected = connectionType == type
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(36.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.05f))
+                                            .border(
+                                                1.dp,
+                                                if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.1f),
+                                                RoundedCornerShape(6.dp)
+                                            )
+                                            .clickable { connectionType = type }
+                                            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = type,
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            types.forEach { type ->
+                                val isSelected = connectionType == type
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(36.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.05f))
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) Color(0xFF4A89FF) else Color.White.copy(alpha = 0.1f),
+                                            RoundedCornerShape(6.dp)
+                                        )
+                                        .clickable { connectionType = type }
+                                        .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = type,
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -1170,41 +1377,80 @@ fun PlaylistFormDialog(
 
                 // Xtream Codes secondary parameters (User, Password)
                 if (connectionType == "Xtream Codes") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it },
-                            label = { Text("Usuario") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).tvFocusEffect(shape = OutlinedTextFieldDefaults.shape),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedLabelColor = Color(0xFF4A89FF),
-                                unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
-                                focusedBorderColor = Color(0xFF4A89FF),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.15f)
+                    if (isMobile) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = username,
+                                onValueChange = { username = it },
+                                label = { Text("Usuario") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = OutlinedTextFieldDefaults.shape),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedLabelColor = Color(0xFF4A89FF),
+                                    unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
+                                    focusedBorderColor = Color(0xFF4A89FF),
+                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f)
+                                )
                             )
-                        )
 
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Contraseña") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).tvFocusEffect(shape = OutlinedTextFieldDefaults.shape),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedLabelColor = Color(0xFF4A89FF),
-                                unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
-                                focusedBorderColor = Color(0xFF4A89FF),
-                                unfocusedBorderColor = Color.White.copy(alpha = 0.15f)
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = { Text("Contraseña") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = OutlinedTextFieldDefaults.shape),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedLabelColor = Color(0xFF4A89FF),
+                                    unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
+                                    focusedBorderColor = Color(0xFF4A89FF),
+                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f)
+                                )
                             )
-                        )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = username,
+                                onValueChange = { username = it },
+                                label = { Text("Usuario") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).tvFocusEffect(shape = OutlinedTextFieldDefaults.shape),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedLabelColor = Color(0xFF4A89FF),
+                                    unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
+                                    focusedBorderColor = Color(0xFF4A89FF),
+                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f)
+                                )
+                            )
+
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = { Text("Contraseña") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f).tvFocusEffect(shape = OutlinedTextFieldDefaults.shape),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedLabelColor = Color(0xFF4A89FF),
+                                    unfocusedLabelColor = Color.White.copy(alpha = 0.4f),
+                                    focusedBorderColor = Color(0xFF4A89FF),
+                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f)
+                                )
+                            )
+                        }
                     }
                 }
             }
