@@ -59,6 +59,91 @@ fun RadioScreen(
         isFavorite = viewModel.isRadioFavorite(station.id)
     }
 
+    // Android MediaPlayer streaming engine
+    val context = LocalContext.current
+    var isPrepared by remember { mutableStateOf(false) }
+    var isBuffering by remember { mutableStateOf(false) }
+    var playbackError by remember { mutableStateOf<String?>(null) }
+    val mediaPlayer = remember { android.media.MediaPlayer() }
+
+    // Prepare and load streamUrl reactively
+    LaunchedEffect(station.streamUrl) {
+        playbackError = null
+        isPrepared = false
+        isBuffering = true
+        try {
+            mediaPlayer.reset()
+            mediaPlayer.setDataSource(station.streamUrl)
+            mediaPlayer.setAudioAttributes(
+                android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .build()
+            )
+            mediaPlayer.setOnPreparedListener { mp ->
+                isPrepared = true
+                isBuffering = false
+                val vol = viewModel.radioVolume
+                mp.setVolume(vol, vol)
+                if (viewModel.isRadioPlaying) {
+                    mp.start()
+                }
+            }
+            mediaPlayer.setOnErrorListener { _, what, extra ->
+                isPrepared = false
+                isBuffering = false
+                playbackError = "Error de sintonización ($what, $extra)"
+                false
+            }
+            mediaPlayer.prepareAsync()
+        } catch (e: Exception) {
+            isPrepared = false
+            isBuffering = false
+            playbackError = e.localizedMessage ?: "No se pudo sintonizar la señal."
+        }
+    }
+
+    // Connect ViewModel's play status reactively
+    LaunchedEffect(viewModel.isRadioPlaying, isPrepared) {
+        try {
+            if (isPrepared) {
+                if (viewModel.isRadioPlaying) {
+                    if (!mediaPlayer.isPlaying) {
+                        mediaPlayer.start()
+                    }
+                } else {
+                    if (mediaPlayer.isPlaying) {
+                        mediaPlayer.pause()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Connect ViewModel's volume reactively
+    LaunchedEffect(viewModel.radioVolume) {
+        try {
+            val vol = viewModel.radioVolume
+            mediaPlayer.setVolume(vol, vol)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Free MediaPlayer resources when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                mediaPlayer.stop()
+                mediaPlayer.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     // Interactive waveform bar bounce animation
     val infiniteTransition = rememberInfiniteTransition(label = "waveform_waves")
     val waveHeights = List(12) { index ->
@@ -101,7 +186,7 @@ fun RadioScreen(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF070B14))
+            .background(Color.Transparent)
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { keyEvent ->
@@ -254,6 +339,72 @@ fun RadioScreen(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Dynamic Audio connection feedback state
+                    if (isBuffering) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(12.dp),
+                                color = baseColor,
+                                strokeWidth = 1.5.dp
+                            )
+                            Text(
+                                text = "Sintonizando señal...",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else if (playbackError != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(Color(0xFFE57373).copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Error",
+                                tint = Color(0xFFEF5350),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "Señal sin audio - Conexión inestable",
+                                color = Color(0xFFEF5350),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(baseColor.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(if (viewModel.isRadioPlaying) Color(0xFF4CAF50) else Color.Gray, CircleShape)
+                            )
+                            Text(
+                                text = if (viewModel.isRadioPlaying) "Reproduciendo en vivo" else "Pausado",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -691,6 +842,72 @@ fun RadioScreen(
                                 contentDescription = "Favorito",
                                 tint = if (isFavorite) Color.Red else Color.White,
                                 modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Mobile audio sintonization status feedback
+                    if (isBuffering) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(10.dp),
+                                color = baseColor,
+                                strokeWidth = 1.2.dp
+                            )
+                            Text(
+                                text = "Sintonizando señal...",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else if (playbackError != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(Color(0xFFE57373).copy(alpha = 0.15f), RoundedCornerShape(16.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Error",
+                                tint = Color(0xFFEF5350),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "Señal sin audio",
+                                color = Color(0xFFEF5350),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .background(baseColor.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(5.dp)
+                                    .background(if (viewModel.isRadioPlaying) Color(0xFF4CAF50) else Color.Gray, CircleShape)
+                            )
+                            Text(
+                                text = if (viewModel.isRadioPlaying) "En vivo" else "Pausado",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
