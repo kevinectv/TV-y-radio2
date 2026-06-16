@@ -2487,199 +2487,192 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
     // Sync options states
     var syncMode by remember { mutableStateOf("automatic") } // "automatic", "manual", "startup"
 
-    LazyColumn(
+    Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(bottom = 32.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // A) HEADER SEGMENT
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "GESTIÓN DE CATÁLOGOS MULTIMEDIA",
-                                color = Color.White,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 15.sp,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Administra, ordena y asocia carteleras premium de películas, series y recomendaciones en la pantalla principal Home. Soporta vinculación remota con APIs de TMDB, listas públicas de Trakt, filtrados de MDBList y almacenamiento local.",
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 11.sp,
-                                lineHeight = 16.sp
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Sync button
-                        Button(
-                            onClick = {
-                                viewModel.syncAllCatalogs()
-                                Toast.makeText(context, "Sincronizando todos los catálogos en segundo plano...", Toast.LENGTH_SHORT).show()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Sincronizar",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Sincronizar Todo", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "GESTIÓN DE CATÁLOGOS MULTIMEDIA",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 15.sp,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Administra, ordena y asocia carteleras premium de películas, series y recomendaciones en la pantalla principal Home. Soporta vinculación remota con APIs de TMDB, listas públicas de Trakt, filtrados de MDBList y almacenamiento local.",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Divider(color = Color.White.copy(alpha = 0.06f))
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                    // Stats indicators Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    // Sync button
+                    Button(
+                        onClick = {
+                            viewModel.syncAllCatalogs()
+                            Toast.makeText(context, "Sincronizando todos los catálogos en segundo plano...", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(8.dp))
                     ) {
-                        // Stat 1: Total installed
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Folder,
-                                contentDescription = null,
-                                tint = Color(0xFF00E5FF),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "${catalogs.size} Instalados",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Sincronizar",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Sincronizar Todo", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
 
-                        // Stat 2: Active count
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Visibility,
-                                contentDescription = null,
-                                tint = Color(0xFF4CAF50),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "${catalogs.count { it.isVisible }} Visibles",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 11.sp
-                            )
-                        }
+                Spacer(modifier = Modifier.height(14.dp))
+                Divider(color = Color.White.copy(alpha = 0.06f))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                        // Stat 3: Status
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF4CAF50),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Base de Datos Optimizada",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 11.sp
-                            )
-                        }
+                // Stats indicators Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Stat 1: Total installed
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${catalogs.size} Instalados",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Stat 2: Active count
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Visibility,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${catalogs.count { it.isVisible }} Visibles",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp
+                        )
+                    }
+
+                    // Stat 3: Status
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Base de Datos Optimizada",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp
+                        )
                     }
                 }
             }
         }
 
         // B) ADD NEW CATALOG TRIGGER (EXCLUSIVE CARD)
-        item {
-            Card(
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+                .clickable { showAddDialog = true },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)),
+            border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .tvFocusEffect(shape = RoundedCornerShape(12.dp))
-                    .clickable { showAddDialog = true },
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)),
-                border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AddCircle,
-                        contentDescription = "Añadir Catálogo",
-                        tint = Color(0xFF00E5FF),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Añadir / Configurar Nuevo Catálogo Premium",
-                        color = Color(0xFF00E5FF),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Añadir Catálogo",
+                    tint = Color(0xFF00E5FF),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Añadir / Configurar Nuevo Catálogo Premium",
+                    color = Color(0xFF00E5FF),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
+                )
             }
         }
 
         // C) CATALOG LIST CARDS
         if (catalogs.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.VideoLibrary,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.15f),
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "No hay catálogos multimedia activos",
-                            color = Color.White.copy(alpha = 0.4f),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Pulsa el botón superior para restablecer los predeterminados o añadir nuevos.",
-                            color = Color.White.copy(alpha = 0.3f),
-                            fontSize = 11.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp)
-                        )
-                    }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.VideoLibrary,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.15f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No hay catálogos multimedia activos",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Pulsa el botón superior para restablecer los predeterminados o añadir nuevos.",
+                        color = Color.White.copy(alpha = 0.3f),
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp)
+                    )
                 }
             }
         } else {
-            items(catalogs, key = { it.id }) { cat ->
+            catalogs.forEach { cat ->
                 CatalogItemCard(
                     catalog = cat,
                     onEdit = {
@@ -2704,84 +2697,83 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
         }
 
         // D) SYNC SETTINGS SEGMENT
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f)),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "PREFERENCIAS DE SINCRONIZACIÓN",
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "PREFERENCIAS DE SINCRONIZACIÓN",
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { syncMode = "automatic" }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (syncMode == "automatic"),
+                        onClick = { syncMode = "automatic" },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { syncMode = "automatic" }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (syncMode == "automatic"),
-                            onClick = { syncMode = "automatic" },
-                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text("Sincronización Automática", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("Busca actualizaciones de carteleras cada 6 horas en segundo plano de manera fluida.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                        }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text("Sincronización Automática", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Busca actualizaciones de carteleras cada 6 horas en segundo plano de manera fluida.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
                     }
+                }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { syncMode = "startup" }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (syncMode == "startup"),
-                            onClick = { syncMode = "startup" },
-                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text("Sincronizar al iniciar la Aplicación", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("Actualiza intensidades de tendencias TMDB y Trakt cada vez que se abre Lumina.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { syncMode = "startup" }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (syncMode == "startup"),
+                        onClick = { syncMode = "startup" },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text("Sincronizar al iniciar la Aplicación", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Actualiza intensidades de tendencias TMDB y Trakt cada vez que se abre Lumina.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
                     }
+                }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { syncMode = "manual" }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (syncMode == "manual"),
-                            onClick = { syncMode = "manual" },
-                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text("Sincronización Manual Únicamente", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("Las listas permanecen estáticas hasta que interactúes con el botón de actualización.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                        }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { syncMode = "manual" }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (syncMode == "manual"),
+                        onClick = { syncMode = "manual" },
+                        colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text("Sincronización Manual Únicamente", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Las listas permanecen estáticas hasta que interactúes con el botón de actualización.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
                     }
                 }
             }
         }
+        Spacer(modifier = Modifier.height(32.dp))
     }
 
     // Dialog 1: Add Catalog
