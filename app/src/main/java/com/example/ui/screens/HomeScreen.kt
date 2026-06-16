@@ -26,8 +26,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.example.data.model.Channel
 import com.example.data.model.RadioStation
+import com.example.data.model.Catalog
+import com.example.data.model.CatalogItem
 import com.example.ui.AppTab
 import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
@@ -46,6 +50,10 @@ fun HomeScreen(
     val favoriteRadios by viewModel.favoriteRadioStations.collectAsState()
     val recentChans by viewModel.recentChannels.collectAsState()
     val recentRadios by viewModel.recentRadioStations.collectAsState()
+
+    val catalogs by viewModel.catalogsStateFlow.collectAsState()
+    var selectedCatalogItem by remember { mutableStateOf<CatalogItem?>(null) }
+    var showDetailsDialog by remember { mutableStateOf(false) }
 
     val allChannels by viewModel.allChannels.collectAsState()
     // Showcase/Banner Channel (First channel by default)
@@ -324,6 +332,33 @@ fun HomeScreen(
             }
         }
 
+        // 4.5 CUSTOM SYNCED CATALOGS (FILAS DINÁMICAS INSPIRADAS EN STREMIO/PLEX)
+        catalogs.filter { it.isVisible }.forEach { catalog ->
+            item {
+                val icon = when (catalog.sourceType) {
+                    "TMDB" -> Icons.Filled.Movie
+                    "Trakt" -> Icons.Filled.Tv
+                    "MDBList" -> Icons.Filled.FilterAlt
+                    else -> Icons.Filled.VideoLibrary
+                }
+                HomeSectionRowHeader(title = catalog.name.uppercase(), icon = icon, color = Color(0xFF00E5FF))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    items(catalog.items.take(catalog.numItems)) { item ->
+                        CatalogItemHomeCard(
+                            item = item,
+                            onClick = {
+                                selectedCatalogItem = item
+                                showDetailsDialog = true
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
         // 5. RADIO POPULARES (HORIZONTAL SCROLLER)
         item {
             HomeSectionRowHeader(title = "EMISORAS DE RADIO POPULARES", icon = Icons.Filled.Radio)
@@ -375,6 +410,16 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    if (showDetailsDialog && selectedCatalogItem != null) {
+        CatalogItemDetailsDialog(
+            item = selectedCatalogItem!!,
+            onDismiss = {
+                showDetailsDialog = false
+                selectedCatalogItem = null
+            }
+        )
     }
 }
 
@@ -628,5 +673,255 @@ private fun CardColorGradientOverlay(color: Color): Brush {
     return Brush.radialGradient(
         colors = listOf(color, Color.White.copy(alpha = 0.08f)),
         radius = 180f
+    )
+}
+
+@Composable
+fun CatalogItemHomeCard(
+    item: CatalogItem,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(110.dp)
+            .clickable { onClick() }
+            .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+            ) {
+                // Movie/Show Poster
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Gold Rating Overlay Tag
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Rating",
+                        tint = Color(0xFFFFD700),
+                        modifier = Modifier.size(8.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = item.rating,
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Dynamic Year overlay gradient background
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                            )
+                        )
+                        .padding(4.dp)
+                ) {
+                    Text(
+                        text = item.year,
+                        color = Color.White.copy(alpha = 0.80f),
+                        fontSize = 8.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Title padding segment
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp)
+            ) {
+                Text(
+                    text = item.title,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = item.genre,
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 8.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CatalogItemDetailsDialog(
+    item: CatalogItem,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1524),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 6.dp,
+        text = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Poster Image Left Side
+                Card(
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(165.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                ) {
+                    AsyncImage(
+                        model = item.posterUrl,
+                        contentDescription = item.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                // Details Text Right Side
+                Column(
+                    modifier = Modifier
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = item.title.uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        letterSpacing = 0.5.sp
+                    )
+
+                    // Tags row
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Year badge
+                        Text(
+                            text = item.year,
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+
+                        // Rating badge
+                        Row(
+                            modifier = Modifier
+                                .background(Color(0xFFFFD700).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = item.rating,
+                                color = Color(0xFFFFD700),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        // Genre badge
+                        Text(
+                            text = item.genre,
+                            color = Color(0xFF00E5FF),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            modifier = Modifier
+                                .background(Color(0xFF00E5FF).copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "SINOPSIS / RESUMEN",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+
+                    Text(
+                        text = item.description,
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onDismiss()
+                    Toast.makeText(context, "Sintonizando la fuente de transmisión recomendada para de '${item.title}'...", Toast.LENGTH_SHORT).show()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Reproducir", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Cerrar", color = Color.White, fontSize = 11.sp)
+            }
+        }
     )
 }

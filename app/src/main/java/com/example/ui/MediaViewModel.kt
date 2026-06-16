@@ -43,6 +43,54 @@ class MediaViewModel(
     // In-app Update Manager (Assigned on Activity creation)
     var updateManager: com.example.data.util.UpdateManager? = null
 
+    // Catalogs Repository & Realtime States
+    var catalogRepository: com.example.data.CatalogRepository? = null
+
+    val catalogsStateFlow: kotlinx.coroutines.flow.StateFlow<List<com.example.data.model.Catalog>>
+        get() = catalogRepository?.catalogs ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList())
+
+    fun addCatalog(catalog: com.example.data.model.Catalog) {
+        viewModelScope.launch {
+            catalogRepository?.addCatalog(catalog)
+        }
+    }
+
+    fun updateCatalog(catalog: com.example.data.model.Catalog) {
+        viewModelScope.launch {
+            catalogRepository?.updateCatalog(catalog)
+        }
+    }
+
+    fun deleteCatalog(id: String) {
+        viewModelScope.launch {
+            catalogRepository?.deleteCatalog(id)
+        }
+    }
+
+    fun moveCatalogUp(id: String) {
+        viewModelScope.launch {
+            catalogRepository?.moveUp(id)
+        }
+    }
+
+    fun moveCatalogDown(id: String) {
+        viewModelScope.launch {
+            catalogRepository?.moveDown(id)
+        }
+    }
+
+    fun syncCatalog(id: String) {
+        viewModelScope.launch {
+            catalogRepository?.syncNow(id)
+        }
+    }
+
+    fun syncAllCatalogs() {
+        viewModelScope.launch {
+            catalogRepository?.syncAll()
+        }
+    }
+
     // Selected App Tab
     var currentTab by mutableStateOf(AppTab.HOME)
         private set

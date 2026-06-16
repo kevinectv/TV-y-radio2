@@ -34,9 +34,13 @@ import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
 import kotlinx.coroutines.launch
 import com.example.BuildConfig
+import java.util.UUID
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.ui.components.CharacterAvatar
 import com.example.data.database.ProfileEntity
 import com.example.data.database.RadioStationEntity
+import com.example.data.model.Catalog
+import com.example.data.model.CatalogItem
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 
@@ -46,6 +50,7 @@ import androidx.compose.ui.layout.ContentScale
 enum class SettingCategory(val label: String, val icon: ImageVector, val description: String) {
     PROFILE("Perfil", Icons.Default.AccountCircle, "Configuración del perfil activo y de los avatares integrados"),
     IPTV_SOURCES("Fuentes IPTV", Icons.Default.Dns, "Gestión integral de playlists M3U, M3U8, Xtream Codes y XMLTV"),
+    CATALOGS("Catálogos", Icons.Default.VideoLibrary, "Administración de carteleras, tendencias y filas horizontales del Home"),
     EPG("Guía EPG", Icons.Default.Dataset, "Ajustes de escala, sincronización automática e intervalos"),
     RADIO("Radio & Audio", Icons.Default.Radio, "Acondicionado de buffers de audio y ecualización óptima"),
     REPRODUCTOR("Reproductor", Icons.Default.PlayCircle, "Selección de algoritmos de decodificación y optimización HW+"),
@@ -209,6 +214,9 @@ fun SettingsWorkspace(
                                 }
                                 SettingCategory.IPTV_SOURCES -> {
                                     IptvSourcesPaneContent(onOpenSources = onOpenSources)
+                                }
+                                SettingCategory.CATALOGS -> {
+                                    CatalogsPaneContent(viewModel = viewModel)
                                 }
                                 SettingCategory.EPG -> {
                                     EpgPaneContent(
@@ -376,6 +384,9 @@ fun SettingsWorkspace(
                             }
                             SettingCategory.IPTV_SOURCES -> {
                                 IptvSourcesPaneContent(onOpenSources = onOpenSources)
+                            }
+                            SettingCategory.CATALOGS -> {
+                                CatalogsPaneContent(viewModel = viewModel)
                             }
                             SettingCategory.EPG -> {
                                 EpgPaneContent(
@@ -2461,3 +2472,879 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
         }
     }
 }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CatalogsPaneContent(viewModel: MediaViewModel) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val catalogs by viewModel.catalogsStateFlow.collectAsState()
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var selectedCatalogToEdit by remember { mutableStateOf<Catalog?>(null) }
+
+    // Sync options states
+    var syncMode by remember { mutableStateOf("automatic") } // "automatic", "manual", "startup"
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 32.dp)
+    ) {
+        // A) HEADER SEGMENT
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "GESTIÓN DE CATÁLOGOS MULTIMEDIA",
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 15.sp,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Administra, ordena y asocia carteleras premium de películas, series y recomendaciones en la pantalla principal Home. Soporta vinculación remota con APIs de TMDB, listas públicas de Trakt, filtrados de MDBList y almacenamiento local.",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 11.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Sync button
+                        Button(
+                            onClick = {
+                                viewModel.syncAllCatalogs()
+                                Toast.makeText(context, "Sincronizando todos los catálogos en segundo plano...", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Sincronizar",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Sincronizar Todo", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Divider(color = Color.White.copy(alpha = 0.06f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Stats indicators Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Stat 1: Total installed
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = null,
+                                tint = Color(0xFF00E5FF),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${catalogs.size} Instalados",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        // Stat 2: Active count
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Visibility,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${catalogs.count { it.isVisible }} Visibles",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        // Stat 3: Status
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Base de Datos Optimizada",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // B) ADD NEW CATALOG TRIGGER (EXCLUSIVE CARD)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+                    .clickable { showAddDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)),
+                border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = "Añadir Catálogo",
+                        tint = Color(0xFF00E5FF),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Añadir / Configurar Nuevo Catálogo Premium",
+                        color = Color(0xFF00E5FF),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+        }
+
+        // C) CATALOG LIST CARDS
+        if (catalogs.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.VideoLibrary,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.15f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "No hay catálogos multimedia activos",
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Pulsa el botón superior para restablecer los predeterminados o añadir nuevos.",
+                            color = Color.White.copy(alpha = 0.3f),
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            items(catalogs, key = { it.id }) { cat ->
+                CatalogItemCard(
+                    catalog = cat,
+                    onEdit = {
+                        selectedCatalogToEdit = cat
+                        showEditDialog = true
+                    },
+                    onMoveUp = { viewModel.moveCatalogUp(cat.id) },
+                    onMoveDown = { viewModel.moveCatalogDown(cat.id) },
+                    onToggleVisibility = {
+                        viewModel.updateCatalog(cat.copy(isVisible = !cat.isVisible))
+                    },
+                    onSync = {
+                        viewModel.syncCatalog(cat.id)
+                        Toast.makeText(context, "Sincronizando cartelera: ${cat.name}", Toast.LENGTH_SHORT).show()
+                    },
+                    onDelete = {
+                        viewModel.deleteCatalog(cat.id)
+                        Toast.makeText(context, "Catálogo eliminado: ${cat.name}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        }
+
+        // D) SYNC SETTINGS SEGMENT
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "PREFERENCIAS DE SINCRONIZACIÓN",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { syncMode = "automatic" }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (syncMode == "automatic"),
+                            onClick = { syncMode = "automatic" },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Sincronización Automática", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Busca actualizaciones de carteleras cada 6 horas en segundo plano de manera fluida.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { syncMode = "startup" }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (syncMode == "startup"),
+                            onClick = { syncMode = "startup" },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Sincronizar al iniciar la Aplicación", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Actualiza intensidades de tendencias TMDB y Trakt cada vez que se abre Lumina.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { syncMode = "manual" }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (syncMode == "manual"),
+                            onClick = { syncMode = "manual" },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Sincronización Manual Únicamente", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Las listas permanecen estáticas hasta que interactúes con el botón de actualización.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Dialog 1: Add Catalog
+    if (showAddDialog) {
+        AddCatalogDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, source, url ->
+                val newCat = Catalog(
+                    id = UUID.randomUUID().toString(),
+                    name = name,
+                    sourceType = source,
+                    url = url,
+                    isVisible = true,
+                    status = "Sincronizado",
+                    lastUpdated = "Ahora mismo"
+                )
+                viewModel.addCatalog(newCat)
+                showAddDialog = false
+                Toast.makeText(context, "Catálogo '$name' agregado correctamente.", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    // Dialog 2: Edit Catalog
+    if (showEditDialog && selectedCatalogToEdit != null) {
+        val cat = selectedCatalogToEdit!!
+        EditCatalogDialog(
+            catalog = cat,
+            onDismiss = {
+                showEditDialog = false
+                selectedCatalogToEdit = null
+            },
+            onConfirm = { updatedCat ->
+                viewModel.updateCatalog(updatedCat)
+                showEditDialog = false
+                selectedCatalogToEdit = null
+                Toast.makeText(context, "Catálogo actualizado.", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+}
+
+@Composable
+fun CatalogItemCard(
+    catalog: Catalog,
+    onEdit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onToggleVisibility: () -> Unit,
+    onSync: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val sourceColor = when (catalog.sourceType) {
+        "TMDB" -> Color(0xFF01B4E4)
+        "Trakt" -> Color(0xFFED1C24)
+        "MDBList" -> Color(0xFFFF9800)
+        "Import" -> Color(0xFF9C27B0)
+        else -> Color(0xFF4CAF50)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .tvFocusEffect(shape = RoundedCornerShape(10.dp)),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (catalog.isVisible) Color.White.copy(alpha = 0.03f) else Color.White.copy(alpha = 0.01f)
+        ),
+        border = BorderStroke(
+            1.dp,
+            if (catalog.isVisible) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.03f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = catalog.name,
+                            color = if (catalog.isVisible) Color.White else Color.White.copy(alpha = 0.4f),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Custom source type pill
+                        Text(
+                            text = catalog.sourceType.uppercase(),
+                            color = Color.Black,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 8.5.sp,
+                            modifier = Modifier
+                                .background(sourceColor, RoundedCornerShape(3.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (catalog.url.isNotEmpty()) catalog.url else "Asociación interna por defecto",
+                        color = Color.White.copy(alpha = 0.4f),
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // Visibility pill state
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .background(
+                                if (catalog.isVisible) Color(0xFF4CAF50) else Color.Gray,
+                                CircleShape
+                            )
+                    )
+                    Text(
+                        text = if (catalog.isVisible) "Visible" else "Oculto",
+                        color = if (catalog.isVisible) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.4f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Stats / Meta details in the card
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(
+                        text = "Elementos: ${catalog.items.size}",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 10.sp
+                    )
+                    Text(
+                        text = "Estado: ${catalog.status}",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 10.sp
+                    )
+                    Text(
+                        text = "Actualizado: ${catalog.lastUpdated}",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 10.sp
+                    )
+                }
+
+                // Action buttons!
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Update
+                    IconButton(
+                        onClick = onSync,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                    }
+
+                    // Move Up
+                    IconButton(
+                        onClick = onMoveUp,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                    ) {
+                        Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                    }
+
+                    // Move Down
+                    IconButton(
+                        onClick = onMoveDown,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                    ) {
+                        Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                    }
+
+                    // Hide/Show Toggle
+                    IconButton(
+                        onClick = onToggleVisibility,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                if (catalog.isVisible) Color(0xFF4CAF50).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
+                                RoundedCornerShape(4.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = if (catalog.isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Visibilidad",
+                            tint = if (catalog.isVisible) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+
+                    // Edit
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                    }
+
+                    // Delete
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color(0xFFEF5350).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFEF5350), modifier = Modifier.size(13.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AddCatalogDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, source: String, url: String) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var source by remember { mutableStateOf("TMDB") }
+    var url by remember { mutableStateOf("") }
+
+    // Automatic Live URL Validation states
+    val isUrlValidByRegex = remember(url) {
+        url.isEmpty() || url.startsWith("http://") || url.startsWith("https://")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1524),
+        tonalElevation = 6.dp,
+        title = {
+            Text("➕ Añadir Nuevo Catálogo", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Name Field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre del Catálogo (Ej. Tendencias Mundiales)") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF00E5FF),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Source selection Row
+                Text("Origen de Datos del Catálogo", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val listSources = listOf("TMDB", "Trakt", "MDBList", "Custom", "Local")
+                    listSources.forEach { src ->
+                        val selected = (source == src)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
+                                .clickable { source = src }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = src,
+                                color = if (selected) Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+
+                // URL Field
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("URL del Endpoint / API") },
+                    isError = !isUrlValidByRegex,
+                    placeholder = { Text("https://api.themoviedb.org/...") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF00E5FF),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Validation Status Indicators
+                if (url.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                if (isUrlValidByRegex) Color(0xFF4CAF50).copy(alpha = 0.15f)
+                                else Color(0xFFEF5350).copy(alpha = 0.15f),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isUrlValidByRegex) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                            contentDescription = null,
+                            tint = if (isUrlValidByRegex) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isUrlValidByRegex) "URL con formato HTTP/HTTPS verificado." else "Formato inválido. Debe comenzar con http:// o https://",
+                            color = if (isUrlValidByRegex) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotEmpty() && isUrlValidByRegex) {
+                        onConfirm(name, source, url)
+                    }
+                },
+                enabled = name.isNotEmpty() && isUrlValidByRegex,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Crear Catálogo", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Cancelar", color = Color.White, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
+@Composable
+fun EditCatalogDialog(
+    catalog: Catalog,
+    onDismiss: () -> Unit,
+    onConfirm: (Catalog) -> Unit
+) {
+    var name by remember { mutableStateOf(catalog.name) }
+    var source by remember { mutableStateOf(catalog.sourceType) }
+    var url by remember { mutableStateOf(catalog.url) }
+    var showInHome by remember { mutableStateOf(catalog.showInHome) }
+    var showInRec by remember { mutableStateOf(catalog.showInRecommendations) }
+    var showInSearch by remember { mutableStateOf(catalog.showInSearch) }
+    var numItems by remember { mutableStateOf(catalog.numItems) }
+
+    val isUrlValidByRegex = remember(url) {
+        url.isEmpty() || url.startsWith("http://") || url.startsWith("https://")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1524),
+        tonalElevation = 6.dp,
+        title = {
+            Text("✏️ Editar Parámetros del Catálogo", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Name field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre del Catálogo") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF00E5FF),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // URL field
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("URL del Endpoint") },
+                    isError = !isUrlValidByRegex,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF00E5FF),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Filters / Count
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Límite de Elementos en Pantalla", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { if (numItems > 5) numItems -= 5 },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.size(28.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text("-", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Text("$numItems", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = { if (numItems < 50) numItems += 5 },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.size(28.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text("+", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Divider(color = Color.White.copy(alpha = 0.05f), modifier = Modifier.padding(vertical = 4.dp))
+
+                // Checkboxes for targeted UI visibility options
+                Text("Visibilidad e Integraciones", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showInHome = !showInHome }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = showInHome,
+                        onCheckedChange = { showInHome = it },
+                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00E5FF))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Mostrar Fila en Pantalla Principal (Home)", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showInRec = !showInRec }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = showInRec,
+                        onCheckedChange = { showInRec = it },
+                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00E5FF))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Inyectar en Sección Recomendadas", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showInSearch = !showInSearch }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = showInSearch,
+                        onCheckedChange = { showInSearch = it },
+                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF00E5FF))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Habilitar en Consultas de Búsqueda Global", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotEmpty() && isUrlValidByRegex) {
+                        val updated = catalog.copy(
+                            name = name,
+                            sourceType = source,
+                            url = url,
+                            showInHome = showInHome,
+                            showInRecommendations = showInRec,
+                            showInSearch = showInSearch,
+                            numItems = numItems
+                        )
+                        onConfirm(updated)
+                    }
+                },
+                enabled = name.isNotEmpty() && isUrlValidByRegex,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Guardar Cambios", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Cancelar", color = Color.White, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
