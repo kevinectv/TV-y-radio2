@@ -1302,18 +1302,38 @@ fun CatalogItemNumberedCard(
 ) {
     Box(
         modifier = Modifier
-            .width(145.dp)
-            .height(180.dp)
+            .width(150.dp)
+            .height(175.dp)
             .clickable { onClick() }
             .tvFocusEffect(shape = RoundedCornerShape(8.dp))
     ) {
-        // Poster Card is placed FIRST, so it stays behind the huge number layers
+        // 1. Giant Number Rank (Drawn FIRST on the bottom layer to stay behind the poster card)
+        val rankStr = "$rank"
+        Text(
+            text = rankStr,
+            style = TextStyle(
+                fontSize = 120.sp,
+                fontWeight = FontWeight.W900,
+                color = Color.White.copy(alpha = 0.82f), // Semi-transparent silvery white/gray look
+                letterSpacing = (-9).sp,
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = Color.Black.copy(alpha = 0.95f),
+                    offset = androidx.compose.ui.geometry.Offset(4f, 4f),
+                    blurRadius = 8f
+                )
+            ),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = 2.dp, y = 14.dp) // Aligns beautifully with the bottom edge
+        )
+
+        // 2. Poster Card (Drawn SECOND on the top layer to overlap the giant rank number on the right)
         Card(
             shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
             modifier = Modifier
-                .width(100.dp)
+                .width(110.dp)
                 .height(155.dp)
                 .align(Alignment.BottomEnd)
         ) {
@@ -1381,44 +1401,5 @@ fun CatalogItemNumberedCard(
                 }
             }
         }
-
-        // Extremely bold, high-contrast, multi-layered outlined rank text
-        // Drawn SECOND so it overlays beautifully on top of the bottom-left poster edge
-        val rankStr = "$rank"
-        
-        // Multi-layered offset shadows to create a perfect thick black stroke effect
-        val strokeOffsets = listOf(
-            Pair(-3, 0), Pair(3, 0), Pair(0, -3), Pair(0, 3),
-            Pair(-2, -2), Pair(2, -2), Pair(-2, 2), Pair(2, 2)
-        )
-        
-        strokeOffsets.forEach { (dx, dy) ->
-            Text(
-                text = rankStr,
-                style = TextStyle(
-                    fontSize = 125.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black,
-                    letterSpacing = (-10).sp
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .offset(x = (dx).dp, y = (16 + dy).dp)
-            )
-        }
-
-        // Main colored text inside the stroke layers
-        Text(
-            text = rankStr,
-            style = TextStyle(
-                fontSize = 125.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF00E5FF), // neon premium cyan
-                letterSpacing = (-10).sp
-            ),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = 0.dp, y = 16.dp)
-        )
     }
 }
