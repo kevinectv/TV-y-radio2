@@ -83,6 +83,9 @@ interface MediaDao {
     @Query("SELECT * FROM channels ORDER BY number ASC, name ASC")
     fun getAllChannelEntities(): Flow<List<ChannelEntity>>
 
+    @Query("SELECT * FROM channels ORDER BY number ASC, name ASC")
+    suspend fun getAllChannelEntitiesList(): List<ChannelEntity>
+
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId")
     suspend fun getChannelsByPlaylist(playlistId: String): List<ChannelEntity>
 

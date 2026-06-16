@@ -23,10 +23,10 @@ fun ElegantBackground(
             if (accentColorHex != null) {
                 Color(android.graphics.Color.parseColor(accentColorHex))
             } else {
-                Color(0xFF00E5FF) // Lumina premium brand cyan
+                Color(0xFF030406) // Deep luxury obsidian black/charcoal
             }
         } catch (e: Exception) {
-            Color(0xFF00E5FF)
+            Color(0xFF030406)
         }
     }
 

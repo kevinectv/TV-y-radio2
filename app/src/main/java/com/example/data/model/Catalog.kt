@@ -28,5 +28,6 @@ data class CatalogItem(
     val year: String = "2024",
     val rating: String = "8.2",
     val genre: String = "Acción",
-    val description: String = "Una película espectacular llena de misterios y acción garantizada."
+    val description: String = "Una película espectacular llena de misterios y acción garantizada.",
+    val streamUrl: String? = null
 )
