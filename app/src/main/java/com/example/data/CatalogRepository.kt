@@ -33,7 +33,17 @@ class CatalogRepository(private val context: Context) {
                 val json = catalogsFile.readText()
                 val list = jsonAdapter.fromJson(json)
                 if (list != null && list.isNotEmpty()) {
-                    _catalogs.value = list.sortedBy { it.orderIndex }
+                    val healed = list.map { cat ->
+                        val currentLayout = try { cat.layoutType } catch (e: Exception) { "Horizontal" } ?: "Horizontal"
+                        val correctedLayout = if (currentLayout == "Horizontal" && (cat.name.contains("Top 250", ignoreCase = true) || cat.name.contains("Mejor Valorada", ignoreCase = true) || cat.name.contains("top", ignoreCase = true) || cat.name.contains("tops", ignoreCase = true))) {
+                            "Top Numerado"
+                        } else {
+                            currentLayout
+                        }
+                        cat.copy(layoutType = correctedLayout)
+                    }
+                    _catalogs.value = healed.sortedBy { it.orderIndex }
+                    saveCatalogsList(healed)
                     return
                 }
             }
