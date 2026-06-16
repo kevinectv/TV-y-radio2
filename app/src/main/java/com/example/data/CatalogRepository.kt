@@ -179,6 +179,7 @@ class CatalogRepository(private val context: Context) {
                 status = "Sincronizado",
                 lastUpdated = "Hoy",
                 orderIndex = idx,
+                layoutType = if (name.contains("Top 250") || name.contains("Mejor Valoradas")) "Top Numerado" else "Horizontal",
                 items = generateItemsForCategory(name)
             )
         }

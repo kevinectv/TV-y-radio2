@@ -16,6 +16,7 @@ data class Catalog(
     val status: String = "Sincronizado", // "Sincronizado", "Pendiente", "Error"
     val lastUpdated: String = "Hoy",
     var orderIndex: Int = 0,
+    val layoutType: String = "Horizontal", // "Horizontal" or "Vertical"
     val items: List<CatalogItem> = emptyList()
 )
 

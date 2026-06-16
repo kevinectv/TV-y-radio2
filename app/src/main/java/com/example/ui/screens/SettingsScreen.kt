@@ -2780,13 +2780,14 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
     if (showAddDialog) {
         AddCatalogDialog(
             onDismiss = { showAddDialog = false },
-            onConfirm = { name, source, url ->
+            onConfirm = { name, source, url, layoutType ->
                 val newCat = Catalog(
                     id = UUID.randomUUID().toString(),
                     name = name,
                     sourceType = source,
                     url = url,
                     isVisible = true,
+                    layoutType = layoutType,
                     status = "Sincronizado",
                     lastUpdated = "Ahora mismo"
                 )
@@ -2877,6 +2878,19 @@ fun CatalogItemCard(
                                 .background(sourceColor, RoundedCornerShape(3.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // Layout Display Type pill
+                        Text(
+                            text = catalog.layoutType.uppercase(),
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 8.5.sp,
+                            modifier = Modifier
+                                .background(Color(0xFF00E5FF), RoundedCornerShape(3.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -2940,53 +2954,50 @@ fun CatalogItemCard(
 
                 // Action buttons!
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Update
                     IconButton(
                         onClick = onSync,
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                            .size(34.dp)
+                            .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.Black, modifier = Modifier.size(16.dp))
                     }
 
                     // Move Up
                     IconButton(
                         onClick = onMoveUp,
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                            .size(34.dp)
+                            .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.Black, modifier = Modifier.size(16.dp))
                     }
 
                     // Move Down
                     IconButton(
                         onClick = onMoveDown,
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                            .size(34.dp)
+                            .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.Black, modifier = Modifier.size(16.dp))
                     }
 
                     // Hide/Show Toggle
                     IconButton(
                         onClick = onToggleVisibility,
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(
-                                if (catalog.isVisible) Color(0xFF4CAF50).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f),
-                                RoundedCornerShape(4.dp)
-                            )
+                            .size(34.dp)
+                            .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(
                             imageVector = if (catalog.isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = "Visibilidad",
-                            tint = if (catalog.isVisible) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.6f),
-                            modifier = Modifier.size(13.dp)
+                            tint = Color.Black,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
 
@@ -2994,20 +3005,20 @@ fun CatalogItemCard(
                     IconButton(
                         onClick = onEdit,
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                            .size(34.dp)
+                            .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Black, modifier = Modifier.size(16.dp))
                     }
 
                     // Delete
                     IconButton(
                         onClick = onDelete,
                         modifier = Modifier
-                            .size(24.dp)
-                            .background(Color(0xFFEF5350).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                            .size(34.dp)
+                            .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFEF5350), modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Black, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -3018,11 +3029,12 @@ fun CatalogItemCard(
 @Composable
 fun AddCatalogDialog(
     onDismiss: () -> Unit,
-    onConfirm: (name: String, source: String, url: String) -> Unit
+    onConfirm: (name: String, source: String, url: String, layoutType: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var source by remember { mutableStateOf("TMDB") }
     var url by remember { mutableStateOf("") }
+    var layoutType by remember { mutableStateOf("Horizontal") } // "Horizontal" or "Vertical"
 
     // Automatic Live URL Validation states
     val isUrlValidByRegex = remember(url) {
@@ -3085,6 +3097,34 @@ fun AddCatalogDialog(
                     }
                 }
 
+                // Layout Choice Row
+                Text("Diseño de Visualización (Home)", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val choices = listOf("Horizontal", "Vertical", "Top Numerado")
+                    choices.forEach { choice ->
+                        val selected = (layoutType == choice)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
+                                .clickable { layoutType = choice }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = choice.uppercase(),
+                                color = if (selected) Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                }
+
                 // URL Field
                 OutlinedTextField(
                     value = url,
@@ -3135,7 +3175,7 @@ fun AddCatalogDialog(
             Button(
                 onClick = {
                     if (name.isNotEmpty() && isUrlValidByRegex) {
-                        onConfirm(name, source, url)
+                        onConfirm(name, source, url, layoutType)
                     }
                 },
                 enabled = name.isNotEmpty() && isUrlValidByRegex,
@@ -3170,6 +3210,7 @@ fun EditCatalogDialog(
     var showInRec by remember { mutableStateOf(catalog.showInRecommendations) }
     var showInSearch by remember { mutableStateOf(catalog.showInSearch) }
     var numItems by remember { mutableStateOf(catalog.numItems) }
+    var layoutType by remember { mutableStateOf(catalog.layoutType) } // "Horizontal" or "Vertical"
 
     val isUrlValidByRegex = remember(url) {
         url.isEmpty() || url.startsWith("http://") || url.startsWith("https://")
@@ -3251,6 +3292,36 @@ fun EditCatalogDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Layout Choice selector (Edit)
+                Text("Diseño de Visualización (Home)", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val choices = listOf("Horizontal", "Vertical", "Top Numerado")
+                    choices.forEach { choice ->
+                        val selected = (layoutType == choice)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
+                                .clickable { layoutType = choice }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = choice.uppercase(),
+                                color = if (selected) Color.Black else Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                }
+
                 Divider(color = Color.White.copy(alpha = 0.05f), modifier = Modifier.padding(vertical = 4.dp))
 
                 // Checkboxes for targeted UI visibility options
@@ -3316,7 +3387,8 @@ fun EditCatalogDialog(
                             showInHome = showInHome,
                             showInRecommendations = showInRec,
                             showInSearch = showInSearch,
-                            numItems = numItems
+                            numItems = numItems,
+                            layoutType = layoutType
                         )
                         onConfirm(updated)
                     }

@@ -75,14 +75,8 @@ fun LuminaAppShell(
 
 
 
-    // Dynamic background matching the current channel or radio selection color hex
-    val backgroundAccent = remember(viewModel.currentTab, viewModel.selectedRadioStation) {
-        if (viewModel.currentTab == AppTab.RADIO) {
-            viewModel.selectedRadioStation.themeColorHex
-        } else {
-            null
-        }
-    }
+    // Premium obsidian & cyan gradient background preserved globally
+    val backgroundAccent: String? = null
 
     Box(
         modifier = modifier

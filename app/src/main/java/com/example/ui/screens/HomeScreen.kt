@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +9,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -57,148 +61,284 @@ fun HomeScreen(
 
     val allChannels by viewModel.allChannels.collectAsState()
     // Showcase/Banner Channel (First channel by default)
-    val heroChannel = allChannels.firstOrNull() ?: MediaViewModel.DefaultChannel
+    // Showcase/Banner movies (Curated highlights from either the active catalogs or premium curated cinema highlights)
+    val featuredMovies = remember(catalogs) {
+        val lists = catalogs.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() }.distinctBy { it.id }
+        if (lists.isNotEmpty()) {
+            lists.take(5)
+        } else {
+            listOf(
+                CatalogItem(
+                    id = "m1", title = "Dune: Parte Dos",
+                    posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+                    year = "2024", rating = "8.7", genre = "Sci-Fi",
+                    description = "Paul Atreides se une a Chani y los Fremen mientras busca venganza contra quienes destruyeron a su familia."
+                ),
+                CatalogItem(
+                    id = "m2", title = "Oppenheimer",
+                    posterUrl = "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=600",
+                    year = "2023", rating = "8.9", genre = "Historia",
+                    description = "La historia del físico estadounidense J. Robert Oppenheimer y su papel en el desarrollo de la bomba atómica del Proyecto Manhattan."
+                ),
+                CatalogItem(
+                    id = "m3", title = "Spider-Man: Across the Spider-Verse",
+                    posterUrl = "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=600",
+                    year = "2023", rating = "9.0", genre = "Animación",
+                    description = "Miles Morales se embarca en una aventura a través del multiverso junto a Gwen Stacy para enfrentar una nueva amenaza espectacular."
+                ),
+                CatalogItem(
+                    id = "m4", title = "Anatomía de una Caída",
+                    posterUrl = "https://images.unsplash.com/photo-1585647347483-22b66260dfff?q=80&w=600",
+                    year = "2023", rating = "8.1", genre = "Drama",
+                    description = "Una mujer es sospechosa de la muerte de su esposo en un remoto chalet de montaña alpino."
+                ),
+                CatalogItem(
+                    id = "m5", title = "Interestelar",
+                    posterUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600",
+                    year = "2014", rating = "8.6", genre = "Sci-Fi",
+                    description = "Un grupo de astronautas se embarca en una expedición heroica a través de un agujero de gusano para salvar el destino de la Tierra."
+                )
+            )
+        }
+    }
+
+    // Auto-rolling slide interval
+    var carouselIndex by remember(featuredMovies) { mutableStateOf(0) }
+    LaunchedEffect(featuredMovies) {
+        if (featuredMovies.isNotEmpty()) {
+            while (true) {
+                kotlinx.coroutines.delay(4500L) // Switch slide every 4.5 seconds
+                carouselIndex = (carouselIndex + 1) % featuredMovies.size
+            }
+        }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        // 1. HERO MAIN HIGHLIGHT SPOTLIGHT
+        // --- SECCIÓN 1: PANTALLAS GRANDES DE PELÍCULAS EN CARRUSEL (AUTO-RODANTE) ---
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable {
-                        viewModel.selectChannel(heroChannel)
-                        viewModel.selectTab(AppTab.TV)
-                    }
-                    .tvFocusEffect(shape = RoundedCornerShape(16.dp))
-            ) {
-                // Background image
-                AsyncImage(
-                    model = heroChannel.logoUrl,
-                    contentDescription = heroChannel.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                // Dark and color wash gradients
+            if (featuredMovies.isNotEmpty()) {
+                val currentMovie = featuredMovies[carouselIndex]
+                
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.9f),
-                                    Color.Black.copy(alpha = 0.5f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.8f)
-                                )
-                            )
-                        )
-                )
-
-                // Hero content details
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .widthIn(max = 380.dp)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.Start
+                        .fillMaxWidth()
+                        .height(280.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable {
+                            selectedCatalogItem = currentMovie
+                            showDetailsDialog = true
+                        }
+                        .tvFocusEffect(shape = RoundedCornerShape(16.dp))
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "DESTACADO LIVE",
-                            color = Color.Black,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 10.sp,
-                            modifier = Modifier
-                                .background(
-                                    Color.White,
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "M3U8 / IPTV PLAYER",
-                            color = Color.White.copy(alpha = 0.60f),
-                            fontSize = 11.sp
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = heroChannel.name,
-                            color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = heroChannel.description,
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 11.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                viewModel.selectChannel(heroChannel)
-                                viewModel.selectTab(AppTab.TV)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(34.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Sintonizar",
-                                modifier = Modifier.size(16.dp)
+                    // Smooth Crossfade Animated transition of posters
+                    Crossfade(
+                        targetState = currentMovie,
+                        animationSpec = tween(durationMillis = 800)
+                    ) { targetMovie ->
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            AsyncImage(
+                                model = targetMovie.posterUrl,
+                                contentDescription = targetMovie.title,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Sintonizar Ahora", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
-                        }
 
-                        // Add to Favorites
-                        var isHeroFav by remember { mutableStateOf(false) }
-                        LaunchedEffect(favoriteChans) {
-                            isHeroFav = viewModel.isChannelFavorite(heroChannel.id)
+                            // Glassmorphism elegant bottom dark gradient vignette
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Black.copy(alpha = 0.25f),
+                                                Color.Black.copy(alpha = 0.9f)
+                                            )
+                                        )
+                                    )
+                            )
                         }
+                    }
 
-                        IconButton(
-                            onClick = { viewModel.toggleChannelFavorite(heroChannel.id) },
-                            modifier = Modifier
-                                .size(34.dp)
-                                .background(Color.White.copy(alpha = 0.15f), CircleShape)
+                    // Content details row and columns
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        // Header metadata
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = if (isHeroFav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = "Favoritos",
-                                tint = if (isHeroFav) Color.Red else Color.White,
-                                modifier = Modifier.size(16.dp)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "PANEL CINEMATOGRÁFICO",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 9.sp,
+                                    modifier = Modifier
+                                        .background(Color(0xFF00E5FF), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = currentMovie.genre.uppercase(),
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Rating Badge
+                            Row(
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = currentMovie.rating,
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
+
+                        // Bottom Title, Descriptions, Action button & Indicator Dots
+                        Column {
+                            Text(
+                                text = currentMovie.title,
+                                color = Color.White,
+                                fontSize = 23.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = currentMovie.description,
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 11.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(end = 24.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Full details popup trigger action button
+                                Button(
+                                    onClick = {
+                                        selectedCatalogItem = currentMovie
+                                        showDetailsDialog = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Ver Información", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                                }
+
+                                // Carousel active slide dots
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    featuredMovies.indices.forEach { idx ->
+                                        val active = (idx == carouselIndex)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(if (active) 7.dp else 5.dp)
+                                                .clip(CircleShape)
+                                                .background(if (active) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.35f))
+                                                .clickable { carouselIndex = idx }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- SECCIÓN 2: CINEMA FILAS DE PELÍCULAS DINÁMICAS (MAIN ATTRACTION) ---
+        catalogs.filter { it.isVisible && it.showInHome }.forEach { catalog ->
+            item {
+                val icon = when (catalog.sourceType) {
+                    "TMDB" -> Icons.Filled.Movie
+                    "Trakt" -> Icons.Filled.Tv
+                    "MDBList" -> Icons.Filled.FilterAlt
+                    else -> Icons.Filled.VideoLibrary
+                }
+                HomeSectionRowHeader(
+                    title = catalog.name.uppercase(), 
+                    icon = icon, 
+                    color = Color(0xFF00E5FF)
+                )
+
+                // Layout Choice selector checking
+                if (catalog.layoutType == "Vertical") {
+                    CatalogVerticalGrid(
+                        items = catalog.items.take(catalog.numItems),
+                        onClick = { item ->
+                            selectedCatalogItem = item
+                            showDetailsDialog = true
+                        }
+                    )
+                } else if (catalog.layoutType == "Top Numerado") {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                            CatalogItemNumberedCard(
+                                item = item,
+                                rank = index + 1,
+                                onClick = {
+                                    selectedCatalogItem = item
+                                    showDetailsDialog = true
+                                }
+                            )
+                        }
+                    }
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        items(catalog.items.take(catalog.numItems)) { item ->
+                            CatalogItemHomeCard(
+                                item = item,
+                                onClick = {
+                                    selectedCatalogItem = item
+                                    showDetailsDialog = true
+                                }
                             )
                         }
                     }
@@ -206,11 +346,21 @@ fun HomeScreen(
             }
         }
 
-        // 2. RECENTS SECTION (HORIZONTAL SCROLLER)
+        // --- SUB-HEADER: RECREACIÓN TELEVISIVA Y DE EMISORAS DE RADIO (DESPLAZADA AL FONDO) ---
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(
+                color = Color.White.copy(alpha = 0.08f),
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
+        // 3. RECENTS SECTION (HORIZONTAL SCROLLER)
         val hasRecents = recentChans.isNotEmpty() || recentRadios.isNotEmpty()
         if (hasRecents) {
             item {
-                HomeSectionRowHeader(title = "REPRODUCIDO RECIENTEMENTE", icon = Icons.Filled.History)
+                HomeSectionRowHeader(title = "REPRODUCIDO RECIENTEMENTE", icon = Icons.Filled.History, color = Color.White.copy(alpha = 0.7f))
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -240,11 +390,11 @@ fun HomeScreen(
             }
         }
 
-        // 3. FAVORITES WATCHLIST (HORIZONTAL SCROLLER)
+        // 4. FAVORITES WATCHLIST (HORIZONTAL SCROLLER)
         val hasFavorites = favoriteChans.isNotEmpty() || favoriteRadios.isNotEmpty()
         if (hasFavorites) {
             item {
-                HomeSectionRowHeader(title = "MIS FAVORITOS GUARDADOS", icon = Icons.Filled.Favorite, color = Color.White)
+                HomeSectionRowHeader(title = "MIS FAVORITOS GUARDADOS", icon = Icons.Filled.Favorite, color = Color.White.copy(alpha = 0.7f))
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -272,49 +422,11 @@ fun HomeScreen(
                     }
                 }
             }
-        } else {
-            // Friendly guide when folder is empty
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.06f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favoritos",
-                            tint = Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = "Construye tu Lista de Seguidos",
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Pulsa el icono del corazón en cualquier canal o radio para tenerlos guardados aquí instantáneamente.",
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-                }
-            }
         }
 
-        // 4. CHANNELS POPULARES (HORIZONTAL SCROLLER)
+        // 5. CANALES POPULARES IPTV (DESPLAZADOS AL RECLUSO)
         item {
-            HomeSectionRowHeader(title = "CANALES POPULARES IPTV", icon = Icons.Filled.Tv)
+            HomeSectionRowHeader(title = "CANALES POPULARES IPTV", icon = Icons.Filled.Tv, color = Color.White.copy(alpha = 0.7f))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -332,36 +444,9 @@ fun HomeScreen(
             }
         }
 
-        // 4.5 CUSTOM SYNCED CATALOGS (FILAS DINÁMICAS INSPIRADAS EN STREMIO/PLEX)
-        catalogs.filter { it.isVisible }.forEach { catalog ->
-            item {
-                val icon = when (catalog.sourceType) {
-                    "TMDB" -> Icons.Filled.Movie
-                    "Trakt" -> Icons.Filled.Tv
-                    "MDBList" -> Icons.Filled.FilterAlt
-                    else -> Icons.Filled.VideoLibrary
-                }
-                HomeSectionRowHeader(title = catalog.name.uppercase(), icon = icon, color = Color(0xFF00E5FF))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    items(catalog.items.take(catalog.numItems)) { item ->
-                        CatalogItemHomeCard(
-                            item = item,
-                            onClick = {
-                                selectedCatalogItem = item
-                                showDetailsDialog = true
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // 5. RADIO POPULARES (HORIZONTAL SCROLLER)
+        // 6. RADIO POPULARES (DESPLAZADOS ABAJO)
         item {
-            HomeSectionRowHeader(title = "EMISORAS DE RADIO POPULARES", icon = Icons.Filled.Radio)
+            HomeSectionRowHeader(title = "EMISORAS DE RADIO POPULARES", icon = Icons.Filled.Radio, color = Color.White.copy(alpha = 0.7f))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -379,9 +464,9 @@ fun HomeScreen(
             }
         }
 
-        // 6. RECOMMENDED STREAMING
+        // 7. RECOMMENDED STREAMING (ABSOLUTE BOTTOM)
         item {
-            HomeSectionRowHeader(title = "RECOMENDADOS PARA TI", icon = Icons.Filled.AutoAwesome, color = Color.White)
+            HomeSectionRowHeader(title = "RECOMENDADOS PARA TI", icon = Icons.Filled.AutoAwesome, color = Color.White.copy(alpha = 0.7f))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
@@ -679,11 +764,12 @@ private fun CardColorGradientOverlay(color: Color): Brush {
 @Composable
 fun CatalogItemHomeCard(
     item: CatalogItem,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val appliedModifier = if (modifier == Modifier) Modifier.width(110.dp) else modifier
     Card(
-        modifier = Modifier
-            .width(110.dp)
+        modifier = appliedModifier
             .clickable { onClick() }
             .tvFocusEffect(shape = RoundedCornerShape(8.dp)),
         shape = RoundedCornerShape(8.dp),
@@ -924,4 +1010,171 @@ fun CatalogItemDetailsDialog(
             }
         }
     )
+}
+
+@Composable
+fun CatalogVerticalGrid(
+    items: List<CatalogItem>,
+    onClick: (CatalogItem) -> Unit
+) {
+    val chunked = remember(items) { items.chunked(3) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        chunked.forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                rowItems.forEach { item ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        CatalogItemHomeCard(
+                            item = item,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onClick(item) }
+                        )
+                    }
+                }
+                // Align column layouts cleanly if row size is under 3
+                val remainder = 3 - rowItems.size
+                if (remainder > 0) {
+                    repeat(remainder) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CatalogItemNumberedCard(
+    item: CatalogItem,
+    rank: Int,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .width(145.dp)
+            .height(180.dp)
+            .clickable { onClick() }
+            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+    ) {
+        // Poster Card is placed FIRST, so it stays behind the huge number layers
+        Card(
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+            modifier = Modifier
+                .width(100.dp)
+                .height(155.dp)
+                .align(Alignment.BottomEnd)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Movie/Show Poster
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Gold Rating Overlay Tag
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Rating",
+                        tint = Color(0xFFFFD700),
+                        modifier = Modifier.size(8.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = item.rating,
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Dynamic Year overlay gradient background
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f))
+                            )
+                        )
+                        .padding(vertical = 4.dp, horizontal = 6.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = item.title,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 8.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = item.year,
+                            color = Color.White.copy(alpha = 0.80f),
+                            fontSize = 7.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        // Extremely bold, high-contrast, multi-layered outlined rank text
+        // Drawn SECOND so it overlays beautifully on top of the bottom-left poster edge
+        val rankStr = "$rank"
+        
+        // Multi-layered offset shadows to create a perfect thick black stroke effect
+        val strokeOffsets = listOf(
+            Pair(-3, 0), Pair(3, 0), Pair(0, -3), Pair(0, 3),
+            Pair(-2, -2), Pair(2, -2), Pair(-2, 2), Pair(2, 2)
+        )
+        
+        strokeOffsets.forEach { (dx, dy) ->
+            Text(
+                text = rankStr,
+                style = TextStyle(
+                    fontSize = 125.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black,
+                    letterSpacing = (-10).sp
+                ),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = (dx).dp, y = (16 + dy).dp)
+            )
+        }
+
+        // Main colored text inside the stroke layers
+        Text(
+            text = rankStr,
+            style = TextStyle(
+                fontSize = 125.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF00E5FF), // neon premium cyan
+                letterSpacing = (-10).sp
+            ),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = 0.dp, y = 16.dp)
+        )
+    }
 }
