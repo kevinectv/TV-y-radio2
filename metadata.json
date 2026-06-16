@@ -1,5 +1,5 @@
 {
-  "name": "IPTV & Radio",
+  "name": "Lumina",
   "description": "A premium IPTV and Live Radio streaming client tailored for Android TV and mobile devices with professional Tivimate EPG grids and immersive playback visuals.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

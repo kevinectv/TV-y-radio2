@@ -64,38 +64,78 @@ fun RadioScreen(
     var isPrepared by remember { mutableStateOf(false) }
     var isBuffering by remember { mutableStateOf(false) }
     var playbackError by remember { mutableStateOf<String?>(null) }
-    val mediaPlayer = remember { android.media.MediaPlayer() }
+    var mediaPlayerState by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
+
+    // Helper release function to clean up Resources
+    fun releaseActivePlayer(player: android.media.MediaPlayer?) {
+        if (player != null) {
+            try {
+                if (player.isPlaying) {
+                    player.stop()
+                }
+            } catch (e: Exception) {
+                // Ignore silent stop on unprepared player
+            }
+            try {
+                player.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     // Prepare and load streamUrl reactively
     LaunchedEffect(station.streamUrl) {
         playbackError = null
         isPrepared = false
         isBuffering = true
+
+        // 1. Release previous player before initiating a new sintonizer
+        releaseActivePlayer(mediaPlayerState)
+        mediaPlayerState = null
+
+        // 2. Allocate a brand new MediaPlayer instance
+        val newPlayer = android.media.MediaPlayer()
+        mediaPlayerState = newPlayer
+
         try {
-            mediaPlayer.reset()
-            mediaPlayer.setDataSource(station.streamUrl)
-            mediaPlayer.setAudioAttributes(
+            // 3. Configure HTTP headers (Crucial to bypass Icecast/Zeno.fm referrer blocks)
+            val headers = mapOf(
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Icy-Metadata" to "1",
+                "Connection" to "Keep-Alive"
+            )
+
+            newPlayer.setDataSource(context, android.net.Uri.parse(station.streamUrl), headers)
+            newPlayer.setAudioAttributes(
                 android.media.AudioAttributes.Builder()
                     .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
                     .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
                     .build()
             )
-            mediaPlayer.setOnPreparedListener { mp ->
+
+            newPlayer.setOnPreparedListener { mp ->
                 isPrepared = true
                 isBuffering = false
                 val vol = viewModel.radioVolume
                 mp.setVolume(vol, vol)
                 if (viewModel.isRadioPlaying) {
-                    mp.start()
+                    try {
+                        mp.start()
+                    } catch (ex: Exception) {
+                        ex.printStackTrace()
+                    }
                 }
             }
-            mediaPlayer.setOnErrorListener { _, what, extra ->
+
+            newPlayer.setOnErrorListener { _, what, extra ->
                 isPrepared = false
                 isBuffering = false
-                playbackError = "Error de sintonización ($what, $extra)"
-                false
+                playbackError = "Error de señal ($what)"
+                true // Retornar true indica que manejamos el error
             }
-            mediaPlayer.prepareAsync()
+
+            newPlayer.prepareAsync()
         } catch (e: Exception) {
             isPrepared = false
             isBuffering = false
@@ -104,16 +144,17 @@ fun RadioScreen(
     }
 
     // Connect ViewModel's play status reactively
-    LaunchedEffect(viewModel.isRadioPlaying, isPrepared) {
+    LaunchedEffect(viewModel.isRadioPlaying, isPrepared, mediaPlayerState) {
         try {
-            if (isPrepared) {
+            val currentPlayer = mediaPlayerState
+            if (currentPlayer != null && isPrepared) {
                 if (viewModel.isRadioPlaying) {
-                    if (!mediaPlayer.isPlaying) {
-                        mediaPlayer.start()
+                    if (!currentPlayer.isPlaying) {
+                        currentPlayer.start()
                     }
                 } else {
-                    if (mediaPlayer.isPlaying) {
-                        mediaPlayer.pause()
+                    if (currentPlayer.isPlaying) {
+                        currentPlayer.pause()
                     }
                 }
             }
@@ -123,24 +164,23 @@ fun RadioScreen(
     }
 
     // Connect ViewModel's volume reactively
-    LaunchedEffect(viewModel.radioVolume) {
+    LaunchedEffect(viewModel.radioVolume, mediaPlayerState) {
         try {
-            val vol = viewModel.radioVolume
-            mediaPlayer.setVolume(vol, vol)
+            val currentPlayer = mediaPlayerState
+            if (currentPlayer != null) {
+                val vol = viewModel.radioVolume
+                currentPlayer.setVolume(vol, vol)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    // Free MediaPlayer resources when leaving the screen
+    // Free MediaPlayer resources when leaving the screen or on clean context dispose
     DisposableEffect(Unit) {
         onDispose {
-            try {
-                mediaPlayer.stop()
-                mediaPlayer.release()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            releaseActivePlayer(mediaPlayerState)
+            mediaPlayerState = null
         }
     }
 

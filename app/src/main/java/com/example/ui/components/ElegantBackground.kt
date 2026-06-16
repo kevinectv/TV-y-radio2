@@ -18,6 +18,18 @@ fun ElegantBackground(
     modifier: Modifier = Modifier,
     accentColorHex: String? = null // For dynamic radio station theme matching
 ) {
+    val baseGlowColor = remember(accentColorHex) {
+        try {
+            if (accentColorHex != null) {
+                Color(android.graphics.Color.parseColor(accentColorHex))
+            } else {
+                Color(0xFF00E5FF) // Lumina premium brand cyan
+            }
+        } catch (e: Exception) {
+            Color(0xFF00E5FF)
+        }
+    }
+
     // Fixed static values to prevent any moving animations, keeping the background completely still
     val beamOffset1 = 0.5f
     val beamOffset2 = 1.2f
@@ -32,51 +44,51 @@ fun ElegantBackground(
             val width = size.width
             val height = size.height
 
-            // 1. Draw a massive base radial gradient representing background ambient glow (pure clean white/grey glow)
+            // 1. Draw a massive base radial gradient representing background ambient glow matching station/brand
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFFFFFFF).copy(alpha = 0.05f * pulseIntensity),
-                        Color(0xFF050505)
+                        baseGlowColor.copy(alpha = 0.11f * pulseIntensity),
+                        Color(0xFF050508)
                     ),
                     center = Offset(width * 0.5f, height * 0.4f),
-                    radius = width * 0.85f
+                    radius = width * 1.0f
                 )
             )
 
-            // 2. Draw side ambient accent lights (Premium graphite/silver highlights)
+            // 2. Draw side ambient accent lights
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF8E8E93).copy(alpha = 0.04f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.05f * pulseIntensity),
                         Color.Transparent
                     ),
-                    center = Offset(width * 0.1f, height * 0.9f),
-                    radius = width * 0.5f
-                )
-            )
-
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFFFFFFFF).copy(alpha = 0.03f * pulseIntensity),
-                        Color.Transparent
-                    ),
-                    center = Offset(width * 0.9f, height * 0.1f),
+                    center = Offset(width * 0.15f, height * 0.85f),
                     radius = width * 0.6f
                 )
             )
 
-            // 3. Draw vertical light lines (sleek graphite/silver laser beams) with soft blur simulations
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        baseGlowColor.copy(alpha = 0.04f * pulseIntensity),
+                        Color.Transparent
+                    ),
+                    center = Offset(width * 0.85f, height * 0.15f),
+                    radius = width * 0.7f
+                )
+            )
+
+            // 3. Draw vertical light lines with soft blurred matching highlights
             // Beam 1: Left drift
             val beamX1 = width * (0.25f + 0.1f * sin(beamOffset1))
             drawRect(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFF444444).copy(alpha = 0.04f * pulseIntensity),
-                        Color(0xFF888888).copy(alpha = 0.06f * pulseIntensity),
-                        Color(0xFF444444).copy(alpha = 0.04f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.015f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.035f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.015f * pulseIntensity),
                         Color.Transparent
                     ),
                     startX = beamX1 - width * 0.12f,
@@ -90,9 +102,9 @@ fun ElegantBackground(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0xFF333333).copy(alpha = 0.03f * pulseIntensity),
-                        Color(0xFF666666).copy(alpha = 0.05f * pulseIntensity),
-                        Color(0xFF333333).copy(alpha = 0.03f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.01f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.025f * pulseIntensity),
+                        baseGlowColor.copy(alpha = 0.01f * pulseIntensity),
                         Color.Transparent
                     ),
                     startX = beamX2 - width * 0.15f,
