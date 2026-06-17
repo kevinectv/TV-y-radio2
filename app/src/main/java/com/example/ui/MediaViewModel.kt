@@ -91,12 +91,104 @@ class MediaViewModel(
         }
     }
 
+    fun refreshCatalogs() {
+        viewModelScope.launch {
+            catalogRepository?.refreshLocalCatalogs()
+        }
+    }
+
     // Selected App Tab
     var currentTab by mutableStateOf(AppTab.HOME)
         private set
 
     fun selectTab(tab: AppTab) {
         currentTab = tab
+    }
+
+    // --- Premium Catalog Item Metadata (Seen progress & Favorites) ---
+    private val _seenProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val seenProgress: StateFlow<Map<String, Float>> = _seenProgress
+
+    private val _favoriteCatalogItems = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteCatalogItems: StateFlow<Set<String>> = _favoriteCatalogItems
+
+    init {
+        loadPremiumMetadata()
+    }
+
+    private fun loadPremiumMetadata() {
+        viewModelScope.launch {
+            try {
+                sharedPreferences?.let { prefs ->
+                    val favSet = prefs.getStringSet("premium_fav_items", null)
+                    if (favSet != null) {
+                        _favoriteCatalogItems.value = favSet.toSet()
+                    } else {
+                        // Preseed some cool favorites initially for stellar visual impact!
+                        val defaults = setOf("f_dune2", "f_shogun", "f_wick4")
+                        _favoriteCatalogItems.value = defaults
+                        prefs.edit().putStringSet("premium_fav_items", defaults).apply()
+                    }
+
+                    val progString = prefs.getString("premium_seen_progress", null)
+                    if (progString != null) {
+                        val map = progString.split(",").mapNotNull {
+                            val parts = it.split(":")
+                            if (parts.size == 2) {
+                                val id = parts[0]
+                                val progress = parts[1].toFloatOrNull() ?: 0f
+                                id to progress
+                            } else null
+                        }.toMap()
+                        _seenProgress.value = map
+                    } else {
+                        // Preseed some cool watch progress values so they are immediately visible on the UI!
+                        val defaultProgress = mapOf(
+                            "f_dune2" to 0.68f,
+                            "f_boys" to 0.85f,
+                            "f_stranger" to 0.40f,
+                            "f_lastofus" to 0.22f
+                        )
+                        _seenProgress.value = defaultProgress
+                        val serString = defaultProgress.map { "${it.key}:${it.value}" }.joinToString(",")
+                        prefs.edit().putString("premium_seen_progress", serString).apply()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun toggleCatalogItemFavorite(itemId: String) {
+        val current = _favoriteCatalogItems.value.toMutableSet()
+        if (current.contains(itemId)) {
+            current.remove(itemId)
+        } else {
+            current.add(itemId)
+        }
+        _favoriteCatalogItems.value = current
+        viewModelScope.launch {
+            try {
+                sharedPreferences?.edit()?.putStringSet("premium_fav_items", current)?.apply()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun setCatalogItemProgress(itemId: String, progress: Float) {
+        val current = _seenProgress.value.toMutableMap()
+        current[itemId] = progress
+        _seenProgress.value = current
+        viewModelScope.launch {
+            try {
+                val progString = current.map { "${it.key}:${it.value}" }.joinToString(",")
+                sharedPreferences?.edit()?.putString("premium_seen_progress", progString)?.apply()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     // Active Profile and Selector State
@@ -621,6 +713,7 @@ class MediaViewModel(
                             groupsCount = groupsCount
                         )
                     )
+                    catalogRepository?.refreshLocalCatalogs()
                     onComplete(true)
                 } else {
                     repository.insertPlaylist(playlistWithProfile.copy(syncStatus = "Error"))

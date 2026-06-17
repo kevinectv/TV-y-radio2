@@ -50,14 +50,14 @@ import androidx.compose.ui.layout.ContentScale
 enum class SettingCategory(val label: String, val icon: ImageVector, val description: String) {
     PROFILE("Perfil", Icons.Default.AccountCircle, "Configuración del perfil activo y de los avatares integrados"),
     IPTV_SOURCES("Fuentes IPTV", Icons.Default.Dns, "Gestión integral de playlists M3U, M3U8, Xtream Codes y XMLTV"),
-    CATALOGS("Catálogos", Icons.Default.VideoLibrary, "Administración de carteleras, tendencias y filas horizontales del Home"),
     EPG("Guía EPG", Icons.Default.Dataset, "Ajustes de escala, sincronización automática e intervalos"),
     RADIO("Radio & Audio", Icons.Default.Radio, "Acondicionado de buffers de audio y ecualización óptima"),
-    REPRODUCTOR("Reproductor", Icons.Default.PlayCircle, "Selección de algoritmos de decodificación y optimización HW+"),
+    CATALOGS("📚 Catálogos", Icons.Default.VideoLibrary, "Administración de carteleras, tendencias y filas horizontales del Home"),
     APARIENCIA("Apariencia", Icons.Default.Palette, "Control del tema claro/oscuro y personalización visual"),
     IDIOMA_REGION("Región e Idioma", Icons.Default.Language, "Selección regional del servidor y traducciones de canales"),
-    NOTIFICATIONS("Notificaciones", Icons.Default.Notifications, "Configuración de alertas programadas y recordatorios"),
     RENDIMIENTO("Rendimiento", Icons.Default.Speed, "Aceleración por GPU, purgado de caché y renderizado a 60 FPS"),
+    REPRODUCTOR("Reproductor", Icons.Default.PlayCircle, "Selección de algoritmos de decodificación y optimización HW+"),
+    NOTIFICATIONS("Notificaciones", Icons.Default.Notifications, "Configuración de alertas programadas y recordatorios"),
     PRIVACIDAD("Privacidad", Icons.Default.Security, "Gestión de telemetría de red y registros locales de uso"),
     BACKUP("Copia de Seguridad", Icons.Default.Backup, "Respaldo y restauración de bases de datos y favoritos"),
     ABOUT("Acerca de", Icons.Default.Info, "Información de la versión de Lumina Media y créditos del equipo")
@@ -2483,6 +2483,8 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedCatalogToEdit by remember { mutableStateOf<Catalog?>(null) }
+    var showLayoutDialog by remember { mutableStateOf(false) }
+    var selectedCatalogForLayout by remember { mutableStateOf<Catalog?>(null) }
 
     // Sync options states
     var syncMode by remember { mutableStateOf("automatic") } // "automatic", "manual", "startup"
@@ -2691,6 +2693,10 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                     onDelete = {
                         viewModel.deleteCatalog(cat.id)
                         Toast.makeText(context, "Catálogo eliminado: ${cat.name}", Toast.LENGTH_SHORT).show()
+                    },
+                    onLayoutClick = {
+                        selectedCatalogForLayout = cat
+                        showLayoutDialog = true
                     }
                 )
             }
@@ -2815,6 +2821,24 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
             }
         )
     }
+
+    // Dialog 3: Visual Layout Chooser Dialog with real-time preview (Diseño Visual)
+    if (showLayoutDialog && selectedCatalogForLayout != null) {
+        val cat = selectedCatalogForLayout!!
+        VisualLayoutDialog(
+            catalog = cat,
+            onDismiss = {
+                showLayoutDialog = false
+                selectedCatalogForLayout = null
+            },
+            onConfirm = { layoutType ->
+                viewModel.updateCatalog(cat.copy(layoutType = layoutType))
+                showLayoutDialog = false
+                selectedCatalogForLayout = null
+                Toast.makeText(context, "Diseño de '${cat.name}' cambiado a: $layoutType", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
 }
 
 @Composable
@@ -2825,7 +2849,8 @@ fun CatalogItemCard(
     onMoveDown: () -> Unit,
     onToggleVisibility: () -> Unit,
     onSync: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onLayoutClick: () -> Unit
 ) {
     val sourceColor = when (catalog.sourceType) {
         "TMDB" -> Color(0xFF01B4E4)
@@ -3011,6 +3036,21 @@ fun CatalogItemCard(
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Black, modifier = Modifier.size(16.dp))
                     }
 
+                    // Diseño Visual
+                    IconButton(
+                        onClick = onLayoutClick,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(Color(0xFF00E5FF), RoundedCornerShape(6.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Layers,
+                            contentDescription = "Diseño Visual",
+                            tint = Color.Black,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
                     // Delete
                     IconButton(
                         onClick = onDelete,
@@ -3099,28 +3139,41 @@ fun AddCatalogDialog(
 
                 // Layout Choice Row
                 Text("Diseño de Visualización (Home)", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    val choices = listOf("Horizontal", "Vertical", "Top Numerado")
-                    choices.forEach { choice ->
-                        val selected = (layoutType == choice)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
-                                .clickable { layoutType = choice }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
+                    val choices = listOf(
+                        listOf("Horizontal Poster Row", "Vertical Poster Row"),
+                        listOf("Landscape Row", "Banner Row"),
+                        listOf("Large Featured Row", "Compact Row")
+                    )
+                    choices.forEach { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = choice.uppercase(),
-                                color = if (selected) Color.Black else Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp
-                            )
+                            pair.forEach { choice ->
+                                val selected = (layoutType == choice)
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
+                                        .clickable { layoutType = choice }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = choice.uppercase(),
+                                        color = if (selected) Color.Black else Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 8.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -3296,28 +3349,41 @@ fun EditCatalogDialog(
 
                 // Layout Choice selector (Edit)
                 Text("Diseño de Visualización (Home)", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    val choices = listOf("Horizontal", "Vertical", "Top Numerado")
-                    choices.forEach { choice ->
-                        val selected = (layoutType == choice)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
-                                .clickable { layoutType = choice }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
+                    val choices = listOf(
+                        listOf("Horizontal Poster Row", "Vertical Poster Row"),
+                        listOf("Landscape Row", "Banner Row"),
+                        listOf("Large Featured Row", "Compact Row")
+                    )
+                    choices.forEach { pair ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = choice.uppercase(),
-                                color = if (selected) Color.Black else Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp
-                            )
+                            pair.forEach { choice ->
+                                val selected = (layoutType == choice)
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
+                                        .clickable { layoutType = choice }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = choice.uppercase(),
+                                        color = if (selected) Color.Black else Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 8.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -3411,4 +3477,230 @@ fun EditCatalogDialog(
         }
     )
 }
+
+@Composable
+fun VisualLayoutDialog(
+    catalog: Catalog,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var selectedLayout by remember { mutableStateOf(catalog.layoutType) }
+
+    val options = listOf(
+        "Horizontal Poster Row" to "Póster horizontal estándar (películas).",
+        "Vertical Poster Row" to "Pósters verticales suntuosos (anime/estelares).",
+        "Landscape Row" to "Formato panorámico 16:9 (series/shows).",
+        "Banner Row" to "Banners anchos refinados (promocionales).",
+        "Large Featured Row" to "Súper pósters de gran formato (grandes éxitos).",
+        "Compact Row" to "Miniaturas de alta densidad (segundarios/cortos)."
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1524),
+        tonalElevation = 8.dp,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Layers,
+                    contentDescription = null,
+                    tint = Color(0xFF00E5FF),
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Configurar Diseño Visual",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Selecciona cómo se mostrarán los elementos de '${catalog.name}' en la pantalla Inicio de forma automática:",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 11.sp
+                )
+
+                // LIVE PREVIEW SIMULATOR MOCKUP BOX (Real-time Preview!)
+                Text(
+                    text = "VISTA PREVIA EN TIEMPO REAL",
+                    color = Color(0xFF00E5FF),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = catalog.name.uppercase(),
+                            color = Color(0xFF00E5FF),
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .align(Alignment.Start)
+                                .padding(bottom = 6.dp)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            repeat(3) { idx ->
+                                var cardWidth = 55.dp
+                                var cardHeight = 75.dp
+                                val color = when (idx) {
+                                    0 -> Color(0xFFE50914).copy(alpha = 0.15f)
+                                    1 -> Color(0xFF00E5FF).copy(alpha = 0.15f)
+                                    else -> Color.White.copy(alpha = 0.05f)
+                                }
+                                val borderColor = when (idx) {
+                                    0 -> Color(0xFFE50914).copy(alpha = 0.5f)
+                                    1 -> Color(0xFF00E5FF).copy(alpha = 0.5f)
+                                    else -> Color.White.copy(alpha = 0.15f)
+                                }
+                                
+                                when (selectedLayout) {
+                                    "Horizontal Poster Row", "Horizontal" -> {
+                                        cardWidth = 55.dp
+                                        cardHeight = 75.dp
+                                    }
+                                    "Vertical Poster Row", "Vertical" -> {
+                                        cardWidth = 62.dp
+                                        cardHeight = 88.dp
+                                    }
+                                    "Landscape Row" -> {
+                                        cardWidth = 85.dp
+                                        cardHeight = 50.dp
+                                    }
+                                    "Banner Row" -> {
+                                        cardWidth = 100.dp
+                                        cardHeight = 40.dp
+                                    }
+                                    "Large Featured Row" -> {
+                                        cardWidth = 75.dp
+                                        cardHeight = 95.dp
+                                    }
+                                    "Compact Row" -> {
+                                        cardWidth = 45.dp
+                                        cardHeight = 60.dp
+                                    }
+                                    else -> {
+                                        cardWidth = 55.dp
+                                        cardHeight = 75.dp
+                                    }
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = cardWidth, height = cardHeight)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(color)
+                                        .border(1.dp, borderColor, RoundedCornerShape(4.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayCircle,
+                                        contentDescription = null,
+                                        tint = if (idx == 0) Color(0xFFE50914) else if (idx == 1) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.3f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // OPTION CHIPS
+                options.forEach { (optionType, optDescription) ->
+                    val selected = (selectedLayout == optionType)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedLayout = optionType }
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                        shape = RoundedCornerShape(6.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selected) Color(0xFF00E5FF).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.02f)
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (selected) Color(0xFF00E5FF).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.05f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = optionType,
+                                    color = if (selected) Color(0xFF00E5FF) else Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                                if (selected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Seleccionado",
+                                        tint = Color(0xFF00E5FF),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = optDescription,
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 9.5.sp
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(selectedLayout) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Confirmar", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text("Cancelar", color = Color.White, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
 

@@ -46,6 +46,7 @@ class CatalogRepository(private val context: Context) {
             if (needsSave) {
                 saveCatalogsList(current)
             }
+            refreshLocalCatalogs()
         }
     }
 
@@ -56,11 +57,11 @@ class CatalogRepository(private val context: Context) {
                 val list = jsonAdapter.fromJson(json)
                 if (list != null && list.isNotEmpty()) {
                     val healed = list.map { cat ->
-                        val currentLayout = try { cat.layoutType } catch (e: Exception) { "Horizontal" } ?: "Horizontal"
-                        val correctedLayout = if (currentLayout == "Horizontal" && (cat.name.contains("Top 250", ignoreCase = true) || cat.name.contains("Mejor Valorada", ignoreCase = true) || cat.name.contains("top", ignoreCase = true) || cat.name.contains("tops", ignoreCase = true))) {
-                            "Top Numerado"
-                        } else {
-                            currentLayout
+                        val currentLayout = try { cat.layoutType } catch (e: Exception) { "Horizontal Poster Row" } ?: "Horizontal Poster Row"
+                        val correctedLayout = when (currentLayout) {
+                            "Horizontal" -> "Horizontal Poster Row"
+                            "Vertical" -> "Vertical Poster Row"
+                            else -> currentLayout
                         }
                         cat.copy(layoutType = correctedLayout)
                     }
@@ -187,25 +188,33 @@ class CatalogRepository(private val context: Context) {
         true
     }
 
+    suspend fun refreshLocalCatalogs() = withContext(Dispatchers.IO) {
+        val current = _catalogs.value
+        val updated = current.map { cat ->
+            if (cat.sourceType == "Local" || cat.sourceType == "Custom" || cat.url.contains("lumina.app/catalogs") || cat.url.isEmpty()) {
+                val realItems = fetchItemsForCatalog(cat)
+                cat.copy(items = realItems, status = "Sincronizado", lastUpdated = "Recién Recargado")
+            } else cat
+        }
+        saveCatalogsList(updated)
+    }
+
     private fun createDefaultCatalogs(): List<Catalog> {
         val categories = listOf(
-            "🔥 Tendencias en Películas" to "TMDB",
-            "📺 Tendencias en Series" to "TMDB",
-            "⭐ Mejor Valoradas" to "TMDB",
-            "🎬 Estrenos" to "TMDB",
-            "🏆 Top 250" to "MDBList",
-            "🍿 Recomendadas" to "Trakt",
-            "🎭 Acción" to "Local",
-            "😂 Comedia" to "Local",
-            "👻 Terror" to "Local",
-            "🚀 Ciencia Ficción" to "Local",
-            "🎌 Anime" to "Local",
-            "👨👩👧 Familiar" to "Local",
-            "🕵 Suspenso" to "Local",
-            "❤️ Romance" to "Local",
-            "🎵 Musicales" to "Local",
-            "🌍 Documentales" to "Local",
-            "⚽ Deportes" to "Local"
+            "Trending Movies" to "TMDB",
+            "Trending TV Shows" to "TMDB",
+            "Popular Movies" to "TMDB",
+            "Popular Series" to "TMDB",
+            "Top Rated Movies" to "TMDB",
+            "Top Rated Series" to "TMDB",
+            "Anime Trending" to "Local",
+            "Anime Popular" to "Local",
+            "Acción" to "Local",
+            "Comedia" to "Local",
+            "Terror" to "Local",
+            "Ciencia Ficción" to "Local",
+            "Documentales" to "Local",
+            "Familiar" to "Local"
         )
         return categories.mapIndexed { idx, (name, src) ->
             Catalog(
@@ -226,7 +235,15 @@ class CatalogRepository(private val context: Context) {
                 status = "Sincronizado",
                 lastUpdated = "Hoy",
                 orderIndex = idx,
-                layoutType = if (name.contains("Top 250") || name.contains("Mejor Valoradas")) "Top Numerado" else "Horizontal",
+                layoutType = when {
+                    name.contains("Trending Movies", ignoreCase = true) -> "Horizontal Poster Row"
+                    name.contains("Trending TV Shows", ignoreCase = true) || name.contains("Trending Series", ignoreCase = true) || name.contains("Popular Series", ignoreCase = true) -> "Landscape Row"
+                    name.contains("Anime Trending", ignoreCase = true) -> "Vertical Poster Row"
+                    name.contains("Top Rated", ignoreCase = true) -> "Large Featured Row"
+                    name.contains("New Releases", ignoreCase = true) || name.contains("Popular Movies", ignoreCase = true) -> "Banner Row"
+                    name.contains("Familiar", ignoreCase = true) || name.contains("Documentales", ignoreCase = true) -> "Compact Row"
+                    else -> "Horizontal Poster Row"
+                },
                 items = getDeepFallbacksForCategory(name)
             )
         }
@@ -309,7 +326,13 @@ class CatalogRepository(private val context: Context) {
                         else -> false
                     }
                     
-                    matchesGenre || (isMovieCategory && (
+                    val matchesDirectGroup = catNameLower.isNotEmpty() && (
+                        category.contains(catNameLower) || 
+                        catNameLower.contains(category) || 
+                        nameLower.contains(catNameLower)
+                    )
+                    
+                    matchesGenre || matchesDirectGroup || (isMovieCategory && (
                         catNameLower.contains("tendencias") || catNameLower.contains("mejor valorada") ||
                         catNameLower.contains("estreno") || catNameLower.contains("top") ||
                         catNameLower.contains("recomendadas") || catNameLower.contains("default")
@@ -645,165 +668,273 @@ class CatalogRepository(private val context: Context) {
     private fun getDeepFallbacksForCategory(categoryName: String): List<CatalogItem> {
         val nameL = categoryName.lowercase()
         return when {
-            nameL.contains("película") || nameL.contains("estreno") || nameL.contains("mejor valorada") || nameL.contains("tendencias") || nameL.contains("top 250") -> {
+            nameL.contains("trending movies") -> {
                 listOf(
                     CatalogItem(
                         id = "f_dune2", title = "Dune: Parte Dos",
                         posterUrl = "https://images.unsplash.com/photo-1547891306-7a89275ce36a?q=80&w=600",
                         year = "2024", rating = "8.9", genre = "Sci-Fi / Aventura",
-                        description = "Paul Atreides se une a Chani y a los Fremen para emprender una campaña de venganza contra los conspiradores que destruyeron a su familia."
+                        description = "Paul Atreides se une a Chani y a los Fremen para emprender una campaña de venganza contra los conspiradores que destruyeron a su familia y restaurar el orden."
                     ),
                     CatalogItem(
                         id = "f_opp", title = "Oppenheimer",
                         posterUrl = "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=600",
                         year = "2023", rating = "8.9", genre = "Biografía / Historia / Drama",
-                        description = "La historia del físico teórico J. Robert Oppenheimer, el director del laboratorio de Los Álamos durante el Proyecto Manhattan."
+                        description = "La historia del físico teórico J. Robert Oppenheimer, el director del laboratorio de Los Álamos durante el Proyecto Manhattan para crear el arma definitiva."
                     ),
                     CatalogItem(
                         id = "f_spiderman", title = "Spider-Man: Across the Spider-Verse",
                         posterUrl = "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=600",
                         year = "2023", rating = "8.8", genre = "Animación / Acción",
-                        description = "Miles Morales es catapultado a través del multiverso, donde se encuentra con una sociedad de Spider-People encargada de proteger la existencia misma."
-                    ),
-                    CatalogItem(
-                        id = "f_joker2", title = "Joker: Folie à Deux",
-                        posterUrl = "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=600",
-                        year = "2024", rating = "7.8", genre = "Drama / Música / Suspenso",
-                        description = "Arthur Fleck se encuentra institucionalizado en Arkham esperando el juicio por sus crímenes como Joker, donde encuentra el verdadero amor."
+                        description = "Miles Morales es catapultado a través del multiverso, donde se encuentra con una sociedad de Spider-People encargada de proteger la existencia misma frente a una anomalía."
                     ),
                     CatalogItem(
                         id = "f_deadpool", title = "Deadpool & Wolverine",
                         posterUrl = "https://images.unsplash.com/photo-1608889175123-8ec330b86f84?q=80&w=600",
                         year = "2024", rating = "8.3", genre = "Acción / Comedia / Sci-Fi",
-                        description = "Un apático Wade Wilson se esfuerza por integrarse en la vida civil, pero el destino del universo lo obliga a formar equipo con un reticente Lobezno."
-                    ),
-                    CatalogItem(
-                        id = "f_inter", title = "Interstellar",
-                        posterUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600",
-                        year = "2014", rating = "8.7", genre = "Sci-Fi / Drama",
-                        description = "Un grupo de científicos y exploradores espaciales viajan a través de un agujero de gusano para buscar un nuevo hogar para la humanidad."
-                    ),
-                    CatalogItem(
-                        id = "f_batman", title = "The Batman",
-                        posterUrl = "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?q=80&w=600",
-                        year = "2022", rating = "8.1", genre = "Acción / Crimen / Drama",
-                        description = "En su segundo año luchando contra el crimen, Batman desenmascara la corrupción en Gotham City que conecta con su propia familia."
-                    ),
-                    CatalogItem(
-                        id = "f_inception", title = "Inception",
-                        posterUrl = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600",
-                        year = "2010", rating = "8.8", genre = "Sci-Fi / Acción",
-                        description = "A un ladrón que roba secretos corporativos a través del uso de la tecnología de compartir sueños se le da la tarea inversa de implantar una idea."
+                        description = "Un apático Wade Wilson se esfuerza por integrarse en la vida civil, pero el destino del multiverso lo obliga de forma inesperada a formar equipo con un reticente y feroz Lobezno."
                     )
                 )
             }
-            nameL.contains("serie") || nameL.contains("recomienda") -> {
+            nameL.contains("trending tv") || nameL.contains("trending series") -> {
                 listOf(
                     CatalogItem(
                         id = "f_shogun", title = "Shōgun",
                         posterUrl = "https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=600",
                         year = "2024", rating = "9.1", genre = "Historia / Drama / Acción",
-                        description = "En el Japón feudal de 1600, Lord Yoshii Toranaga lucha por mantener con vida a su clan mientras sus rivales forman coaliciones mortales."
+                        description = "En el Japón feudal de 1600, Lord Yoshii Toranaga lucha ferozmente por mantener con vida a su asediado clan mientras sus rivales forman coaliciones mortales contra él."
                     ),
                     CatalogItem(
                         id = "f_boys", title = "The Boys",
                         posterUrl = "https://images.unsplash.com/photo-1626814026360-221091186039?q=80&w=600",
                         year = "2024", rating = "8.7", genre = "Acción / Sátira",
-                        description = "Un grupo de intrépidos justicieros continúa su implacable cruzada para desenmascarar y derrocar a los superhéroes más corruptos del planeta."
+                        description = "Un grupo de intrépidos justicieros continúa su implacable cruzada clandestina para desenmascarar y derrocar a los superhéroes más corruptos e hipócritas del imperio Vought."
                     ),
                     CatalogItem(
                         id = "f_lastofus", title = "The Last of Us",
                         posterUrl = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=600",
                         year = "2023", rating = "8.8", genre = "Drama / Terror",
-                        description = "Tras la caída de la sociedad moderna, un endurecido contrabandista Joel asume la misión de escoltar a una joven de 14 años."
+                        description = "Tras la dolorosa caída de la sociedad moderna, un endurecido contrabandista llamado Joel asume la misión crítica de escoltar a Ellie, una fuerte joven de 14 años."
                     ),
                     CatalogItem(
                         id = "f_stranger", title = "Stranger Things",
                         posterUrl = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600",
                         year = "2022", rating = "8.7", genre = "Fantasía / Sci-Fi / Drama",
-                        description = "Al desentrañar la desaparición misteriosa de un niño, un pequeño pueblo descubre un laboratorio militar que libera fuerzas de otra dimensión."
-                    ),
-                    CatalogItem(
-                        id = "f_house", title = "House of the Dragon",
-                        posterUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600",
-                        year = "2024", rating = "8.5", genre = "Fantasía / Drama",
-                        description = "La tumultuosa historia y el sangriento inicio de la guerra dinástica de los Targaryen por el control del famoso Trono de Hierro."
+                        description = "Al desentrañar la misteriosa desaparición de su amigo Will, un pequeño pueblo de Indiana descubre un laboratorio gubernamental secreto con portales a otra dimensión oscura."
                     )
                 )
             }
-            nameL.contains("acción") || nameL.contains("accion") || nameL.contains("suspenso") -> {
+            nameL.contains("popular movies") -> {
                 listOf(
+                    CatalogItem(
+                        id = "f_inside2", title = "Intensamente 2",
+                        posterUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
+                        year = "2024", rating = "8.4", genre = "Animación / Familiar / Comedia",
+                        description = "El cuartel mental de Riley experimenta una de las más grandes demoliciones al abrir espacio repentinamente a Ansiedad y otras emociones adolescentes."
+                    ),
+                    CatalogItem(
+                        id = "f_glad2", title = "Gladiator II",
+                        posterUrl = "https://images.unsplash.com/photo-1598257006458-087169a1f08d?q=80&w=600",
+                        year = "2024", rating = "7.9", genre = "Drama / Acción / Historia",
+                        description = "Lucio se ve obligado por la fuerza tiránica a entrar al glorioso coliseo romano para reclamar el honor mancillado del pueblo de Roma bajo opresores gemelos."
+                    ),
                     CatalogItem(
                         id = "f_wick4", title = "John Wick: Capítulo 4",
                         posterUrl = "https://images.unsplash.com/photo-1508962914676-134849a727f0?q=80&w=600",
                         year = "2023", rating = "8.2", genre = "Acción / Suspenso",
-                        description = "John Wick halla una rendija definitiva para vencer a la todopoderosa Mesa Alta, enfrentando a asesinos en múltiples continentes."
-                    ),
-                    CatalogItem(
-                        id = "f_madmax", title = "Mad Max: Fury Road",
-                        posterUrl = "https://images.unsplash.com/photo-1626379616459-b2ce1d9decbc?q=80&w=600",
-                        year = "2015", rating = "8.1", genre = "Acción / Post-apocalíptico",
-                        description = "En un páramo estéril azotado por pandillas mecánicas, Imperator Furiosa comanda un rescate veloz auxiliada por Max Rockatansky."
-                    ),
-                    CatalogItem(
-                        id = "f_topgun", title = "Top Gun: Maverick",
-                        posterUrl = "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?q=80&w=600",
-                        year = "2022", rating = "8.3", genre = "Acción / Drama",
-                        description = "Maverick es convocado para instruir a una escuadra técnica de pilotos graduados para una misión de ataque aéreo de alta precisión."
+                        description = "John Wick halla una rendija definitiva para vencer a la todopoderosa Mesa Alta, enfrentando a asesinos en múltiples continentes bajo una lluvia de balas."
                     )
                 )
             }
-            nameL.contains("terror") -> {
+            nameL.contains("popular series") || nameL.contains("popular tv") -> {
                 listOf(
                     CatalogItem(
-                        id = "f_conjuro", title = "El Conjuro",
-                        posterUrl = "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=600",
-                        year = "2013", rating = "7.5", genre = "Terror / Suspenso",
-                        description = "Investigadores de fenómenos paranormales de renombre asisten a un matrimonio de granjeros poseídos por una fuerza invisible."
+                        id = "f_house", title = "House of the Dragon",
+                        posterUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600",
+                        year = "2024", rating = "8.5", genre = "Fantasía / Drama",
+                        description = "La tumultuosa historia del origen y el sangriento inicio de la guerra civil dinástica conocida como la Danza de los Dragones dentro de la dinastía Targaryen."
                     ),
                     CatalogItem(
-                        id = "f_hereditary", title = "Hereditary",
-                        posterUrl = "https://images.unsplash.com/photo-1505635552518-3448ff116af3?q=80&w=600",
-                        year = "2018", rating = "7.3", genre = "Drama / Terror / Misterio",
-                        description = "Luego de la muerte de la misteriosa abuela de la familia Graham, atroces herencias paranormales y sectarias inician su curso."
+                        id = "f_fallout", title = "Fallout",
+                        posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+                        year = "2024", rating = "8.6", genre = "Ficción / Acción / Aventura",
+                        description = "La pacífica historia de la supervivencia en los búnkeres subterráneos de lujo se estrella de frente con el páramo radiactivo del exterior."
+                    )
+                )
+            }
+            nameL.contains("top rated movies") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_godfather", title = "El Padrino",
+                        posterUrl = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600",
+                        year = "1972", rating = "9.2", genre = "Drama / Crimen",
+                        description = "La envejecida y poderosa dinastía de un patriarca del crimen organizado transfiere el control clandestino de su imperio a su reacio hijo menor rescatando el honor familiar."
                     ),
                     CatalogItem(
-                        id = "f_alien", title = "Alien: Romulus",
+                        id = "f_darkknight", title = "Batman: El Caballero de la Noche",
+                        posterUrl = "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?q=80&w=600",
+                        year = "2008", rating = "9.0", genre = "Acción / Crimen / Drama",
+                        description = "Cuando una retorcida mente criminal conocida colectivamente como el Joker desata el caos absoluto en Gotham City, Batman libra una guerra intensa."
+                    ),
+                    CatalogItem(
+                        id = "f_inter", title = "Interstellar",
                         posterUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600",
-                        year = "2024", rating = "7.4", genre = "Terror / Sci-Fi",
-                        description = "Un grupo de jóvenes colonos espaciales explora una estación espacial abandonada topándose con la criatura más hostil del universo."
+                        year = "2014", rating = "8.7", genre = "Sci-Fi / Drama",
+                        description = "Un grupo de científicos y exploradores valientes viajan a través de un agujero de gusano misterioso para buscar un nuevo planeta habitable para la humanidad."
+                    )
+                )
+            }
+            nameL.contains("top rated series") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_breaking", title = "Breaking Bad",
+                        posterUrl = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=600",
+                        year = "2013", rating = "9.5", genre = "Drama / Crimen",
+                        description = "Un brillante pero deprimido profesor de química es diagnosticado con cáncer terminal y decide asociarse con un exalumno para montar un laboratorio móvil."
+                    ),
+                    CatalogItem(
+                        id = "f_chernobyl", title = "Chernobyl",
+                        posterUrl = "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600",
+                        year = "2019", rating = "9.4", genre = "Drama / Historia",
+                        description = "La dramática recreación fidedigna de la explosión devastadora de la planta nuclear soviética en 1986 y la enorme operación patriótica de contención subsecuente."
+                    )
+                )
+            }
+            nameL.contains("anime trending") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_demonslayer", title = "Demon Slayer: Kimetsu no Yaiba",
+                        posterUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
+                        year = "2024", rating = "8.7", genre = "Anime / Acción / Fantasía",
+                        description = "Tanjiro Kamado emprende un duro y largo viaje para convertirse en cazador de demonios con el único fin de salvar de la condena a su afectada hermana Nezuko."
+                    ),
+                    CatalogItem(
+                        id = "f_jujutsu", title = "Jujutsu Kaisen",
+                        posterUrl = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600",
+                        year = "2023", rating = "8.6", genre = "Anime / Acción / Sobrenatural",
+                        description = "Yuji Itadori, un estudiante de secundaria con destreza física admirable, traga un accesorio maldito del temible Sukuna para resguardar a sus amigos."
+                    )
+                )
+            }
+            nameL.contains("anime popular") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_deathnote", title = "Death Note",
+                        posterUrl = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600",
+                        year = "2006", rating = "9.0", genre = "Anime / Misterio / Drama",
+                        description = "Un prodigioso estudiante de secundaria encuentra una libreta sobrenatural de un Shinigami con la letal capacidad de silenciar a cualquiera cuyo nombre se escriba."
+                    ),
+                    CatalogItem(
+                        id = "f_attack", title = "Shingeki no Kyojin",
+                        posterUrl = "https://images.unsplash.com/photo-1626814026360-221091186039?q=80&w=600",
+                        year = "2023", rating = "9.1", genre = "Anime / Acción / Fantasía",
+                        description = "Eren Yeager dedica su vida entera a exterminar a los misteriosos Titanes gigantes tras presenciar la caída violenta de los muros de su ciudad natal."
+                    )
+                )
+            }
+            nameL.contains("acción") || nameL.contains("accion") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_wick_a", title = "John Wick 4",
+                        posterUrl = "https://images.unsplash.com/photo-1508962914676-134849a727f0?q=80&w=600",
+                        year = "2023", rating = "8.2", genre = "Acción / Suspenso",
+                        description = "John Wick halla una rendija definitiva para vencer de una vez por todas a la todopoderosa Mesa Alta de asesinos de todo el globo."
+                    ),
+                    CatalogItem(
+                        id = "f_madmax_a", title = "Mad Max: Fury Road",
+                        posterUrl = "https://images.unsplash.com/photo-1626379616459-b2ce1d9decbc?q=80&w=600",
+                        year = "2015", rating = "8.1", genre = "Acción / Post-apocalíptico",
+                        description = "En un páramo estéril azotado por tormentas de arena indómitas y pandillas motorizadas, Imperator Furiosa comanda un rescate veloz."
                     )
                 )
             }
             nameL.contains("comedia") -> {
                 listOf(
                     CatalogItem(
-                        id = "f_barbie", title = "Barbie",
+                        id = "f_barbie_c", title = "Barbie",
                         posterUrl = "https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=600",
                         year = "2023", rating = "7.2", genre = "Comedia / Fantasía",
-                        description = "Barbie y Ken incursionan fuera de su idílico mundo de plástico rosa para conocer el desafiante y real mundo de carne y hueso."
+                        description = "Barbie y Ken incursionan fuera de su idílico mundo de plástico rosa para conocer el desafiante, contradictorio e imperfecto mundo humano real."
                     ),
                     CatalogItem(
-                        id = "f_mask", title = "La Máscara",
+                        id = "f_mask_c", title = "La Máscara",
                         posterUrl = "https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=600",
-                        year = "1994", rating = "8.0", genre = "Comedia",
-                        description = "Un pusilánime bancario encuentra accidentalmente un amuleto consagrado al dios de las jugarretas nórdicas, modificando por completo su ser."
+                        year = "1994", rating = "8.0", genre = "Comedia / Fantasía",
+                        description = "Un pusilánime bancario encuentra un artefacto sagrado consagrado a Loki, desatando una personalidad caricaturesca y cómica sin límites."
+                    )
+                )
+            }
+            nameL.contains("terror") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_conjuro_t", title = "El Conjuro",
+                        posterUrl = "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=600",
+                        year = "2013", rating = "7.5", genre = "Terror / Paranormal",
+                        description = "Investigadores paranormales asisten a una asustada pareja y a sus hijas acosadas espiritualmente por entidades demoníacas en su isolated hogar."
+                    ),
+                    CatalogItem(
+                        id = "f_hereditary_t", title = "Hereditary",
+                        posterUrl = "https://images.unsplash.com/photo-1505635552518-3448ff116af3?q=80&w=600",
+                        year = "2018", rating = "7.3", genre = "Drama / Terror / Misterio",
+                        description = "Tras fallecer la excéntrica abuela de la familia Graham, atroces secretos ancestrales y rituales sectarios de corte bíblico empiezan a manifestarse."
+                    )
+                )
+            }
+            nameL.contains("ciencia") || nameL.contains("ficción") || nameL.contains("ficcion") || nameL.contains("sci-fi") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_dune1_s", title = "Dune: Parte Uno",
+                        posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+                        year = "2021", rating = "8.1", genre = "Sci-Fi / Aventura",
+                        description = "Paul Atreides, un joven aristócrata superdotado, viaja al planeta desértico Arrakis para asegurar el invaluable recurso de la especia."
+                    ),
+                    CatalogItem(
+                        id = "f_blade_s", title = "Blade Runner 2049",
+                        posterUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600",
+                        year = "2017", rating = "8.4", genre = "Sci-Fi / Distopía / Neo-Noir",
+                        description = "Un replicante detective desentierra un enigma milenario de asombroso calibre espiritual que amenaza con convulsionar irreversiblemente el orden general."
+                    )
+                )
+            }
+            nameL.contains("documentales") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_earth3_d", title = "Planeta Tierra III",
+                        posterUrl = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=600",
+                        year = "2023", rating = "9.5", genre = "Documental / Naturaleza",
+                        description = "La colosal y premiada saga explora el asombroso ingenio de las especies animales intentando persistir en hábitats que cambian a velocidad récord."
+                    ),
+                    CatalogItem(
+                        id = "f_lastdance_d", title = "El Último Baile",
+                        posterUrl = "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=600",
+                        year = "2020", rating = "9.1", genre = "Documental / Deportes",
+                        description = "La recopilación definitiva del meteórico impacto de la figura inmortal de Michael Jordan y de su última temporada gloriosa al mando de los Bulls."
+                    )
+                )
+            }
+            nameL.contains("familiar") || nameL.contains("familia") -> {
+                listOf(
+                    CatalogItem(
+                        id = "f_inside_f", title = "Intensamente 2",
+                        posterUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
+                        year = "2024", rating = "8.4", genre = "Animación / Familiar / Comedia",
+                        description = "El cuartel mental de Riley experimenta una de las más grandes demoliciones al abrir espacio repentinamente a Ansiedad y otras emociones adolescentes."
+                    ),
+                    CatalogItem(
+                        id = "f_coco_f", title = "Coco",
+                        posterUrl = "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600",
+                        year = "2017", rating = "8.4", genre = "Animación / Familiar / Fantasía",
+                        description = "El pequeño Miguel comete una ofrenda musical que lo propulsa mágicamente a la deslumbrante y alegre dimensión de los difuntos mexicanos."
                     )
                 )
             }
             else -> {
                 listOf(
                     CatalogItem(
-                        id = "f_glad2", title = "Gladiator II",
+                        id = "f_glad2_def", title = "Gladiator II",
                         posterUrl = "https://images.unsplash.com/photo-1598257006458-087169a1f08d?q=80&w=600",
-                        year = "2024", rating = "7.9", genre = "Drama / Acción / Historia",
-                        description = "Lucio se ve obligado a entrar en el circo imperial para reclamar el honor mancillado del pueblo de Roma bajo opresores gemelos."
-                    ),
-                    CatalogItem(
-                        id = "f_inside2", title = "Intensamente 2",
-                        posterUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
-                        year = "2024", rating = "8.4", genre = "Animación / Familiar / Comedia",
-                        description = "El cuartel mental de Riley experimenta una súbita demolición interna al abrir espacio a una delegación entera de emociones adolescentes."
+                        year = "2024", rating = "7.9", genre = "Drama / Acción",
+                        description = "Lucio se ve obligado por la fuerza tiránica a entrar al glorioso coliseo romano para reclamar el honor mancillado del pueblo de Roma bajo opresores gemelos."
                     )
                 )
             }
