@@ -191,7 +191,8 @@ class CatalogRepository(private val context: Context) {
     suspend fun refreshLocalCatalogs() = withContext(Dispatchers.IO) {
         val current = _catalogs.value
         val updated = current.map { cat ->
-            if (cat.sourceType == "Local" || cat.sourceType == "Custom" || cat.url.contains("lumina.app/catalogs") || cat.url.isEmpty()) {
+            val isCustomUrl = cat.url.isNotEmpty() && !cat.url.contains("lumina.app") && cat.url.startsWith("http", ignoreCase = true)
+            if (cat.sourceType == "Local" || cat.sourceType == "Custom" || isCustomUrl || cat.url.isEmpty()) {
                 val realItems = fetchItemsForCatalog(cat)
                 cat.copy(items = realItems, status = "Sincronizado", lastUpdated = "Recién Recargado")
             } else cat
@@ -221,11 +222,22 @@ class CatalogRepository(private val context: Context) {
                 id = "default_${idx + 1}",
                 name = name,
                 sourceType = src,
-                url = when (src) {
-                    "TMDB" -> "https://api.themoviedb.org/3/catalog/default_${idx + 1}"
-                    "MDBList" -> "https://mdblist.com/lists/public/default_${idx + 1}"
-                    "Trakt" -> "https://api.trakt.tv/lists/default_${idx + 1}"
-                    else -> "http://lumina.app/catalogs/genre_${idx + 1}"
+                url = when (name) {
+                    "Trending Movies" -> "https://api.themoviedb.org/3/trending/movie/week?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Trending TV Shows" -> "https://api.themoviedb.org/3/trending/tv/week?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Popular Movies" -> "https://api.themoviedb.org/3/movie/popular?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Popular Series" -> "https://api.themoviedb.org/3/tv/popular?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Top Rated Movies" -> "https://api.themoviedb.org/3/movie/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Top Rated Series" -> "https://api.themoviedb.org/3/tv/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Anime Trending" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=es-MX"
+                    "Anime Popular" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=100&language=es-MX"
+                    "Acción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=28&language=es-MX"
+                    "Comedia" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=35&language=es-MX"
+                    "Terror" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=27&language=es-MX"
+                    "Ciencia Ficción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=878&language=es-MX"
+                    "Documentales" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=99&language=es-MX"
+                    "Familiar" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=10751&language=es-MX"
+                    else -> "https://api.themoviedb.org/3/trending/all/day?api_key=INSERT_KEY_HERE&language=es-MX"
                 },
                 isVisible = true,
                 showInHome = true,
@@ -252,37 +264,85 @@ class CatalogRepository(private val context: Context) {
     private suspend fun fetchItemsForCatalog(catalog: Catalog): List<CatalogItem> = withContext(Dispatchers.IO) {
         val list = mutableListOf<CatalogItem>()
 
+        val rawUrl = catalog.url.trim()
+        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
+        val tmdbKey = prefs.getString("tmdb_api_key", "") ?: ""
+        val traktKey = prefs.getString("trakt_api_key", "") ?: ""
+        val mdblistKey = prefs.getString("mdblist_api_key", "") ?: ""
+        
+        var cleanUrl = rawUrl
+        if (cleanUrl.contains("INSERT_KEY_HERE")) {
+            if (tmdbKey.isNotEmpty() && cleanUrl.contains("api.themoviedb.org")) {
+                cleanUrl = cleanUrl.replace("INSERT_KEY_HERE", tmdbKey)
+            }
+        }
+        
+        // Auto-inject MDBList API key if missing but they provided the base API endpoint
+        if (cleanUrl.contains("mdblist.com/api") && mdblistKey.isNotEmpty() && !cleanUrl.contains("apikey=")) {
+            cleanUrl = if (cleanUrl.contains("?")) "$cleanUrl&apikey=$mdblistKey" else "$cleanUrl/?apikey=$mdblistKey"
+        }
+        
+        // Auto-inject MDBList API key if they just pasted a list URL
+        if (cleanUrl.startsWith("https://mdblist.com/lists/") && mdblistKey.isNotEmpty()) {
+            // Converts https://mdblist.com/lists/username/listname to https://mdblist.com/api/?apikey=XXX&i=list_id
+            // Well, we can't reliably get the list ID from the URL. Let's just leave it if they didn't use the API endpoint.
+        }
+        
         // 1. Try to fetch from HTTP URL if specified and non-default
-        if (catalog.url.isNotEmpty() && 
-            catalog.url.startsWith("http") && 
-            !catalog.url.contains("lumina.app/catalogs") && 
-            !catalog.url.contains("api.themoviedb.org/3/catalog/") &&
-            !catalog.url.contains("mdblist.com/lists/public/") &&
-            !catalog.url.contains("api.trakt.tv/lists/")) {
+        if (cleanUrl.isNotEmpty() && 
+            cleanUrl.startsWith("http", ignoreCase = true) && 
+            !cleanUrl.contains("/default_") && 
+            !cleanUrl.contains("lumina.app/catalogs/genre_")) {
+            
+            // If the user hasn't provided a TMDB key, but we are querying TMDB using the placeholder,
+            // we should not execute the request to avoid 401 Unauthorized crashes, we just return empty.
+            if (cleanUrl.contains("INSERT_KEY_HERE")) {
+                return@withContext emptyList()
+            }
+            
             try {
                 val client = okhttp3.OkHttpClient.Builder()
                     .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
                     .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
                     .build()
-                val request = okhttp3.Request.Builder()
-                    .url(catalog.url)
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    .build()
+                    
+                var reqBuilder = okhttp3.Request.Builder().url(cleanUrl)
+                reqBuilder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                
+                if (cleanUrl.contains("trakt.tv") && traktKey.isNotEmpty()) {
+                    reqBuilder.header("trakt-api-version", "2")
+                    reqBuilder.header("trakt-api-key", traktKey)
+                }
+                
+                val request = reqBuilder.build()
                 
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
                         val bodyString = response.body?.string() ?: ""
-                        if (bodyString.trim().startsWith("#EXTM3U")) {
+                        val cleanedBody = bodyString.replace("\uFEFF", "").trim()
+                        if (cleanedBody.startsWith("#EXTM3U") || cleanedBody.contains("#EXTINF:")) {
                             // It's an M3U file
-                            val m3uItems = parseM3uCatalog(bodyString, catalog.id)
+                            val m3uItems = parseM3uCatalog(cleanedBody, catalog.id)
                             if (m3uItems.isNotEmpty()) {
                                 list.addAll(m3uItems)
                             }
-                        } else if (bodyString.trim().startsWith("{") || bodyString.trim().startsWith("[")) {
+                        } else if (cleanedBody.startsWith("{") || cleanedBody.startsWith("[")) {
                             // It's JSON (TMDB or Trakt or Custom API)
-                            val jsonItems = parseJsonCatalog(bodyString, catalog)
+                            val jsonItems = parseJsonCatalog(cleanedBody, catalog)
                             if (jsonItems.isNotEmpty()) {
                                 list.addAll(jsonItems)
+                            }
+                        } else {
+                            if (cleanedBody.contains("#EXTINF:")) {
+                                val m3uItems = parseM3uCatalog(cleanedBody, catalog.id)
+                                if (m3uItems.isNotEmpty()) {
+                                    list.addAll(m3uItems)
+                                }
+                            } else if (cleanedBody.contains("{") || cleanedBody.contains("[")) {
+                                val jsonItems = parseJsonCatalog(cleanedBody, catalog)
+                                if (jsonItems.isNotEmpty()) {
+                                    list.addAll(jsonItems)
+                                }
                             }
                         }
                     }
@@ -292,87 +352,13 @@ class CatalogRepository(private val context: Context) {
             }
         }
 
-        // 2. Query matching local VOD/Movie/Series channels parsed from IPTV Playlists
-        val dbItems = mutableListOf<CatalogItem>()
-        try {
-            val db = com.example.data.database.AppDatabase.getDatabase(context)
-            val channels = db.mediaDao().getAllChannelEntitiesList()
-            if (channels.isNotEmpty()) {
-                val catNameLower = catalog.name.lowercase()
-                
-                val filteredChannels = channels.filter { chan ->
-                    val category = chan.category.lowercase()
-                    val nameLower = chan.name.lowercase()
-                    
-                    // Detect if this channel represents a video/movie stream
-                    val isMovieCategory = category.contains("pelicula") || category.contains("película") ||
-                            category.contains("movie") || category.contains("vod") ||
-                            category.contains("cine") || category.contains("cinema") ||
-                            category.contains("series") || category.contains("serie") ||
-                            category.contains("show") || category.contains("temporada") ||
-                            category.contains("documental") || category.contains("premium")
-                    
-                    val matchesGenre = when {
-                        catNameLower.contains("acción") || catNameLower.contains("accion") -> category.contains("accion") || category.contains("acción") || category.contains("action") || nameLower.contains("acción") || nameLower.contains("accion")
-                        catNameLower.contains("comedia") -> category.contains("comedia") || category.contains("comedy") || nameLower.contains("comedia")
-                        catNameLower.contains("terror") -> category.contains("terror") || category.contains("horror") || nameLower.contains("terror") || nameLower.contains("horror")
-                        catNameLower.contains("ciencia") || catNameLower.contains("sci-fi") -> category.contains("ciencia") || category.contains("sci") || category.contains("fiction") || category.contains("ficción")
-                        catNameLower.contains("anime") -> category.contains("anime") || category.contains("manga") || nameLower.contains("anime")
-                        catNameLower.contains("deportes") -> category.contains("deporte") || category.contains("sport") || category.contains("fútbol") || category.contains("football")
-                        catNameLower.contains("documentales") -> category.contains("documental") || category.contains("docu")
-                        catNameLower.contains("familiar") || catNameLower.contains("kids") -> category.contains("familiar") || category.contains("kids") || category.contains("famil") || category.contains("infantil")
-                        catNameLower.contains("suspenso") -> category.contains("suspenso") || category.contains("suspense") || category.contains("thriller")
-                        catNameLower.contains("romance") -> category.contains("romance") || category.contains("román") || category.contains("amor")
-                        else -> false
-                    }
-                    
-                    val matchesDirectGroup = catNameLower.isNotEmpty() && (
-                        category.contains(catNameLower) || 
-                        catNameLower.contains(category) || 
-                        nameLower.contains(catNameLower)
-                    )
-                    
-                    matchesGenre || matchesDirectGroup || (isMovieCategory && (
-                        catNameLower.contains("tendencias") || catNameLower.contains("mejor valorada") ||
-                        catNameLower.contains("estreno") || catNameLower.contains("top") ||
-                        catNameLower.contains("recomendadas") || catNameLower.contains("default")
-                    ))
-                }
-                
-                filteredChannels.forEachIndexed { index, chan ->
-                    val yearRegex = Regex("\\b(19|20)\\d{2}\\b")
-                    val yearMatch = yearRegex.find(chan.name)
-                    val year = yearMatch?.value ?: "2024"
-                    val cleanTitle = chan.name.replace(Regex("\\s*[(]?\\b(19|20)\\d{2}\\b[)]?\\s*"), "").trim()
-                    
-                    dbItems.add(
-                        CatalogItem(
-                            id = chan.id,
-                            title = cleanTitle,
-                            posterUrl = chan.logoUrl.ifEmpty { "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300" },
-                            year = year,
-                            rating = String.format(java.util.Locale.US, "%.1f", 7.2 + (chan.name.hashCode().coerceAtLeast(0) % 25) / 10.0),
-                            genre = chan.category,
-                            description = "Contenido sintonizado en vivo desde tu lista IPTV. Presiona reproducir para iniciar la transmisión real.",
-                            streamUrl = chan.streamUrl
-                        )
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        // 2. Query matching local channels (Disabled as requested to keep local IPTV streams separated from general Movie/VOD Home Screen catalogs)
+        val dbItems = emptyList<CatalogItem>()
 
-        // Merge results: URL results take priority, supplemented by matching IPTV items
+        // Merge results: URL results take priority
         val mergedList = (list + dbItems).distinctBy { it.title.lowercase().trim() }
         
-        // 3. Fallback to highly-detailed, beautiful, real Hollywood reference items if list is still empty (or too short)
-        if (mergedList.size < 5) {
-            val fallbacks = getDeepFallbacksForCategory(catalog.name)
-            (mergedList + fallbacks).distinctBy { it.title.lowercase().trim() }.take(catalog.numItems.coerceAtLeast(15))
-        } else {
-            mergedList.take(catalog.numItems.coerceAtLeast(15))
-        }
+        mergedList.take(maxOf(catalog.numItems, 500))
     }
 
     private fun parseM3uCatalog(m3uContent: String, catalogId: String): List<CatalogItem> {
@@ -387,11 +373,15 @@ class CatalogRepository(private val context: Context) {
             for (line in lines) {
                 val trimmed = line.trim()
                 if (trimmed.startsWith("#EXTINF:")) {
+                    val tvgName = extractAttribute(trimmed, "tvg-name")
                     val lastComma = trimmed.lastIndexOf(',')
                     currentName = if (lastComma != -1) {
                         trimmed.substring(lastComma + 1).trim()
                     } else {
-                        "Película $index"
+                        tvgName.ifEmpty { "Película $index" }
+                    }
+                    if (currentName.isEmpty() && tvgName.isNotEmpty()) {
+                        currentName = tvgName
                     }
                     
                     currentLogo = extractAttribute(trimmed, "tvg-logo")
@@ -489,17 +479,34 @@ class CatalogRepository(private val context: Context) {
                         )
                     }
                 } else {
-                    // Try to scan for any array inside the root object and parse it generically
+                    // Try to scan for any array inside the root object and parse list of candidates
+                    var bestList = mutableListOf<CatalogItem>()
                     val keys = root.keys()
                     while (keys.hasNext()) {
                         val key = keys.next()
-                        val value = root.get(key)
+                        val value = root.opt(key)
                         if (value is org.json.JSONArray) {
                             val items = parseGenericJsonArray(value, catalog)
-                            if (items.isNotEmpty()) {
-                                return items
+                            if (items.size > bestList.size) {
+                                bestList = items.toMutableList()
+                            }
+                        } else if (value is org.json.JSONObject) {
+                            // Sometime it is nested under root -> "data" -> "movies" array
+                            val nestedKeys = value.keys()
+                            while (nestedKeys.hasNext()) {
+                                val nKey = nestedKeys.next()
+                                val nValue = value.opt(nKey)
+                                if (nValue is org.json.JSONArray) {
+                                    val items = parseGenericJsonArray(nValue, catalog)
+                                    if (items.size > bestList.size) {
+                                        bestList = items.toMutableList()
+                                    }
+                                }
                             }
                         }
+                    }
+                    if (bestList.isNotEmpty()) {
+                        return bestList
                     }
                 }
             } else if (trimmed.startsWith("[")) {
@@ -531,7 +538,7 @@ class CatalogRepository(private val context: Context) {
                 if (title.isEmpty()) continue
                 
                 var poster = ""
-                listOf("poster", "poster_url", "poster_path", "image", "cover", "thumbnail", "logo").forEach { key ->
+                listOf("poster", "poster_url", "posterUrl", "poster_path", "image", "image_url", "imageUrl", "cover", "cover_url", "coverUrl", "thumbnail", "thumbnail_url", "logo").forEach { key ->
                     if (obj.has(key) && obj.optString(key).isNotEmpty()) {
                         poster = obj.optString(key)
                         return@forEach
@@ -604,16 +611,20 @@ class CatalogRepository(private val context: Context) {
                 }
                 
                 var year = obj.optString("year").ifEmpty {
-                    if (obj.has("release_date")) {
-                        obj.optString("release_date")
-                    } else if (obj.has("movie")) {
-                        val mObj = obj.optJSONObject("movie")
-                        mObj?.optString("year") ?: ""
-                    } else if (obj.has("show")) {
-                        val sObj = obj.optJSONObject("show")
-                        sObj?.optString("year") ?: ""
-                    } else {
-                        "2024"
+                    obj.optString("release_year").ifEmpty {
+                        obj.optString("releaseYear").ifEmpty {
+                            if (obj.has("release_date")) {
+                                obj.optString("release_date")
+                            } else if (obj.has("movie")) {
+                                val mObj = obj.optJSONObject("movie")
+                                mObj?.optString("year") ?: ""
+                            } else if (obj.has("show")) {
+                                val sObj = obj.optJSONObject("show")
+                                sObj?.optString("year") ?: ""
+                            } else {
+                                "2024"
+                            }
+                        }
                     }
                 }
                 if (year.isEmpty()) {
@@ -630,20 +641,28 @@ class CatalogRepository(private val context: Context) {
                 
                 val desc = obj.optString("description").ifEmpty {
                     obj.optString("overview").ifEmpty {
-                        if (obj.has("movie")) {
-                            val mObj = obj.optJSONObject("movie")
-                            mObj?.optString("overview") ?: "Contenido sintonizado."
-                        } else if (obj.has("show")) {
-                            val sObj = obj.optJSONObject("show")
-                            sObj?.optString("overview") ?: "Contenido sintonizado."
-                        } else {
-                            "Contenido sintonizado en Lumina."
+                        obj.optString("summary").ifEmpty {
+                            obj.optString("plot").ifEmpty {
+                                if (obj.has("movie")) {
+                                    val mObj = obj.optJSONObject("movie")
+                                    mObj?.optString("overview") ?: "Contenido sintonizado."
+                                } else if (obj.has("show")) {
+                                    val sObj = obj.optJSONObject("show")
+                                    sObj?.optString("overview") ?: "Contenido sintonizado."
+                                } else {
+                                    "Contenido sintonizado en Lumina."
+                                }
+                            }
                         }
                     }
                 }
                 
-                val streamUrl = obj.optString("url").ifEmpty {
-                    obj.optString("stream_url", "")
+                var streamUrl = ""
+                listOf("url", "stream_url", "streamUrl", "file", "link", "source", "stream", "uri", "video", "playback_url", "m3u8").forEach { key ->
+                    if (obj.has(key) && obj.optString(key).isNotEmpty()) {
+                        streamUrl = obj.optString(key)
+                        return@forEach
+                    }
                 }
                 
                 list.add(

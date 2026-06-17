@@ -221,10 +221,11 @@ class MediaRepository(private val mediaDao: MediaDao) {
                 if (!response.isSuccessful) return@withContext false
                 val bodyString = response.body?.string() ?: return@withContext false
                 
-                val parsedList = if (bodyString.trim().startsWith("{")) {
-                    parseJsonPlaylist(bodyString, playlistId)
+                val cleanedBody = bodyString.replace("\uFEFF", "").trim()
+                val parsedList = if (cleanedBody.startsWith("{") || cleanedBody.startsWith("[")) {
+                    parseJsonPlaylist(cleanedBody, playlistId)
                 } else {
-                    parseM3uPlaylist(bodyString, playlistId)
+                    parseM3uPlaylist(cleanedBody, playlistId)
                 }
                 
                 mediaDao.deleteChannelsByPlaylist(playlistId)
@@ -348,13 +349,25 @@ class MediaRepository(private val mediaDao: MediaDao) {
     }
 
     private fun extractAttribute(line: String, attrName: String): String {
-        val key = "$attrName=\""
-        val start = line.indexOf(key)
-        if (start == -1) return ""
-        val fromKey = line.substring(start + key.length)
-        val end = fromKey.indexOf('"')
-        if (end == -1) return ""
-        return fromKey.substring(0, end)
+        val key = "$attrName="
+        val index = line.indexOf(key)
+        if (index == -1) return ""
+        val start = index + key.length
+        if (start >= line.length) return ""
+        val quoteChar = line[start]
+        return if (quoteChar == '"' || quoteChar == '\'') {
+            val end = line.indexOf(quoteChar, start + 1)
+            if (end != -1) {
+                line.substring(start + 1, end)
+            } else ""
+        } else {
+            val space = line.indexOf(' ', start)
+            if (space != -1) {
+                line.substring(start, space)
+            } else {
+                line.substring(start)
+            }
+        }
     }
 
     suspend fun getChannelsCountForPlaylist(playlistId: String): Int {

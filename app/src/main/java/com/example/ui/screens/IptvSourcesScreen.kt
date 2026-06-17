@@ -43,6 +43,10 @@ fun IptvSourcesScreen(
 ) {
     val playlists by viewModel.playlists.collectAsState()
     val epgSources by viewModel.epgSources.collectAsState()
+
+    androidx.activity.compose.BackHandler {
+        onBack()
+    }
     
     val coroutineScope = rememberCoroutineScope()
 

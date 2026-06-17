@@ -82,46 +82,7 @@ fun HomeScreen(
     // Showcase/Banner Channel (First channel by default)
     // Showcase/Banner movies (Curated highlights from either the active catalogs or premium curated cinema highlights)
     val featuredMovies = remember(catalogs) {
-        val lists = catalogs.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() }.distinctBy { it.id }
-        val curated = listOf(
-            CatalogItem(
-                id = "m_michael",
-                title = "Michael",
-                posterUrl = "https://images.unsplash.com/photo-1547153760-18fc86324498?q=80&w=1200",
-                year = "2026",
-                rating = "7.7",
-                genre = "Música / Biografía / Drama",
-                description = "El viaje de Michael Jackson más allá de la música, desde el descubrimiento de su extraordinario talento como líder de los Jackson Five hasta convertirse en una de las más grandes leyendas de la historia."
-            ),
-            CatalogItem(
-                id = "m_theboys",
-                title = "The Boys",
-                posterUrl = "https://images.unsplash.com/photo-1626814026360-221091186039?q=80&w=1200",
-                year = "2024",
-                rating = "8.7",
-                genre = "Acción / Ciencia Ficción / Sátira",
-                description = "En un mundo donde los superhéroes abusan de sus poderes, un grupo de vigilantes se propone exponer la verdad sobre Los Siete y la poderosa corporación Vought."
-            ),
-            CatalogItem(
-                id = "m1", title = "Dune: Parte Dos",
-                posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1200",
-                year = "2024", rating = "8.9", genre = "Sci-Fi / Aventura",
-                description = "Paul Atreides se une a Chani y los Fremen mientras busca venganza contra los conspiradores que destruyeron a su familia."
-            ),
-            CatalogItem(
-                id = "m2", title = "Oppenheimer",
-                posterUrl = "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=1200",
-                year = "2023", rating = "8.9", genre = "Historia / Biografía / Drama",
-                description = "La historia del físico J. Robert Oppenheimer y su papel en el desarrollo de la bomba atómica dentro del Proyecto Manhattan."
-            ),
-            CatalogItem(
-                id = "m3", title = "Spider-Man: Across the Spider-Verse",
-                posterUrl = "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=1200",
-                year = "2023", rating = "9.0", genre = "Animación / Acción / Aventura",
-                description = "Miles Morales se embarca en una aventura a través del multiverso junto a Gwen Stacy para enfrentar una nueva y misteriosa amenaza."
-            )
-        )
-        (curated + lists).distinctBy { it.id }.take(6)
+        catalogs.filter { it.isVisible && it.showInHome }.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() && !it.posterUrl.contains("unsplash.com") && !it.posterUrl.contains("images.unsplash") }.distinctBy { it.id }.shuffled().take(12)
     }
 
     val favoriteCatalogItems by viewModel.favoriteCatalogItems.collectAsState()
@@ -325,10 +286,6 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(390.dp)
-                            .clickable {
-                                selectedCatalogItem = currentMovie
-                                showDetailsDialog = true
-                            }
                     ) {
                         Row(
                             modifier = Modifier
@@ -462,7 +419,9 @@ fun HomeScreen(
                                             ),
                                             shape = RoundedCornerShape(8.dp),
                                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(34.dp)
+                                            modifier = Modifier
+                                                .height(34.dp)
+                                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                                         ) {
                                             Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
@@ -481,11 +440,31 @@ fun HomeScreen(
                                             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
                                             shape = RoundedCornerShape(8.dp),
                                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(34.dp)
+                                            modifier = Modifier
+                                                .height(34.dp)
+                                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                                         ) {
                                             Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text("AÑADIR A LISTA", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                selectedCatalogItem = currentMovie
+                                                showDetailsDialog = true
+                                            },
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                            modifier = Modifier
+                                                .height(34.dp)
+                                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                                        ) {
+                                            Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("DETALLES", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
 
@@ -501,7 +480,7 @@ fun HomeScreen(
                                                     .size(if (active) 7.dp else 5.dp)
                                                     .clip(CircleShape)
                                                     .background(if (active) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.35f))
-                                                    .clickable { activeHeroMovie = movie }
+                                                    /* no clickable on TV/mobile to prevent focus trap */
                                             )
                                         }
                                     }

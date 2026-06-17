@@ -2609,36 +2609,92 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
         }
 
         // B) ADD NEW CATALOG TRIGGER (EXCLUSIVE CARD)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .tvFocusEffect(shape = RoundedCornerShape(12.dp))
-                .clickable { showAddDialog = true },
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)),
-            border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
+            Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                    .weight(1f)
+                    .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+                    .clickable { showAddDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)),
+                border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
             ) {
-                Icon(
-                    imageVector = Icons.Default.AddCircle,
-                    contentDescription = "Añadir Catálogo",
-                    tint = Color(0xFF00E5FF),
-                    modifier = Modifier.size(24.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = "Añadir Catálogo",
+                        tint = Color(0xFF00E5FF),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Añadir Nuevo Catálogo",
+                        color = Color(0xFF00E5FF),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+
+            var showApiKeysDialog by remember { mutableStateOf(false) }
+            if (showApiKeysDialog) {
+                ApiKeysDialog(
+                    onDismiss = { showApiKeysDialog = false },
+                    onSave = { tmdb, trakt, mdblist ->
+                        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
+                        prefs.edit()
+                            .putString("tmdb_api_key", tmdb)
+                            .putString("trakt_api_key", trakt)
+                            .putString("mdblist_api_key", mdblist)
+                            .apply()
+                        showApiKeysDialog = false
+                        Toast.makeText(context, "API Keys guardadas. Sincronizando datos premium...", Toast.LENGTH_SHORT).show()
+                        viewModel.syncAllCatalogs()
+                    }
                 )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "Añadir / Configurar Nuevo Catálogo Premium",
-                    color = Color(0xFF00E5FF),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.5.sp
-                )
+            }
+
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+                    .clickable { showApiKeysDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFED1C24).copy(alpha = 0.12f)),
+                border = BorderStroke(1.5.dp, Color(0xFFED1C24).copy(alpha = 0.4f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VpnKey,
+                        contentDescription = "API Keys",
+                        tint = Color(0xFFED1C24),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Configurar API Keys (TMDB)",
+                        color = Color(0xFFED1C24),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
             }
         }
 
@@ -3324,7 +3380,7 @@ fun EditCatalogDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = { if (numItems > 5) numItems -= 5 },
+                            onClick = { if (numItems > 25) numItems -= 25 else numItems = 25 },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.size(28.dp),
@@ -3334,7 +3390,7 @@ fun EditCatalogDialog(
                         }
                         Text("$numItems", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Button(
-                            onClick = { if (numItems < 50) numItems += 5 },
+                            onClick = { if (numItems < 1000) numItems += 25 },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f)),
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.size(28.dp),
@@ -3698,6 +3754,71 @@ fun VisualLayoutDialog(
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text("Cancelar", color = Color.White, fontSize = 11.sp)
+            }
+        }
+    )
+}
+
+@Composable
+fun ApiKeysDialog(
+    onDismiss: () -> Unit,
+    onSave: (tmdb: String, trakt: String, mdblist: String) -> Unit
+) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
+    var tmdbKey by remember { mutableStateOf(prefs.getString("tmdb_api_key", "") ?: "") }
+    var traktKey by remember { mutableStateOf(prefs.getString("trakt_api_key", "") ?: "") }
+    var mdblistKey by remember { mutableStateOf(prefs.getString("mdblist_api_key", "") ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF0F1524),
+        tonalElevation = 6.dp,
+        title = {
+            Text("Configurar API Keys", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("Añade tus claves API de servicios web para acceder a carteleras reales y personalizadas:", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, lineHeight = 15.sp)
+                
+                OutlinedTextField(
+                    value = tmdbKey,
+                    onValueChange = { tmdbKey = it },
+                    label = { Text("TMDB API V3 Key (Opcional)") },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+
+                OutlinedTextField(
+                    value = mdblistKey,
+                    onValueChange = { mdblistKey = it },
+                    label = { Text("MDBList API Key (Opcional)") },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+
+                OutlinedTextField(
+                    value = traktKey,
+                    onValueChange = { traktKey = it },
+                    label = { Text("Trakt Client ID (Opcional)") },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(tmdbKey.trim(), traktKey.trim(), mdblistKey.trim()) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
+            ) {
+                Text("Aplicar", color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cerrar", color = Color.White.copy(alpha = 0.7f))
             }
         }
     )
