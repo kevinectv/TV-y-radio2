@@ -282,10 +282,9 @@ class CatalogRepository(private val context: Context) {
             cleanUrl = if (cleanUrl.contains("?")) "$cleanUrl&apikey=$mdblistKey" else "$cleanUrl/?apikey=$mdblistKey"
         }
         
-        // Auto-inject MDBList API key if they just pasted a list URL
-        if (cleanUrl.startsWith("https://mdblist.com/lists/") && mdblistKey.isNotEmpty()) {
-            // Converts https://mdblist.com/lists/username/listname to https://mdblist.com/api/?apikey=XXX&i=list_id
-            // Well, we can't reliably get the list ID from the URL. Let's just leave it if they didn't use the API endpoint.
+        // Auto-inject JSON endpoint for mdblist public lists
+        if (cleanUrl.startsWith("https://mdblist.com/lists/") && !cleanUrl.contains("/json") && !cleanUrl.contains("/api")) {
+            cleanUrl = cleanUrl.removeSuffix("/") + "/json"
         }
         
         // 1. Try to fetch from HTTP URL if specified and non-default
@@ -466,6 +465,9 @@ class CatalogRepository(private val context: Context) {
                         val rating = String.format(java.util.Locale.US, "%.1f", vote)
                         val desc = obj.optString("overview", "Un emocionante viaje cinematográfico real en Lumina.")
                         
+                        val tmdbId = obj.optString("id")
+                        val isTvShow = obj.optString("media_type") == "tv" || obj.has("first_air_date") || (obj.has("name") && !obj.has("title"))
+                        
                         list.add(
                             CatalogItem(
                                 id = "${catalog.id}_t_${obj.optString("id", i.toString())}",
@@ -474,7 +476,9 @@ class CatalogRepository(private val context: Context) {
                                 year = year,
                                 rating = rating,
                                 genre = catalog.name,
-                                description = desc
+                                description = desc,
+                                tmdbId = if (tmdbId.isNotEmpty()) tmdbId else null,
+                                isTvShow = isTvShow
                             )
                         )
                     }
@@ -573,6 +577,8 @@ class CatalogRepository(private val context: Context) {
                     tmdbId = obj.optString("tmdb_id")
                 } else if (obj.has("tmdbId") && obj.optString("tmdbId").isNotEmpty() && obj.optString("tmdbId") != "null") {
                     tmdbId = obj.optString("tmdbId")
+                } else if (obj.has("tmdbid") && obj.optString("tmdbid").isNotEmpty() && obj.optString("tmdbid") != "null") {
+                    tmdbId = obj.optString("tmdbid")
                 } else if (obj.has("movie")) {
                     val movieObj = obj.optJSONObject("movie")
                     if (movieObj != null) {
@@ -583,6 +589,8 @@ class CatalogRepository(private val context: Context) {
                             }
                         } else if (movieObj.has("tmdb_id")) {
                             tmdbId = movieObj.optString("tmdb_id")
+                        } else if (movieObj.has("tmdbid")) {
+                            tmdbId = movieObj.optString("tmdbid")
                         }
                     }
                 } else if (obj.has("show")) {
@@ -595,12 +603,27 @@ class CatalogRepository(private val context: Context) {
                             }
                         } else if (showObj.has("tmdb_id")) {
                             tmdbId = showObj.optString("tmdb_id")
+                        } else if (showObj.has("tmdbid")) {
+                            tmdbId = showObj.optString("tmdbid")
                         }
                     }
                 }
                 
+                var imdbId = ""
+                if (obj.has("imdb_id") && obj.optString("imdb_id").isNotEmpty() && obj.optString("imdb_id") != "null") {
+                    imdbId = obj.optString("imdb_id")
+                } else if (obj.has("imdbid") && obj.optString("imdbid").isNotEmpty() && obj.optString("imdbid") != "null") {
+                    imdbId = obj.optString("imdbid")
+                }
+                
                 if (poster.isEmpty() && tmdbId.isNotEmpty() && tmdbId != "null" && tmdbId != "0") {
-                    poster = "https://img.vidsrc.to/poster/$tmdbId"
+                    // Try to construct a high quality poster using TMDB. Without secret keys we can't fetch the paths dynamically,
+                    // but there are some public visual proxy services. 
+                    // To ensure reliability we will keep relying on generic placeholders if real proxies fail.
+                    // For now, TMDB IDs don't guarantee images without paths, so we will use OMDB or fallback
+                }
+                if (poster.isEmpty() && imdbId.isNotEmpty() && imdbId != "null") {
+                    poster = "https://images.metahub.space/poster/medium/$imdbId/img"
                 }
                 
                 if (poster.isNotEmpty() && !poster.startsWith("http") && poster.startsWith("/")) {
@@ -665,6 +688,8 @@ class CatalogRepository(private val context: Context) {
                     }
                 }
                 
+                val isTvShow = obj.optString("type") == "show" || obj.has("show") || obj.has("first_air_date") || (obj.has("name") && !obj.has("title")) || obj.optString("media_type") == "tv"
+                
                 list.add(
                     CatalogItem(
                         id = "${catalog.id}_g_${i}",
@@ -674,7 +699,9 @@ class CatalogRepository(private val context: Context) {
                         rating = rating,
                         genre = catalog.name,
                         description = desc,
-                        streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null
+                        streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null,
+                        tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
+                        isTvShow = isTvShow
                     )
                 )
             } catch (e: Exception) {

@@ -97,6 +97,65 @@ fun HomeScreen(
         description = "El viaje de Michael Jackson más allá de la música, desde el descubrimiento de su extraordinario talento como líder de los Jackson Five..."
     )
 
+    // Logo state
+    var activeHeroLogoUrl by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(currentMovie) {
+        val tmdbId = currentMovie.tmdbId
+        if (tmdbId.isNullOrEmpty()) {
+            activeHeroLogoUrl = null
+        } else {
+            val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
+            val apiKey = prefs.getString("tmdb_api_key", "") ?: ""
+            if (apiKey.isNotEmpty()) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val client = okhttp3.OkHttpClient()
+                        var type = if (currentMovie.isTvShow) "tv" else "movie"
+                        
+                        suspend fun fetchLogo(mediaType: String): String? {
+                            val req = okhttp3.Request.Builder()
+                                .url("https://api.themoviedb.org/3/$mediaType/$tmdbId/images?api_key=$apiKey&include_image_language=es,en,null")
+                                .build()
+                            val resp = client.newCall(req).execute()
+                            if (resp.isSuccessful) {
+                                val jsonStr = resp.body?.string() ?: ""
+                                val jsonObj = org.json.JSONObject(jsonStr)
+                                val logos = jsonObj.optJSONArray("logos")
+                                if (logos != null && logos.length() > 0) {
+                                    // Try to find Spanish or English first, otherwise take the first available
+                                    var bestPath = logos.getJSONObject(0).optString("file_path")
+                                    for (i in 0 until logos.length()) {
+                                        val lang = logos.getJSONObject(i).optString("iso_639_1", "")
+                                        if (lang == "es") {
+                                            bestPath = logos.getJSONObject(i).optString("file_path")
+                                            break
+                                        }
+                                    }
+                                    return "https://image.tmdb.org/t/p/w500$bestPath"
+                                }
+                            }
+                            return null
+                        }
+                        
+                        var logo = fetchLogo(type)
+                        if (logo == null) {
+                           // Fallback to the other type if the first one failed (e.g. wrong type inferred)
+                           val otherType = if (type == "tv") "movie" else "tv"
+                           logo = fetchLogo(otherType)
+                        }
+                        
+                        activeHeroLogoUrl = logo
+                    } catch (e: Exception) {
+                        activeHeroLogoUrl = null
+                    }
+                }
+            } else {
+                activeHeroLogoUrl = null
+            }
+        }
+    }
+
     // Trailer Simulation States
     var isTrailerLive by remember { mutableStateOf(false) }
     var currentSubIndex by remember { mutableStateOf(0) }
@@ -165,6 +224,8 @@ fun HomeScreen(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                         ViewGroup.LayoutParams.MATCH_PARENT
                                     )
+                                    isFocusable = false
+                                    isFocusableInTouchMode = false
                                 }
                             },
                             update = { videoView ->
@@ -300,22 +361,32 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.Bottom,
                                 horizontalAlignment = Alignment.Start
                             ) {
-                                // A) Título elegante con sombra
-                                Text(
-                                    text = details.logoText,
-                                    style = TextStyle(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 38.sp,
-                                        color = Color.White,
-                                        letterSpacing = (-0.5).sp,
-                                        shadow = androidx.compose.ui.graphics.Shadow(
-                                            color = Color.Black.copy(alpha = 0.85f),
-                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                            blurRadius = 8f
-                                        )
-                                    ),
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
+                                // A) Título elegante con sombra O Logo
+                                if (activeHeroLogoUrl != null) {
+                                    coil.compose.AsyncImage(
+                                        model = activeHeroLogoUrl,
+                                        contentDescription = details.logoText,
+                                        modifier = Modifier.padding(bottom = 12.dp).heightIn(max = 100.dp).widthIn(max = 280.dp),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                        alignment = Alignment.BottomStart
+                                    )
+                                } else {
+                                    Text(
+                                        text = details.logoText,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 38.sp,
+                                            color = Color.White,
+                                            letterSpacing = (-0.5).sp,
+                                            shadow = androidx.compose.ui.graphics.Shadow(
+                                                color = Color.Black.copy(alpha = 0.85f),
+                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                blurRadius = 8f
+                                            )
+                                        ),
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                }
 
                                 // B) Línea de metadatos (Año • Género • Duración)
                                 Text(

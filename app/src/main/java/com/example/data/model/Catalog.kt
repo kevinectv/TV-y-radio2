@@ -29,5 +29,8 @@ data class CatalogItem(
     val rating: String = "8.2",
     val genre: String = "Acción",
     val description: String = "Una película espectacular llena de misterios y acción garantizada.",
-    val streamUrl: String? = null
+    val streamUrl: String? = null,
+    val tmdbId: String? = null,
+    val isTvShow: Boolean = false,
+    val logoUrl: String? = null
 )
