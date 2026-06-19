@@ -129,7 +129,6 @@ fun SettingsWorkspace(
                     modifier = Modifier
                         .width(220.dp)
                         .fillMaxHeight()
-                        .focusGroup()
                         .padding(end = 12.dp)
                 ) {
                     Text(
@@ -170,7 +169,6 @@ fun SettingsWorkspace(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .focusGroup()
                         .padding(start = 16.dp)
                 ) {
                     AnimatedContent(

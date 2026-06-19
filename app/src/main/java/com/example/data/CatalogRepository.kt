@@ -39,8 +39,8 @@ class CatalogRepository(private val context: Context) {
                 
                 if (cat.items.isEmpty() && cat.url.startsWith("http") && hasNoDefaultMock) {
                     needsSave = true
-                    val items = fetchItemsForCatalog(cat)
-                    cat.copy(items = items, status = "Sincronizado", lastUpdated = "Al iniciar")
+                    val result = fetchItemsForCatalog(cat)
+                    cat.copy(items = result.items, status = result.status, lastUpdated = "Al iniciar")
                 } else cat
             }
             if (needsSave) {
@@ -96,13 +96,13 @@ class CatalogRepository(private val context: Context) {
     suspend fun addCatalog(catalog: Catalog): Boolean = withContext(Dispatchers.IO) {
         val current = _catalogs.value.toMutableList()
         val index = current.size
-        val items = fetchItemsForCatalog(catalog)
+        val result = fetchItemsForCatalog(catalog)
         val newCatalog = catalog.copy(
             id = if (catalog.id.isEmpty()) UUID.randomUUID().toString() else catalog.id,
             orderIndex = index,
-            items = items,
-            status = "Sincronizado",
-            lastUpdated = "Hoy"
+            items = result.items,
+            status = result.status,
+            lastUpdated = result.lastUpdated
         )
         current.add(newCatalog)
         saveCatalogsList(current)
@@ -114,15 +114,17 @@ class CatalogRepository(private val context: Context) {
             if (it.id == updated.id) {
                 val urlChanged = it.url != updated.url
                 val itemsEmpty = updated.items.isEmpty()
-                val realItems = if (urlChanged || itemsEmpty) {
-                    fetchItemsForCatalog(updated)
+                val (realItems, status, lastUpdated) = if (urlChanged || itemsEmpty) {
+                    val res = fetchItemsForCatalog(updated)
+                    val items = if (res.items.isEmpty() && updated.items.isNotEmpty()) updated.items else res.items
+                    Triple(items, res.status, res.lastUpdated)
                 } else {
-                    updated.items
+                    Triple(updated.items, "Sincronizado", "Ahora mismo")
                 }
                 updated.copy(
                     items = realItems,
-                    status = "Sincronizado",
-                    lastUpdated = "Ahora mismo"
+                    status = status,
+                    lastUpdated = lastUpdated
                 )
             } else it
         }
@@ -163,11 +165,12 @@ class CatalogRepository(private val context: Context) {
     suspend fun syncNow(id: String): Boolean = withContext(Dispatchers.IO) {
         val updated = _catalogs.value.map {
             if (it.id == id) {
-                val realItems = fetchItemsForCatalog(it)
+                val result = fetchItemsForCatalog(it)
+                val updatedItems = if (result.items.isEmpty() && it.items.isNotEmpty()) it.items else result.items
                 it.copy(
-                    status = "Sincronizado",
-                    lastUpdated = "Último minuto",
-                    items = realItems
+                    status = result.status,
+                    lastUpdated = result.lastUpdated,
+                    items = updatedItems
                 )
             } else it
         }
@@ -177,11 +180,12 @@ class CatalogRepository(private val context: Context) {
 
     suspend fun syncAll(): Boolean = withContext(Dispatchers.IO) {
         val current = _catalogs.value.map {
-            val realItems = fetchItemsForCatalog(it)
+            val result = fetchItemsForCatalog(it)
+            val updatedItems = if (result.items.isEmpty() && it.items.isNotEmpty()) it.items else result.items
             it.copy(
-                status = "Sincronizado",
-                lastUpdated = "Hace unos instantes",
-                items = realItems
+                status = result.status,
+                lastUpdated = result.lastUpdated,
+                items = updatedItems
             )
         }
         saveCatalogsList(current)
@@ -193,8 +197,9 @@ class CatalogRepository(private val context: Context) {
         val updated = current.map { cat ->
             val isCustomUrl = cat.url.isNotEmpty() && !cat.url.contains("lumina.app") && cat.url.startsWith("http", ignoreCase = true)
             if (cat.sourceType == "Local" || cat.sourceType == "Custom" || isCustomUrl || cat.url.isEmpty()) {
-                val realItems = fetchItemsForCatalog(cat)
-                cat.copy(items = realItems, status = "Sincronizado", lastUpdated = "Recién Recargado")
+                val result = fetchItemsForCatalog(cat)
+                val updatedItems = if (result.items.isEmpty() && cat.items.isNotEmpty()) cat.items else result.items
+                cat.copy(items = updatedItems, status = result.status, lastUpdated = result.lastUpdated)
             } else cat
         }
         saveCatalogsList(updated)
@@ -261,19 +266,31 @@ class CatalogRepository(private val context: Context) {
         }
     }
 
-    private suspend fun fetchItemsForCatalog(catalog: Catalog): List<CatalogItem> = withContext(Dispatchers.IO) {
+data class SyncResult(
+    val items: List<CatalogItem>,
+    val status: String,
+    val lastUpdated: String
+)
+
+    private suspend fun fetchItemsForCatalog(catalog: Catalog): SyncResult = withContext(Dispatchers.IO) {
         val list = mutableListOf<CatalogItem>()
+        var status = "Sincronizado"
+        val lastUpdated = "Recién Recargado"
 
         val rawUrl = catalog.url.trim()
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val tmdbKey = prefs.getString("tmdb_api_key", "") ?: ""
-        val traktKey = prefs.getString("trakt_api_key", "") ?: ""
-        val mdblistKey = prefs.getString("mdblist_api_key", "") ?: ""
+        val tmdbKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val traktKey = prefs.getString("trakt_api_key", "")?.trim() ?: ""
+        val mdblistKey = prefs.getString("mdblist_api_key", "")?.trim() ?: ""
         
         var cleanUrl = rawUrl
         if (cleanUrl.contains("INSERT_KEY_HERE")) {
             if (tmdbKey.isNotEmpty() && cleanUrl.contains("api.themoviedb.org")) {
-                cleanUrl = cleanUrl.replace("INSERT_KEY_HERE", tmdbKey)
+                if (tmdbKey.startsWith("ey")) {
+                    cleanUrl = cleanUrl.replace("api_key=INSERT_KEY_HERE", "").replace("&&", "&").replace("?&", "?").trimEnd('&', '?')
+                } else {
+                    cleanUrl = cleanUrl.replace("INSERT_KEY_HERE", tmdbKey)
+                }
             }
         }
         
@@ -296,7 +313,7 @@ class CatalogRepository(private val context: Context) {
             // If the user hasn't provided a TMDB key, but we are querying TMDB using the placeholder,
             // we should not execute the request to avoid 401 Unauthorized crashes, we just return empty.
             if (cleanUrl.contains("INSERT_KEY_HERE")) {
-                return@withContext emptyList()
+                return@withContext SyncResult(emptyList(), "Falta API Key", "Sin clave")
             }
             
             try {
@@ -311,6 +328,10 @@ class CatalogRepository(private val context: Context) {
                 if (cleanUrl.contains("trakt.tv") && traktKey.isNotEmpty()) {
                     reqBuilder.header("trakt-api-version", "2")
                     reqBuilder.header("trakt-api-key", traktKey)
+                }
+                
+                if (cleanUrl.contains("api.themoviedb.org") && tmdbKey.startsWith("ey")) {
+                    reqBuilder.header("Authorization", "Bearer $tmdbKey")
                 }
                 
                 val request = reqBuilder.build()
@@ -344,9 +365,22 @@ class CatalogRepository(private val context: Context) {
                                 }
                             }
                         }
+                        status = "Sincronizado"
+                    } else {
+                        status = when (response.code) {
+                            401 -> "Error 401: No autorizado (Verifica tu clave)"
+                            403 -> "Error 403: Prohibido / Sin acceso"
+                            404 -> "Error 404: No encontrado"
+                            else -> "Error HTTP: ${response.code}"
+                        }
                     }
                 }
+            } catch (e: java.net.UnknownHostException) {
+                status = "Sin conexión (Host desconocido)"
+            } catch (e: java.net.SocketTimeoutException) {
+                status = "Tiempo de espera agotado"
             } catch (e: Exception) {
+                status = "Error: ${e.localizedMessage ?: "Fallo"}"
                 e.printStackTrace()
             }
         }
@@ -357,7 +391,11 @@ class CatalogRepository(private val context: Context) {
         // Merge results: URL results take priority
         val mergedList = (list + dbItems).distinctBy { it.title.lowercase().trim() }
         
-        mergedList.take(maxOf(catalog.numItems, 500))
+        SyncResult(
+            items = mergedList.take(maxOf(catalog.numItems, 500)),
+            status = status,
+            lastUpdated = lastUpdated
+        )
     }
 
     private fun parseM3uCatalog(m3uContent: String, catalogId: String): List<CatalogItem> {
