@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -193,11 +194,7 @@ fun HomeScreen(
         }
     }
 
-    val scale by animateFloatAsState(
-        targetValue = if (isTrailerLive) 1.08f else 1.0f,
-        animationSpec = tween(durationMillis = 13500, easing = androidx.compose.animation.core.LinearEasing),
-        label = "ken_burns_scale"
-    )
+    val scale = 1.0f
 
     Box(modifier = modifier.fillMaxSize()) {
         // --- 1. CAPA DE FONDO CINEMÁTICO ADAPTATIVO CON CROSSFADE ---
@@ -228,6 +225,7 @@ fun HomeScreen(
                                     isFocusableInTouchMode = false
                                 }
                             },
+                            modifier = Modifier.fillMaxSize().focusable(false),
                             update = { videoView ->
                                 val url = movieDetails.trailerUrl
                                 if (videoView.tag != url) {
@@ -239,6 +237,7 @@ fun HomeScreen(
                                             mp.isLooping = true
                                             mp.setVolume(0f, 0f) // Silenciado para ambiente premium
                                             videoView.start()
+                                            videoView.clearFocus()
                                             isReady = true
                                         }
                                         videoView.setOnErrorListener { _, _, _ ->
@@ -255,8 +254,7 @@ fun HomeScreen(
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
-                            },
-                            modifier = Modifier.fillMaxSize()
+                            }
                         )
                         
                         if (!isReady) {
@@ -320,18 +318,7 @@ fun HomeScreen(
                 }
             }
 
-            // Barra fina de progreso del tráiler en el fondo
-            if (isTrailerLive) {
-                LinearProgressIndicator(
-                    progress = { trailerProgress },
-                    color = Color(0xFF00E5FF),
-                    trackColor = Color.White.copy(alpha = 0.1f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .align(Alignment.BottomCenter)
-                )
-            }
+            // Barra fina de progreso del tráiler removida para aspecto premium
         }
 
         // --- 2. LISTADO DESLIZANTE DE CATEGORÍAS EN PRIMERA PLANA (OVERLAPPING SCROLL) ---
@@ -539,22 +526,7 @@ fun HomeScreen(
                                         }
                                     }
 
-                                    // Indicadores de posición del carrusel para navegación manual táctil/remoto
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        featuredMovies.forEachIndexed { idx, movie ->
-                                            val active = (movie.id == currentMovie.id)
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(if (active) 7.dp else 5.dp)
-                                                    .clip(CircleShape)
-                                                    .background(if (active) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.35f))
-                                                    /* no clickable on TV/mobile to prevent focus trap */
-                                            )
-                                        }
-                                    }
+                                    // Indicadores de posición removidos para diseño premium
                                 }
 
                                 // Subtítulos dinámicos removidos para un diseño limpio y premium
@@ -1124,13 +1096,35 @@ fun CatalogItemHomeCard(
         else -> 154.dp
     }
 
+    var isFocused by remember { mutableStateOf(false) }
+    var showInlineVideo by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            kotlinx.coroutines.delay(1000)
+            showInlineVideo = true
+        } else {
+            showInlineVideo = false
+        }
+    }
+
+    val cinematicDetails = remember(item.id) { getCinematicDetails(item) }
+    val hasTrailer = cinematicDetails.trailerUrl.isNotEmpty()
+
+    val animatedWidth by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (showInlineVideo && hasTrailer) 240.dp else cardWidth,
+        animationSpec = androidx.compose.animation.core.tween(350),
+        label = "inline_video_width"
+    )
+
     val appliedModifier = if (modifier == Modifier) {
-        Modifier.width(cardWidth)
+        Modifier.width(animatedWidth)
     } else modifier
     Card(
         modifier = appliedModifier
             .onFocusChanged { state ->
-                if (state.isFocused || state.hasFocus) {
+                isFocused = state.isFocused || state.hasFocus
+                if (isFocused) {
                     onFocus()
                 }
             }
@@ -1138,7 +1132,7 @@ fun CatalogItemHomeCard(
             .tvFocusEffect(
                 shape = RoundedCornerShape(8.dp),
                 focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.10f
+                scaleAmount = 1.05f
             ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
@@ -1150,13 +1144,67 @@ fun CatalogItemHomeCard(
                     .fillMaxWidth()
                     .height(imageHeight)
             ) {
-                // Movie/Show Poster
-                AsyncImage(
-                    model = item.posterUrl,
-                    contentDescription = item.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (showInlineVideo && hasTrailer) {
+                    var isReady by remember { mutableStateOf(false) }
+                    AndroidView(
+                        factory = { ctx ->
+                            android.widget.VideoView(ctx).apply {
+                                layoutParams = android.view.ViewGroup.LayoutParams(
+                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                                isFocusable = false
+                                isFocusableInTouchMode = false
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .focusable(false),
+                        update = { videoView ->
+                            val url = cinematicDetails.trailerUrl
+                            if (videoView.tag != url) {
+                                videoView.tag = url
+                                try {
+                                    videoView.stopPlayback()
+                                    videoView.setVideoPath(url)
+                                    videoView.setOnPreparedListener { mp ->
+                                        mp.isLooping = true
+                                        mp.setVolume(0f, 0f)
+                                        videoView.start()
+                                        videoView.clearFocus()
+                                        isReady = true
+                                    }
+                                    videoView.setOnErrorListener { _, _, _ -> true }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        },
+                        onRelease = { videoView ->
+                            try {
+                                videoView.stopPlayback()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    )
+                    if (!isReady) {
+                        AsyncImage(
+                            model = cinematicDetails.backdropUrl,
+                            contentDescription = item.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                } else {
+                    // Movie/Show Poster
+                    AsyncImage(
+                        model = item.posterUrl,
+                        contentDescription = item.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
 
                 // Gold Rating Overlay Tag
                 Row(

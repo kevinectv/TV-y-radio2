@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -128,6 +129,7 @@ fun SettingsWorkspace(
                     modifier = Modifier
                         .width(220.dp)
                         .fillMaxHeight()
+                        .focusGroup()
                         .padding(end = 12.dp)
                 ) {
                     Text(
@@ -168,6 +170,7 @@ fun SettingsWorkspace(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .focusGroup()
                         .padding(start = 16.dp)
                 ) {
                     AnimatedContent(
@@ -2781,12 +2784,13 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { syncMode = "automatic" }
+                        .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = (syncMode == "automatic"),
-                        onClick = { syncMode = "automatic" },
+                        onClick = null,
                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -2800,12 +2804,13 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { syncMode = "startup" }
+                        .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = (syncMode == "startup"),
-                        onClick = { syncMode = "startup" },
+                        onClick = null,
                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -2819,12 +2824,13 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { syncMode = "manual" }
+                        .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = (syncMode == "manual"),
-                        onClick = { syncMode = "manual" },
+                        onClick = null,
                         colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -3042,6 +3048,7 @@ fun CatalogItemCard(
                         onClick = onSync,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.Black, modifier = Modifier.size(16.dp))
@@ -3052,6 +3059,7 @@ fun CatalogItemCard(
                         onClick = onMoveUp,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.Black, modifier = Modifier.size(16.dp))
@@ -3062,6 +3070,7 @@ fun CatalogItemCard(
                         onClick = onMoveDown,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.Black, modifier = Modifier.size(16.dp))
@@ -3072,6 +3081,7 @@ fun CatalogItemCard(
                         onClick = onToggleVisibility,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(
@@ -3087,6 +3097,7 @@ fun CatalogItemCard(
                         onClick = onEdit,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Black, modifier = Modifier.size(16.dp))
@@ -3097,6 +3108,7 @@ fun CatalogItemCard(
                         onClick = onLayoutClick,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color(0xFF00E5FF), RoundedCornerShape(6.dp))
                     ) {
                         Icon(
@@ -3112,6 +3124,7 @@ fun CatalogItemCard(
                         onClick = onDelete,
                         modifier = Modifier
                             .size(34.dp)
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Black, modifier = Modifier.size(16.dp))

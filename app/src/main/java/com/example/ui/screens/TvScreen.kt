@@ -6,6 +6,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -223,8 +224,11 @@ fun TvScreen(
                                                     android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                                                     android.view.ViewGroup.LayoutParams.MATCH_PARENT
                                                 )
+                                                isFocusable = false
+                                                isFocusableInTouchMode = false
                                             }
                                         },
+                                        modifier = Modifier.fillMaxSize().focusable(false),
                                         update = { videoView ->
                                             if (viewModel.isFullscreenPlayerActive) {
                                                 try {
@@ -264,8 +268,7 @@ fun TvScreen(
                                             } catch (e: Exception) {
                                                 e.printStackTrace()
                                             }
-                                        },
-                                        modifier = Modifier.fillMaxSize()
+                                        }
                                     )
                                 } else {
                                     if (viewModel.selectedChannel.id != "no_channel") {
@@ -471,8 +474,11 @@ fun TvScreen(
                                                         android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                                                         android.view.ViewGroup.LayoutParams.MATCH_PARENT
                                                     )
+                                                    isFocusable = false
+                                                    isFocusableInTouchMode = false
                                                 }
                                             },
+                                            modifier = Modifier.fillMaxSize().focusable(false),
                                             update = { videoView ->
                                                 if (viewModel.isFullscreenPlayerActive) {
                                                     try {
@@ -512,8 +518,7 @@ fun TvScreen(
                                                 } catch (e: Exception) {
                                                     e.printStackTrace()
                                                 }
-                                            },
-                                            modifier = Modifier.fillMaxSize()
+                                            }
                                         )
                                     } else {
                                         if (viewModel.selectedChannel.id != "no_channel") {
