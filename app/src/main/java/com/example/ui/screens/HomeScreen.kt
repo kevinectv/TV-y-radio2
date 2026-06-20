@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -223,6 +224,7 @@ fun HomeScreen(
                     bannerHeight = bannerHeight,
                     isWideLayout = isWideLayout,
                     viewModel = viewModel,
+                    scrollState = listState,
                     onTrailerClick = { activeTrailerItem = it },
                     onDetailsClick = { selectedCatalogItem = it }
                 )
@@ -961,10 +963,21 @@ fun HomeHeroBanner(
     bannerHeight: androidx.compose.ui.unit.Dp,
     isWideLayout: Boolean,
     viewModel: MediaViewModel,
+    scrollState: LazyListState,
     onTrailerClick: (CatalogItem) -> Unit,
     onDetailsClick: (CatalogItem) -> Unit
 ) {
     val context = LocalContext.current
+
+    val parallaxOffset by remember(scrollState) {
+        derivedStateOf {
+            if (scrollState.firstVisibleItemIndex == 0) {
+                scrollState.firstVisibleItemScrollOffset * 0.45f
+            } else {
+                0f
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -972,11 +985,15 @@ fun HomeHeroBanner(
             .height(bannerHeight)
             .background(Color(0xFF030406))
     ) {
-        // A) Backdrop Image Layer with Crossfade
+        // A) Backdrop Image Layer with Crossfade (With custom parallax movement)
         Crossfade(
             targetState = currentMovie,
             animationSpec = tween(650),
-            label = "hero_backdrop_fade"
+            label = "hero_backdrop_fade",
+            modifier = Modifier
+                .graphicsLayer {
+                    translationY = parallaxOffset
+                }
         ) { movie ->
             val movieDetails = getCinematicDetails(movie)
             val backdropUrlToUse = if (movie == currentMovie) {
@@ -985,7 +1002,13 @@ fun HomeHeroBanner(
                 movieDetails.backdropUrl
             }
             
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 10.dp) // Premium margins around image to keep it beautiful & balanced
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+            ) {
                 AsyncImage(
                     model = backdropUrlToUse,
                     contentDescription = movie.title,
@@ -1018,7 +1041,7 @@ fun HomeHeroBanner(
                                 colors = listOf(
                                     Color.Transparent,
                                     Color.Black.copy(alpha = 0.40f),
-                                    Color(0xFF030406) // Smooth blend with background list color
+                                    Color.Black.copy(alpha = 0.90f) // Matches background slate
                                 )
                             )
                         )
