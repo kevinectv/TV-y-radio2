@@ -125,110 +125,35 @@ fun HomeScreen(
         
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
         val apiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
-        if (apiKey.isNotEmpty()) {
+        
+        // 1. Try reading straight from Lumina Catalog Engine cache fields
+        if (currentMovie.backdropUrl != null || currentMovie.logoUrl != null || currentMovie.castJson != null) {
+            activeHeroLogoUrl = currentMovie.logoUrl
+            activeHeroLoadedDetails = LoadedTmdbDetails(
+                description = currentMovie.description,
+                rating = currentMovie.rating,
+                year = currentMovie.year,
+                logoUrl = currentMovie.logoUrl,
+                backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl
+            )
+            return@LaunchedEffect
+        }
+
+        // 2. Fallback to Catalog Engine lookup
+        val engine = viewModel.catalogRepository?.engine
+        if (engine != null && apiKey.isNotEmpty()) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
-                    val client = okhttp3.OkHttpClient()
-                    var tmdbId = currentMovie.tmdbId
-                    var isTv = currentMovie.isTvShow
+                    val enriched = engine.enrichCatalogItem(currentMovie, apiKey)
                     
-                    // Fallback lookup: Search by title if tmdbId is missing (so simple custom lists load real dynamic overviews too!)
-                    if (tmdbId.isNullOrEmpty()) {
-                        val searchUrl = "https://api.themoviedb.org/3/search/multi?query=${java.net.URLEncoder.encode(currentMovie.title, "UTF-8")}&language=es-MX"
-                        val reqBuilder = okhttp3.Request.Builder()
-                        if (apiKey.startsWith("ey")) {
-                            reqBuilder.url(searchUrl)
-                            reqBuilder.header("Authorization", "Bearer $apiKey")
-                        } else {
-                            reqBuilder.url("$searchUrl&api_key=$apiKey")
-                        }
-                        val resp = client.newCall(reqBuilder.build()).execute()
-                        if (resp.isSuccessful) {
-                            val jsonStr = resp.body?.string() ?: ""
-                            val results = org.json.JSONObject(jsonStr).optJSONArray("results")
-                            if (results != null && results.length() > 0) {
-                                val first = results.getJSONObject(0)
-                                tmdbId = first.optString("id")
-                                isTv = first.optString("media_type") == "tv" || first.has("first_air_date") || (first.has("name") && !first.has("title"))
-                            }
-                        }
-                    }
-                    
-                    if (!tmdbId.isNullOrEmpty()) {
-                        val mediaType = if (isTv) "tv" else "movie"
-                        
-                        // 1. Fetch details
-                        val detailUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId?language=es-MX"
-                        val reqBuilder = okhttp3.Request.Builder()
-                        if (apiKey.startsWith("ey")) {
-                            reqBuilder.url(detailUrl)
-                            reqBuilder.header("Authorization", "Bearer $apiKey")
-                        } else {
-                            reqBuilder.url("$detailUrl&api_key=$apiKey")
-                        }
-                        val resp = client.newCall(reqBuilder.build()).execute()
-                        var overrideDesc = currentMovie.description
-                        var overrideRating = currentMovie.rating
-                        var overrideYear = currentMovie.year
-                        var overrideBackdrop = currentMovie.posterUrl
-                        
-                        if (resp.isSuccessful) {
-                            val jsonStr = resp.body?.string() ?: ""
-                            val jsonObj = org.json.JSONObject(jsonStr)
-                            val overview = jsonObj.optString("overview", "").trim()
-                            if (overview.isNotEmpty()) {
-                                overrideDesc = overview
-                            }
-                            val vote = jsonObj.optDouble("vote_average", 0.0)
-                            if (vote > 0.0) {
-                                overrideRating = String.format(java.util.Locale.US, "%.1f", vote)
-                            }
-                            val releaseDate = jsonObj.optString("release_date").ifEmpty { jsonObj.optString("first_air_date", "") }
-                            if (releaseDate.length >= 4) {
-                                overrideYear = releaseDate.substring(0, 4)
-                            }
-                            val backdropPath = jsonObj.optString("backdrop_path", "")
-                            if (backdropPath.isNotEmpty()) {
-                                overrideBackdrop = "https://image.tmdb.org/t/p/w1280$backdropPath"
-                            }
-                        }
-                        
-                        // 2. Fetch logo
-                        val logoUrlBuilder = "https://api.themoviedb.org/3/$mediaType/$tmdbId/images?include_image_language=es,en,null"
-                        val logoReqBuilder = okhttp3.Request.Builder()
-                        if (apiKey.startsWith("ey")) {
-                            logoReqBuilder.url(logoUrlBuilder)
-                            logoReqBuilder.header("Authorization", "Bearer $apiKey")
-                        } else {
-                            logoReqBuilder.url("$logoUrlBuilder&api_key=$apiKey")
-                        }
-                        val logoResp = client.newCall(logoReqBuilder.build()).execute()
-                        var logo: String? = null
-                        if (logoResp.isSuccessful) {
-                            val jsonStr = logoResp.body?.string() ?: ""
-                            val logos = org.json.JSONObject(jsonStr).optJSONArray("logos")
-                            if (logos != null && logos.length() > 0) {
-                                var bestPath = logos.getJSONObject(0).optString("file_path")
-                                for (i in 0 until logos.length()) {
-                                    val lang = logos.getJSONObject(i).optString("iso_639_1", "")
-                                    if (lang == "es") {
-                                        bestPath = logos.getJSONObject(i).optString("file_path")
-                                        break
-                                    }
-                                }
-                                logo = "https://image.tmdb.org/t/p/w500$bestPath"
-                            }
-                        }
-                        
-                        activeHeroLogoUrl = logo
-                        activeHeroLoadedDetails = LoadedTmdbDetails(
-                            description = overrideDesc,
-                            rating = overrideRating,
-                            year = overrideYear,
-                            logoUrl = logo,
-                            backdropUrl = overrideBackdrop
-                        )
-                    }
+                    activeHeroLogoUrl = enriched.logoUrl
+                    activeHeroLoadedDetails = LoadedTmdbDetails(
+                        description = enriched.description,
+                        rating = enriched.rating,
+                        year = enriched.year,
+                        logoUrl = enriched.logoUrl,
+                        backdropUrl = enriched.backdropUrl ?: enriched.posterUrl
+                    )
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -1711,129 +1636,73 @@ fun CatalogItemDetailsDialog(
     LaunchedEffect(item) {
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
         val apiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
-        if (apiKey.isNotEmpty()) {
+        
+        // 1. Try reading straight from Lumina Catalog Engine cache fields
+        val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
+            ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+        }
+        if (item.backdropUrl != null || item.logoUrl != null || cachedCast.isNotEmpty()) {
+            if (!item.backdropUrl.isNullOrEmpty()) {
+                dynamicBackdrop = item.backdropUrl
+            }
+            if (!item.logoUrl.isNullOrEmpty()) {
+                dynamicLogoUrl = item.logoUrl
+            }
+            if (cachedCast.isNotEmpty()) {
+                dynamicCast = cachedCast
+            }
+            if (!item.description.isNullOrEmpty()) {
+                dynamicDescription = item.description
+            }
+            if (!item.rating.isNullOrEmpty()) {
+                dynamicRating = item.rating
+            }
+            if (!item.year.isNullOrEmpty()) {
+                dynamicYear = item.year
+            }
+            return@LaunchedEffect
+        }
+
+        // 2. Fallback to Catalog Engine lookup
+        val engine = viewModel.catalogRepository?.engine
+        if (engine != null && apiKey.isNotEmpty()) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
-                    val client = okhttp3.OkHttpClient()
-                    var tmdbId = item.tmdbId
-                    var isTv = item.isTvShow
+                    val enriched = engine.enrichCatalogItem(item, apiKey)
                     
-                    // Fallback lookup: Search by title if tmdbId is missing (so simple custom lists load real dynamic overviews too!)
-                    if (tmdbId.isNullOrEmpty()) {
-                        val searchUrl = "https://api.themoviedb.org/3/search/multi?query=${java.net.URLEncoder.encode(item.title, "UTF-8")}&language=es-MX"
-                        val reqBuilder = okhttp3.Request.Builder()
-                        if (apiKey.startsWith("ey")) {
-                            reqBuilder.url(searchUrl)
-                            reqBuilder.header("Authorization", "Bearer $apiKey")
-                        } else {
-                            reqBuilder.url("$searchUrl&api_key=$apiKey")
-                        }
-                        val resp = client.newCall(reqBuilder.build()).execute()
-                        if (resp.isSuccessful) {
-                            val jsonStr = resp.body?.string() ?: ""
-                            val results = org.json.JSONObject(jsonStr).optJSONArray("results")
-                            if (results != null && results.length() > 0) {
-                                val first = results.getJSONObject(0)
-                                tmdbId = first.optString("id")
-                                isTv = first.optString("media_type") == "tv" || first.has("first_air_date") || (first.has("name") && !first.has("title"))
-                            }
-                        }
+                    if (!enriched.backdropUrl.isNullOrEmpty()) {
+                        dynamicBackdrop = enriched.backdropUrl
                     }
-                    
-                    if (!tmdbId.isNullOrEmpty()) {
-                        val mediaType = if (isTv) "tv" else "movie"
-                        
-                        // 1. Fetch details
-                        val detailUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId?language=es-MX"
-                        val reqBuilder = okhttp3.Request.Builder()
-                        if (apiKey.startsWith("ey")) {
-                            reqBuilder.url(detailUrl)
-                            reqBuilder.header("Authorization", "Bearer $apiKey")
-                        } else {
-                            reqBuilder.url("$detailUrl&api_key=$apiKey")
-                        }
-                        val resp = client.newCall(reqBuilder.build()).execute()
-                        if (resp.isSuccessful) {
-                            val jsonStr = resp.body?.string() ?: ""
-                            val jsonObj = org.json.JSONObject(jsonStr)
-                            val overview = jsonObj.optString("overview", "").trim()
-                            if (overview.isNotEmpty()) {
-                                dynamicDescription = overview
+                    if (!enriched.logoUrl.isNullOrEmpty()) {
+                        dynamicLogoUrl = enriched.logoUrl
+                    }
+                    val parsedCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
+                        ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+                    }
+                    if (parsedCast.isNotEmpty()) {
+                        dynamicCast = parsedCast
+                    }
+                    if (!enriched.description.isNullOrEmpty()) {
+                        dynamicDescription = enriched.description
+                    }
+                    if (!enriched.rating.isNullOrEmpty()) {
+                        dynamicRating = enriched.rating
+                    }
+                    if (!enriched.year.isNullOrEmpty()) {
+                        dynamicYear = enriched.year
+                    }
+
+                    // Save enriched items into catalogs list asynchronously
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        viewModel.catalogRepository?.let { repo ->
+                            val currentList = repo.catalogs.value.map { cat ->
+                                val hasItem = cat.items.any { it.id == item.id }
+                                if (hasItem) {
+                                    val newItems = cat.items.map { if (it.id == item.id) enriched else it }
+                                    cat.copy(items = newItems)
+                                } else cat
                             }
-                            val vote = jsonObj.optDouble("vote_average", 0.0)
-                            if (vote > 0.0) {
-                                dynamicRating = String.format(java.util.Locale.US, "%.1f", vote)
-                            }
-                            val releaseDate = jsonObj.optString("release_date").ifEmpty { jsonObj.optString("first_air_date", "") }
-                            if (releaseDate.length >= 4) {
-                                dynamicYear = releaseDate.substring(0, 4)
-                            }
-                            val backdropPath = jsonObj.optString("backdrop_path", "")
-                            if (backdropPath.isNotEmpty()) {
-                                dynamicBackdrop = "https://image.tmdb.org/t/p/w1280$backdropPath"
-                            }
-                        }
-                        
-                        // 2. Fetch logo
-                        val logoUrlBuilder = "https://api.themoviedb.org/3/$mediaType/$tmdbId/images?include_image_language=es,en,null"
-                        val logoReqBuilder = okhttp3.Request.Builder()
-                        if (apiKey.startsWith("ey")) {
-                            logoReqBuilder.url(logoUrlBuilder)
-                            logoReqBuilder.header("Authorization", "Bearer $apiKey")
-                        } else {
-                            logoReqBuilder.url("$logoUrlBuilder&api_key=$apiKey")
-                        }
-                        val logoResp = client.newCall(logoReqBuilder.build()).execute()
-                        if (logoResp.isSuccessful) {
-                            val jsonStr = logoResp.body?.string() ?: ""
-                            val logos = org.json.JSONObject(jsonStr).optJSONArray("logos")
-                            if (logos != null && logos.length() > 0) {
-                                var bestPath = logos.getJSONObject(0).optString("file_path")
-                                for (i in 0 until logos.length()) {
-                                    val lang = logos.getJSONObject(i).optString("iso_639_1", "")
-                                    if (lang == "es") {
-                                        bestPath = logos.getJSONObject(i).optString("file_path")
-                                        break
-                                    }
-                                }
-                                dynamicLogoUrl = "https://image.tmdb.org/t/p/w500$bestPath"
-                                try {
-                                    val creditsUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId/credits?language=es-MX"
-                                    val creditsReqBuilder = okhttp3.Request.Builder()
-                                    if (apiKey.startsWith("ey")) {
-                                        creditsReqBuilder.url(creditsUrl)
-                                        creditsReqBuilder.header("Authorization", "Bearer $apiKey")
-                                    } else {
-                                        creditsReqBuilder.url("$creditsUrl&api_key=$apiKey")
-                                    }
-                                    val creditsResp = client.newCall(creditsReqBuilder.build()).execute()
-                                    if (creditsResp.isSuccessful) {
-                                        val jsonStr = creditsResp.body?.string() ?: ""
-                                        val castArray = org.json.JSONObject(jsonStr).optJSONArray("cast")
-                                        if (castArray != null && castArray.length() > 0) {
-                                            val tmdbCast = mutableListOf<ActorInfo>()
-                                            val count = minOf(castArray.length(), 10)
-                                            for (i in 0 until count) {
-                                                val castObj = castArray.getJSONObject(i)
-                                                val name = castObj.optString("name", "")
-                                                val character = castObj.optString("character", "")
-                                                val profilePath = castObj.optString("profile_path", "")
-                                                val photoUrl = if (profilePath.isNotEmpty() && profilePath != "null") {
-                                                    "https://image.tmdb.org/t/p/w185$profilePath"
-                                                } else {
-                                                    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200"
-                                                }
-                                                tmdbCast.add(ActorInfo(name, character, photoUrl))
-                                            }
-                                            if (tmdbCast.isNotEmpty()) {
-                                                dynamicCast = tmdbCast
-                                            }
-                                        }
-                                    }
-                                } catch (creditsEx: Exception) {
-                                    creditsEx.printStackTrace()
-                                }
-                            }
+                            repo.saveCatalogsList(currentList)
                         }
                     }
                 } catch (e: Exception) {
@@ -1982,20 +1851,33 @@ fun CatalogItemDetailsDialog(
                                     .align(Alignment.BottomStart)
                                     .padding(horizontal = 20.dp, vertical = 12.dp)
                             ) {
-                                Text(
-                                    text = item.title.uppercase(),
-                                    color = Color.White,
-                                    style = TextStyle(
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 24.sp,
-                                        letterSpacing = (-0.5).sp,
-                                        shadow = androidx.compose.ui.graphics.Shadow(
-                                            color = Color.Black.copy(alpha = 0.9f),
-                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                            blurRadius = 6f
+                                if (!dynamicLogoUrl.isNullOrEmpty()) {
+                                    AsyncImage(
+                                        model = dynamicLogoUrl,
+                                        contentDescription = item.title,
+                                        modifier = Modifier
+                                            .padding(bottom = 6.dp)
+                                            .heightIn(max = 65.dp)
+                                            .widthIn(max = 160.dp),
+                                        contentScale = ContentScale.Fit,
+                                        alignment = Alignment.BottomStart
+                                    )
+                                } else {
+                                    Text(
+                                        text = item.title.uppercase(),
+                                        color = Color.White,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 24.sp,
+                                            letterSpacing = (-0.5).sp,
+                                            shadow = androidx.compose.ui.graphics.Shadow(
+                                                color = Color.Black.copy(alpha = 0.9f),
+                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                blurRadius = 6f
+                                            )
                                         )
                                     )
-                                )
+                                }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),

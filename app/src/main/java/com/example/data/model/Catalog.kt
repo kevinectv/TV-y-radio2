@@ -32,5 +32,11 @@ data class CatalogItem(
     val streamUrl: String? = null,
     val tmdbId: String? = null,
     val isTvShow: Boolean = false,
-    val logoUrl: String? = null
+    val logoUrl: String? = null,
+    val backdropUrl: String? = null,
+    val trailerUrl: String? = null,
+    val director: String? = null,
+    val producer: String? = null,
+    val duration: String? = null,
+    val castJson: String? = null
 )

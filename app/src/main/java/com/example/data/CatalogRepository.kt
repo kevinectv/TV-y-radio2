@@ -24,6 +24,7 @@ class CatalogRepository(private val context: Context) {
 
     private val _catalogs = MutableStateFlow<List<Catalog>>(emptyList())
     val catalogs: StateFlow<List<Catalog>> = _catalogs
+    val engine by lazy { LuminaCatalogEngine(context, this) }
 
     init {
         loadCatalogs()
@@ -47,6 +48,11 @@ class CatalogRepository(private val context: Context) {
                 saveCatalogsList(current)
             }
             refreshLocalCatalogs()
+            try {
+                engine.autoSyncAndEnrichAll()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -80,7 +86,7 @@ class CatalogRepository(private val context: Context) {
         }
     }
 
-    private fun saveCatalogsList(list: List<Catalog>) {
+    fun saveCatalogsList(list: List<Catalog>) {
         try {
             val sortedList = list.mapIndexed { idx, catalog -> catalog.copy(orderIndex = idx) }
             val json = jsonAdapter.toJson(sortedList)
@@ -175,6 +181,13 @@ class CatalogRepository(private val context: Context) {
             } else it
         }
         saveCatalogsList(updated)
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            try {
+                engine.autoSyncAndEnrichAll()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         true
     }
 
@@ -189,6 +202,13 @@ class CatalogRepository(private val context: Context) {
             )
         }
         saveCatalogsList(current)
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            try {
+                engine.autoSyncAndEnrichAll()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         true
     }
 

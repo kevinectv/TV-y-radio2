@@ -2488,7 +2488,8 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
     var selectedCatalogForLayout by remember { mutableStateOf<Catalog?>(null) }
 
     // Sync options states
-    var syncMode by remember { mutableStateOf("automatic") } // "automatic", "manual", "startup"
+    val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
+    var syncMode by remember { mutableStateOf(sharedPrefs.getString("catalog_sync_mode", "automatic") ?: "automatic") }
 
     Column(
         modifier = Modifier
@@ -2781,7 +2782,11 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { syncMode = "automatic" }
+                        .clickable {
+                            syncMode = "automatic"
+                            sharedPrefs.edit().putString("catalog_sync_mode", "automatic").apply()
+                            Toast.makeText(context, "Sincronización Automática configurada", Toast.LENGTH_SHORT).show()
+                        }
                         .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2801,7 +2806,11 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { syncMode = "startup" }
+                        .clickable {
+                            syncMode = "startup"
+                            sharedPrefs.edit().putString("catalog_sync_mode", "startup").apply()
+                            Toast.makeText(context, "Sincronizar al iniciar configurado", Toast.LENGTH_SHORT).show()
+                        }
                         .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2821,7 +2830,11 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { syncMode = "manual" }
+                        .clickable {
+                            syncMode = "manual"
+                            sharedPrefs.edit().putString("catalog_sync_mode", "manual").apply()
+                            Toast.makeText(context, "Sincronización Manual Únicamente configurada", Toast.LENGTH_SHORT).show()
+                        }
                         .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -3039,46 +3052,46 @@ fun CatalogItemCard(
 
                 // Action buttons!
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Update
                     IconButton(
                         onClick = onSync,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.Black, modifier = Modifier.size(13.dp))
                     }
 
                     // Move Up
                     IconButton(
                         onClick = onMoveUp,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.Black, modifier = Modifier.size(13.dp))
                     }
 
                     // Move Down
                     IconButton(
                         onClick = onMoveDown,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.Black, modifier = Modifier.size(13.dp))
                     }
 
                     // Hide/Show Toggle
                     IconButton(
                         onClick = onToggleVisibility,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
@@ -3086,7 +3099,7 @@ fun CatalogItemCard(
                             imageVector = if (catalog.isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = "Visibilidad",
                             tint = Color.Black,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(13.dp)
                         )
                     }
 
@@ -3094,18 +3107,18 @@ fun CatalogItemCard(
                     IconButton(
                         onClick = onEdit,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Black, modifier = Modifier.size(13.dp))
                     }
 
                     // Diseño Visual
                     IconButton(
                         onClick = onLayoutClick,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color(0xFF00E5FF), RoundedCornerShape(6.dp))
                     ) {
@@ -3113,7 +3126,7 @@ fun CatalogItemCard(
                             imageVector = Icons.Default.Layers,
                             contentDescription = "Diseño Visual",
                             tint = Color.Black,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(13.dp)
                         )
                     }
 
@@ -3121,11 +3134,11 @@ fun CatalogItemCard(
                     IconButton(
                         onClick = onDelete,
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(28.dp)
                             .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                             .background(Color.White, RoundedCornerShape(6.dp))
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Black, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Black, modifier = Modifier.size(13.dp))
                     }
                 }
             }
