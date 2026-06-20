@@ -726,12 +726,14 @@ data class SyncResult(
                             obj.optString("plot").ifEmpty {
                                 if (obj.has("movie")) {
                                     val mObj = obj.optJSONObject("movie")
-                                    mObj?.optString("overview") ?: "Contenido sintonizado."
+                                    val ov = mObj?.optString("overview") ?: ""
+                                    if (ov.isNotEmpty()) ov else "Disfruta de este magnífico largometraje disponible en Lumina con la mejor calidad de sonido e imagen del sector cinematográfico."
                                 } else if (obj.has("show")) {
                                     val sObj = obj.optJSONObject("show")
-                                    sObj?.optString("overview") ?: "Contenido sintonizado."
+                                    val ov = sObj?.optString("overview") ?: ""
+                                    if (ov.isNotEmpty()) ov else "Sigue los episodios de tu serie de televisión preferida en alta definición y sin interrupciones con Lumina."
                                 } else {
-                                    "Contenido sintonizado en Lumina."
+                                    "Descubre una experiencia de entretenimiento increíble con este título cuidadosamente seleccionado para el catálogo premium de Lumina."
                                 }
                             }
                         }

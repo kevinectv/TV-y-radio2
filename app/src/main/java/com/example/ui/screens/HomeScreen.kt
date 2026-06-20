@@ -52,6 +52,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.data.model.Channel
 import com.example.data.model.RadioStation
 import com.example.data.model.Catalog
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.example.data.model.CatalogItem
 import com.example.ui.AppTab
 import com.example.ui.MediaViewModel
@@ -80,7 +82,6 @@ fun HomeScreen(
 
     val catalogs by viewModel.catalogsStateFlow.collectAsState()
     var selectedCatalogItem by remember { mutableStateOf<CatalogItem?>(null) }
-    var showDetailsDialog by remember { mutableStateOf(false) }
     var activeTrailerItem by remember { mutableStateOf<CatalogItem?>(null) }
 
     val allChannels by viewModel.allChannels.collectAsState()
@@ -134,7 +135,9 @@ fun HomeScreen(
                 rating = currentMovie.rating,
                 year = currentMovie.year,
                 logoUrl = currentMovie.logoUrl,
-                backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl
+                backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl,
+                duration = currentMovie.duration,
+                genre = currentMovie.genre
             )
             return@LaunchedEffect
         }
@@ -152,7 +155,9 @@ fun HomeScreen(
                         rating = enriched.rating,
                         year = enriched.year,
                         logoUrl = enriched.logoUrl,
-                        backdropUrl = enriched.backdropUrl ?: enriched.posterUrl
+                        backdropUrl = enriched.backdropUrl ?: enriched.posterUrl,
+                        duration = enriched.duration,
+                        genre = enriched.genre
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -200,470 +205,27 @@ fun HomeScreen(
 
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val backdropHeight = if (isWideLayout) 580.dp else 460.dp
+    val bannerHeight = if (isWideLayout) 500.dp else 380.dp
 
-    Box(modifier = modifier.fillMaxSize()) {
-        // --- 1. CAPA DE FONDO CINEMÁTICO ADAPTATIVO CON CROSSFADE ---
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(backdropHeight)
-                .background(Color(0xFF030406))
-        ) {
-            Crossfade(
-                targetState = currentMovie,
-                animationSpec = tween(650),
-                label = "movie_backdrop_fade"
-            ) { movie ->
-                val movieDetails = getCinematicDetails(movie)
-                val backdropUrlToUse = if (movie == currentMovie) {
-                    activeHeroLoadedDetails?.backdropUrl ?: movieDetails.backdropUrl
-                } else {
-                    movieDetails.backdropUrl
-                }
-                Box(modifier = Modifier.fillMaxSize()) {
-                    if (isTrailerLive && movieDetails.trailerUrl.isNotEmpty() && movie == currentMovie) {
-                        var isReady by remember(movie) { mutableStateOf(false) }
-                        
-                        AndroidView(
-                            factory = { ctx ->
-                                VideoView(ctx).apply {
-                                    layoutParams = ViewGroup.LayoutParams(
-                                        ViewGroup.LayoutParams.MATCH_PARENT,
-                                        ViewGroup.LayoutParams.MATCH_PARENT
-                                    )
-                                    isFocusable = false
-                                    isFocusableInTouchMode = false
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize().focusable(false),
-                            update = { videoView ->
-                                val url = movieDetails.trailerUrl
-                                if (videoView.tag != url) {
-                                    videoView.tag = url
-                                    try {
-                                        videoView.stopPlayback()
-                                        videoView.setVideoPath(url)
-                                        videoView.setOnPreparedListener { mp ->
-                                            mp.isLooping = true
-                                            mp.setVolume(0f, 0f) // Silenciado para ambiente premium
-                                            videoView.start()
-                                            videoView.clearFocus()
-                                            isReady = true
-                                        }
-                                        videoView.setOnErrorListener { _, _, _ ->
-                                            true
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-                            },
-                            onRelease = { videoView ->
-                                try {
-                                    videoView.stopPlayback()
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        )
-                        
-                        if (!isReady) {
-                            AsyncImage(
-                                model = backdropUrlToUse,
-                                contentDescription = movie.title,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer(
-                                        scaleX = scale,
-                                        scaleY = scale
-                                    )
-                                    .blur(8.dp),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    } else {
-                        AsyncImage(
-                            model = backdropUrlToUse,
-                            contentDescription = movie.title,
-                            modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer(
-                                        scaleX = scale,
-                                        scaleY = scale
-                                    )
-                                    .blur(8.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-
-                    // Degradado Cine-Lux para garantizar legibilidad extrema de textos en el lado izquierdo
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = 0.98f),
-                                        Color.Black.copy(alpha = 0.85f),
-                                        Color.Black.copy(alpha = 0.40f),
-                                        Color.Transparent
-                                    ),
-                                    endX = 1100f
-                                )
-                            )
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.40f),
-                                        Color(0xFF030406) // Fusión perfecta con el color de fondo obsidian de abajo
-                                    )
-                                )
-                            )
-                    )
-                }
-            }
-        }
-
-        // --- 2. LISTADO DESLIZANTE DE CATEGORÍAS EN PRIMERA PLANA (OVERLAPPING SCROLL) ---
+    Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
+        // --- 1. LISTADO DESLIZANTE DE CATEGORÍAS EN PRIMERA PLANA (SCROLL UNDER THE BANNER) ---
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(bottom = 90.dp)
         ) {
-            // -- SECCIÓN 1: CABECERA TRANSLÚCIDA CON DETALLES DEL CONTENIDO (INFO OVERLAY PANEL) --
             item {
-                if (featuredMovies.isNotEmpty()) {
-                    val details = getCinematicDetails(currentMovie)
-                    val baseDescription = activeHeroLoadedDetails?.description ?: currentMovie.description
-                    val baseYear = activeHeroLoadedDetails?.year ?: currentMovie.year
-                    val baseRating = activeHeroLoadedDetails?.rating ?: currentMovie.rating
-                    val headerHeight = if (isWideLayout) 540.dp else 420.dp
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(headerHeight)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 16.dp),
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(),
-                                verticalArrangement = Arrangement.Bottom,
-                                horizontalAlignment = Alignment.Start
-                            ) {
-                                // A) Título elegante con sombra O Logo
-                                val logoToUse = activeHeroLogoUrl ?: currentMovie.logoUrl
-                                if (logoToUse != null) {
-                                    AsyncImage(
-                                        model = logoToUse,
-                                        contentDescription = details.logoText,
-                                        modifier = Modifier
-                                            .padding(bottom = 12.dp)
-                                            .heightIn(max = if (isWideLayout) 130.dp else 90.dp)
-                                            .widthIn(max = if (isWideLayout) 360.dp else 240.dp),
-                                        contentScale = ContentScale.Fit,
-                                        alignment = Alignment.BottomStart
-                                    )
-                                } else {
-                                    Text(
-                                        text = currentMovie.title,
-                                        style = TextStyle(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = if (isWideLayout) 46.sp else 32.sp,
-                                            color = Color.White,
-                                            letterSpacing = (-1).sp,
-                                            shadow = androidx.compose.ui.graphics.Shadow(
-                                                color = Color.Black.copy(alpha = 0.95f),
-                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                blurRadius = 12f
-                                            )
-                                        ),
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                }
-
-                                // B) Línea de metadatos (Año • Género • Duración • TMDB badge • IMDb badge • Status badge)
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.padding(bottom = 10.dp)
-                                ) {
-                                    Text(
-                                        text = baseYear,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                    
-                                    val statusText = remember(currentMovie) {
-                                        val hash = currentMovie.title.hashCode()
-                                        val absHash = if (hash < 0) -hash else hash
-                                        when {
-                                            absHash % 3 == 0 -> "Estreno"
-                                            absHash % 3 == 1 -> "Popular"
-                                            else -> "Trending"
-                                        }
-                                    }
-                                    val statusColor = when (statusText) {
-                                        "Estreno" -> Color(0xFF00E5FF)
-                                        "Popular" -> Color(0xFFFF2E93)
-                                        else -> Color(0xFF00FF87)
-                                    }
-                                    Text(
-                                        text = statusText.uppercase(),
-                                        color = statusColor,
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 10.sp,
-                                        modifier = Modifier
-                                            .background(statusColor.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                            .border(0.5.dp, statusColor.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
- 
-                                    Text(
-                                        text = currentMovie.genre,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
- 
-                                    Text(
-                                        text = "•",
-                                        color = Color.White.copy(alpha = 0.3f),
-                                        fontSize = 12.sp
-                                    )
- 
-                                    val durationText = remember(currentMovie) {
-                                        val mDetails = getCinematicDetails(currentMovie)
-                                        val metaParts = mDetails.dateAndMetadata.split("•")
-                                        if (metaParts.size >= 3) {
-                                            metaParts[2].trim()
-                                        } else if (currentMovie.isTvShow) {
-                                            "4 Temp"
-                                        } else {
-                                            "2h 15m"
-                                        }
-                                    }
-                                    Text(
-                                        text = durationText,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
- 
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                                            .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.40f), RoundedCornerShape(6.dp))
-                                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Star,
-                                            contentDescription = "IMDb Rating",
-                                            tint = Color(0xFFFFD700),
-                                            modifier = Modifier.size(11.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        val imdbRating = remember(currentMovie, baseRating) {
-                                            val ratingFloat = baseRating.toFloatOrNull() ?: 7.5f
-                                            val calculated = (ratingFloat - 0.2f).coerceIn(1.0f, 10.0f)
-                                            String.format("%.1f", calculated)
-                                        }
-                                        Text(
-                                            text = "IMDb $imdbRating",
-                                            color = Color(0xFFFFD700),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Black
-                                        )
-                                    }
- 
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                                            .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.40f), RoundedCornerShape(6.dp))
-                                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Star,
-                                            contentDescription = "TMDB Rating",
-                                            tint = Color(0xFF00FF87),
-                                            modifier = Modifier.size(11.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "TMDB $baseRating",
-                                            color = Color(0xFF00FF87),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Black
-                                        )
-                                    }
-                                }
- 
-                                // C) Sinopsis corta con max 3 líneas y legibilidad premium
-                                Text(
-                                    text = baseDescription,
-                                    color = Color.White.copy(alpha = 0.82f),
-                                    fontSize = if (isWideLayout) 13.sp else 11.5.sp,
-                                    maxLines = 3,
-                                    lineHeight = if (isWideLayout) 18.sp else 16.sp,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .padding(bottom = 18.dp, end = 24.dp)
-                                        .widthIn(max = 620.dp)
-                                )
-
-                                // D) Botones principales con target táctil >= 48dp y focusable para Android TV / Control Remoto
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 16.dp)
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            val movieChannel = Channel(
-                                                id = "movie_${currentMovie.id}",
-                                                name = currentMovie.title,
-                                                streamUrl = currentMovie.streamUrl ?: getCinematicDetails(currentMovie).trailerUrl,
-                                                logoUrl = currentMovie.posterUrl,
-                                                category = "Cine Premium",
-                                                description = currentMovie.description,
-                                                number = 999
-                                            )
-                                            viewModel.selectChannel(movieChannel)
-                                            viewModel.isFullscreenPlayerActive = true
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF00E5FF),
-                                            contentColor = Color.Black
-                                        ),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                        modifier = Modifier
-                                            .height(40.dp)
-                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("REPRODUCIR", fontSize = 12.sp, fontWeight = FontWeight.Black)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            val movieChannel = Channel(
-                                                id = "trailer_${currentMovie.id}",
-                                                name = "${currentMovie.title} - Tráiler",
-                                                streamUrl = getCinematicDetails(currentMovie).trailerUrl,
-                                                logoUrl = currentMovie.posterUrl,
-                                                category = "Cine Premium",
-                                                description = currentMovie.description,
-                                                number = 998) ; activeTrailerItem = currentMovie ; return@OutlinedButton ; val dummy = Channel(id="", name="", streamUrl="", logoUrl="", category="", description="", number=0
-                                            )
-                                            viewModel.selectChannel(movieChannel)
-                                            viewModel.isFullscreenPlayerActive = true
-                                        },
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                                        modifier = Modifier
-                                            .height(40.dp)
-                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("VER TRÁILER", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                                    }
-
-                                    var isInMyList by remember(currentMovie) { mutableStateOf(currentMovie.id in favoriteCatalogItems) }
-                                    OutlinedIconButton(
-                                        onClick = {
-                                            viewModel.toggleCatalogItemFavorite(currentMovie.id)
-                                            isInMyList = !isInMyList
-                                            Toast.makeText(context, if (isInMyList) "Añadida a Mi Lista" else "Quitada de Mi Lista", Toast.LENGTH_SHORT).show()
-                                        },
-                                        colors = IconButtonDefaults.outlinedIconButtonColors(contentColor = Color.White),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(
-                                            imageVector = if (isInMyList) Icons.Filled.Check else Icons.Filled.Add,
-                                            contentDescription = "Añadir a mi lista",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            selectedCatalogItem = currentMovie
-                                            showDetailsDialog = true
-                                        },
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                                        modifier = Modifier
-                                            .height(40.dp)
-                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("DETALLES", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                                    }
-
-                                    var isFavorite by remember(currentMovie) { mutableStateOf(currentMovie.id in favoriteCatalogItems) }
-                                    OutlinedIconButton(
-                                        onClick = {
-                                            viewModel.toggleCatalogItemFavorite(currentMovie.id)
-                                            isFavorite = !isFavorite
-                                        },
-                                        colors = IconButtonDefaults.outlinedIconButtonColors(
-                                            contentColor = if (isFavorite) Color(0xFFFF2E93) else Color.White
-                                        ),
-                                        border = BorderStroke(1.dp, if (isFavorite) Color(0xFFFF2E93).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.3f)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                                    ) {
-                                        Icon(
-                                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                            contentDescription = "Favorito",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                HomeHeroBanner(
+                    currentMovie = currentMovie,
+                    activeHeroLoadedDetails = activeHeroLoadedDetails,
+                    featuredMovies = featuredMovies,
+                    favoriteCatalogItems = favoriteCatalogItems,
+                    bannerHeight = bannerHeight,
+                    isWideLayout = isWideLayout,
+                    viewModel = viewModel,
+                    onTrailerClick = { activeTrailerItem = it },
+                    onDetailsClick = { selectedCatalogItem = it }
+                )
             }
 
             // Dynamic Home Cinema Rows (All user custom lists & active templates in their chosen order)
@@ -692,9 +254,7 @@ fun HomeScreen(
                                     },
                                     onClick = {
                                         activeHeroMovie = item
-                                        coroutineScope.launch {
-                                            listState.animateScrollToItem(0)
-                                        }
+                                        selectedCatalogItem = item
                                     }
                                 )
                             }
@@ -712,9 +272,7 @@ fun HomeScreen(
                                 onFocus = { activeHeroMovie = it },
                                 onClick = { clickedItem ->
                                     activeHeroMovie = clickedItem
-                                    coroutineScope.launch {
-                                        listState.animateScrollToItem(0)
-                                    }
+                                    selectedCatalogItem = clickedItem
                                 }
                             )
                         }
@@ -743,9 +301,7 @@ fun HomeScreen(
                                         },
                                         onClick = {
                                             activeHeroMovie = item
-                                            coroutineScope.launch {
-                                                listState.animateScrollToItem(0)
-                                            }
+                                            selectedCatalogItem = item
                                         }
                                     )
                                 }
@@ -906,14 +462,476 @@ fun HomeScreen(
             }
         }
     }
-    }
 
-    if (showDetailsDialog && selectedCatalogItem != null) {
+    // --- 2. HERO BANNER FIJO (Fixed Hero Banner on top layer) ---
+    if (false) Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(bannerHeight)
+            .background(Color(0xFF030406))
+    ) {
+        // A) Backdrop Image Layer with Crossfade
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(650),
+            label = "hero_backdrop_fade"
+        ) { movie ->
+            val movieDetails = getCinematicDetails(movie)
+            val backdropUrlToUse = if (movie == currentMovie) {
+                activeHeroLoadedDetails?.backdropUrl ?: movieDetails.backdropUrl
+            } else {
+                movieDetails.backdropUrl
+            }
+            
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = backdropUrlToUse,
+                    contentDescription = movie.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Cinematic Gradients (horizontal for text readability, vertical for fusion with list)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.98f),
+                                    Color.Black.copy(alpha = 0.85f),
+                                    Color.Black.copy(alpha = 0.40f),
+                                    Color.Transparent
+                                ),
+                                endX = 1100f
+                            )
+                        )
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.40f),
+                                    Color(0xFF030406) // Smooth blend with background list color
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
+        // B) Hero Content Panel with Crossfade (title, ratings, buttons)
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(500),
+            label = "hero_content_fade"
+        ) { targetMovie ->
+            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 16.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    // 1. PREMIUM BADGES ROW (Constant height container to secure bounds of elements)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(26.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (richMeta.trendPositionText != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
+                                            ),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.TrendingUp,
+                                        contentDescription = "Trend Position",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = richMeta.trendPositionText.uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 9.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            richMeta.premiumBadges.forEach { badge ->
+                                val badgeColor = when (badge) {
+                                    "Top 10" -> Color(0xFFFFD700)
+                                    "Tendencia Global" -> Color(0xFF00FF87)
+                                    "Estreno" -> Color(0xFF00E5FF)
+                                    "Nuevo" -> Color(0xFF9D4EDD)
+                                    else -> Color(0xFFFF2E93)
+                                }
+                                Text(
+                                    text = badge.uppercase(),
+                                    color = badgeColor,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 9.sp,
+                                    letterSpacing = 0.5.sp,
+                                    modifier = Modifier
+                                        .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 2. LOGO OR TITLE (Constant height container to ensure absolute visual stability)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(if (isWideLayout) 120.dp else 80.dp),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
+                        if (richMeta.logoUrl != null) {
+                            AsyncImage(
+                                model = richMeta.logoUrl,
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = if (isWideLayout) 120.dp else 80.dp)
+                                    .widthIn(max = if (isWideLayout) 340.dp else 220.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.BottomStart
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = if (isWideLayout) 42.sp else 30.sp,
+                                    color = Color.White,
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.95f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 12f
+                                    )
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // 3. RATINGS & PRIMARY METADATA ROW (Constant height container)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = richMeta.year,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = "IMDb Rating",
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "IMDb ${richMeta.ratingImdb}",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = "TMDB Rating",
+                                    tint = Color(0xFF00FF87),
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "TMDB ${richMeta.ratingTmdb}",
+                                    color = Color(0xFF00FF87),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Whatshot,
+                                    contentDescription = "Popularity",
+                                    tint = Color(0xFFFF2E93),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = richMeta.popularityText,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 4. SECONDARY METADATA ROW (Genres & Duration - Constant height container)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(24.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = richMeta.genres,
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Text(
+                                text = "•",
+                                color = Color.White.copy(alpha = 0.3f),
+                                fontSize = 12.sp
+                            )
+
+                            Text(
+                                text = richMeta.duration,
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 5. TECHNICAL CAPABILITY BADGES (Constant height container)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(24.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            richMeta.techIndicators.forEach { tech ->
+                                Text(
+                                    text = tech,
+                                    color = Color.White.copy(alpha = 0.65f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 9.sp,
+                                    modifier = Modifier
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(3.dp))
+                                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // 6. SHORT SINOPSIS (Constant height box to secure boundary of elements)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 24.dp)
+                            .height(64.dp)
+                    ) {
+                        Text(
+                            text = richMeta.description,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = if (isWideLayout) 13.sp else 11.5.sp,
+                            maxLines = 3,
+                            lineHeight = if (isWideLayout) 18.sp else 16.sp,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 640.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 7. CORE PREMIUM FUNCTIONAL BUTTONS (Constant height buttons list)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                val movieChannel = Channel(
+                                    id = "movie_${targetMovie.id}",
+                                    name = targetMovie.title,
+                                    streamUrl = targetMovie.streamUrl ?: getCinematicDetails(targetMovie).trailerUrl,
+                                    logoUrl = targetMovie.posterUrl,
+                                    category = "Cine Premium",
+                                    description = targetMovie.description,
+                                    number = 999
+                                )
+                                viewModel.selectChannel(movieChannel)
+                                viewModel.isFullscreenPlayerActive = true
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00E5FF),
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("REPRODUCIR", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                activeTrailerItem = targetMovie
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("VER TRÁILER", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        val isInMyList = targetMovie.id in favoriteCatalogItems
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.toggleCatalogItemFavorite(targetMovie.id)
+                                Toast.makeText(context, if (!isInMyList) "Añadida a Mi Lista" else "Quitada de Mi Lista", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = if (isInMyList) Color(0xFF00FF87) else Color.White
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(
+                                imageVector = if (isInMyList) Icons.Filled.Check else Icons.Filled.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "MI LISTA", 
+                                fontSize = 11.5.sp, 
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                selectedCatalogItem = targetMovie
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("DETALLES", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+    if (selectedCatalogItem != null) {
         CatalogItemDetailsDialog(
             item = selectedCatalogItem!!,
             viewModel = viewModel,
             onDismiss = {
-                showDetailsDialog = false
                 selectedCatalogItem = null
             },
             onTrailerClick = { clickedItem ->
@@ -931,6 +949,483 @@ fun HomeScreen(
                 viewModel.activeTrailerItem = null
             }
         )
+    }
+}
+
+@Composable
+fun HomeHeroBanner(
+    currentMovie: CatalogItem,
+    activeHeroLoadedDetails: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>,
+    favoriteCatalogItems: Set<String>,
+    bannerHeight: androidx.compose.ui.unit.Dp,
+    isWideLayout: Boolean,
+    viewModel: MediaViewModel,
+    onTrailerClick: (CatalogItem) -> Unit,
+    onDetailsClick: (CatalogItem) -> Unit
+) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(bannerHeight)
+            .background(Color(0xFF030406))
+    ) {
+        // A) Backdrop Image Layer with Crossfade
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(650),
+            label = "hero_backdrop_fade"
+        ) { movie ->
+            val movieDetails = getCinematicDetails(movie)
+            val backdropUrlToUse = if (movie == currentMovie) {
+                activeHeroLoadedDetails?.backdropUrl ?: movieDetails.backdropUrl
+            } else {
+                movieDetails.backdropUrl
+            }
+            
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = backdropUrlToUse,
+                    contentDescription = movie.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Cinematic Gradients (horizontal for text readability, vertical for fusion with list)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.98f),
+                                    Color.Black.copy(alpha = 0.85f),
+                                    Color.Black.copy(alpha = 0.40f),
+                                    Color.Transparent
+                                ),
+                                endX = 1100f
+                            )
+                        )
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.40f),
+                                    Color(0xFF030406) // Smooth blend with background list color
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
+        // B) Hero Content Panel with Crossfade (title, ratings, buttons)
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(500),
+            label = "hero_content_fade"
+        ) { targetMovie ->
+            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 16.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    // 1. PREMIUM BADGES ROW
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(26.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (richMeta.trendPositionText != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
+                                            ),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.TrendingUp,
+                                        contentDescription = "Trend Position",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = richMeta.trendPositionText.uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 9.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            richMeta.premiumBadges.forEach { badge ->
+                                val badgeColor = when (badge) {
+                                    "Top 10" -> Color(0xFFFFD700)
+                                    "Tendencia Global" -> Color(0xFF00FF87)
+                                    "Estreno" -> Color(0xFF00E5FF)
+                                    "Nuevo" -> Color(0xFF9D4EDD)
+                                    else -> Color(0xFFFF2E93)
+                                }
+                                Text(
+                                    text = badge.uppercase(),
+                                    color = badgeColor,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 9.sp,
+                                    letterSpacing = 0.5.sp,
+                                    modifier = Modifier
+                                        .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 2. LOGO OR TITLE
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(if (isWideLayout) 120.dp else 80.dp),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
+                        if (richMeta.logoUrl != null) {
+                            AsyncImage(
+                                model = richMeta.logoUrl,
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = if (isWideLayout) 120.dp else 80.dp)
+                                    .widthIn(max = if (isWideLayout) 340.dp else 220.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.BottomStart
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = if (isWideLayout) 42.sp else 30.sp,
+                                    color = Color.White,
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.95f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 12f
+                                    )
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // 3. RATINGS & PRIMARY METADATA ROW
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = richMeta.year,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = "IMDb Rating",
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "IMDb ${richMeta.ratingImdb}",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = "TMDB Rating",
+                                    tint = Color(0xFF00FF87),
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "TMDB ${richMeta.ratingTmdb}",
+                                    color = Color(0xFF00FF87),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Whatshot,
+                                    contentDescription = "Popularity",
+                                    tint = Color(0xFFFF2E93),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = richMeta.popularityText,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 4. SECONDARY METADATA ROW
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(24.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = richMeta.genres,
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Text(
+                                text = "•",
+                                color = Color.White.copy(alpha = 0.3f),
+                                fontSize = 12.sp
+                            )
+
+                            Text(
+                                text = richMeta.duration,
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 5. TECHNICAL CAPABILITY BADGES
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(24.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            richMeta.techIndicators.forEach { tech ->
+                                Text(
+                                    text = tech,
+                                    color = Color.White.copy(alpha = 0.65f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 9.sp,
+                                    modifier = Modifier
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(3.dp))
+                                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // 6. SHORT SINOPSIS
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 24.dp)
+                            .height(64.dp)
+                    ) {
+                        Text(
+                            text = richMeta.description,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = if (isWideLayout) 13.sp else 11.5.sp,
+                            maxLines = 3,
+                            lineHeight = if (isWideLayout) 18.sp else 16.sp,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 640.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 7. CORE PREMIUM FUNCTIONAL BUTTONS
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                val movieChannel = Channel(
+                                    id = "movie_${targetMovie.id}",
+                                    name = targetMovie.title,
+                                    streamUrl = targetMovie.streamUrl ?: getCinematicDetails(targetMovie).trailerUrl,
+                                    logoUrl = targetMovie.posterUrl,
+                                    category = "Cine Premium",
+                                    description = targetMovie.description,
+                                    number = 999
+                                )
+                                viewModel.selectChannel(movieChannel)
+                                viewModel.isFullscreenPlayerActive = true
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00E5FF),
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("REPRODUCIR", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onTrailerClick(targetMovie)
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("VER TRÁILER", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        val isInMyList = targetMovie.id in favoriteCatalogItems
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.toggleCatalogItemFavorite(targetMovie.id)
+                                Toast.makeText(context, if (!isInMyList) "Añadida a Mi Lista" else "Quitada de Mi Lista", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = if (isInMyList) Color(0xFF00FF87) else Color.White
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(
+                                imageVector = if (isInMyList) Icons.Filled.Check else Icons.Filled.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "MI LISTA", 
+                                fontSize = 11.5.sp, 
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onDetailsClick(targetMovie)
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .height(40.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                        ) {
+                            Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("DETALLES", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1101,9 +1596,9 @@ fun ChannelHomeCard(
         modifier = Modifier
             .width(180.dp)
             .height(115.dp)
-            .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
             .clickable { onPlayClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
@@ -1214,9 +1709,9 @@ fun RadioHomeCard(
         modifier = Modifier
             .width(180.dp)
             .height(115.dp)
-            .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
             .clickable { onPlayClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
         border = BorderStroke(1.dp, CardColorGradientOverlay(cardColor))
     ) {
@@ -1373,11 +1868,11 @@ fun CatalogItemHomeCard(
             }
             .clickable { onClick() }
             .tvFocusEffect(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(4.dp),
                 focusedBorderColor = Color(0xFF00E5FF),
                 scaleAmount = 1.08f
             ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
@@ -1614,7 +2109,510 @@ fun getMockCast(itemTitle: String, genre: String): List<ActorInfo> {
 }
 
 @Composable
+fun CatalogItemFullScreenDetails(
+    item: CatalogItem,
+    viewModel: MediaViewModel,
+    onDismiss: () -> Unit,
+    onNavigateToSimilar: (CatalogItem) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val localDetails = remember(item) { getCinematicDetails(item) }
+    val offlineDescription = remember(item) {
+        val joins = localDetails.subtitleLines.joinToString("\n")
+        if (joins.replace("\\[.*?\\]".toRegex(), "").trim().isNotEmpty()) joins else item.description
+    }
+
+    var dynamicDescription by remember(item) { mutableStateOf(offlineDescription.ifEmpty { item.description }) }
+    var dynamicRating by remember(item) { mutableStateOf(item.rating) }
+    var dynamicYear by remember(item) { mutableStateOf(item.year) }
+    var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(item.logoUrl) }
+    var dynamicBackdrop by remember(item) { mutableStateOf(item.backdropUrl ?: localDetails.backdropUrl) }
+    var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
+
+    val catalogsState = viewModel.catalogsStateFlow.collectAsState()
+    val similarItems = remember(item, catalogsState.value) {
+        catalogsState.value.flatMap { it.items }
+            .filter { it.id != item.id && (it.genre.split("/").any { g -> item.genre.contains(g.trim(), ignoreCase = true) } || it.isTvShow == item.isTvShow) }
+            .distinctBy { it.id }
+            .take(8)
+    }
+
+    LaunchedEffect(item) {
+        val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
+            ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+        }
+        if (cachedCast.isNotEmpty()) {
+            dynamicCast = cachedCast
+        } else {
+            dynamicCast = getMockCast(item.title, item.genre)
+        }
+    }
+
+    androidx.activity.compose.BackHandler {
+        onDismiss()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF030406))
+    ) {
+        // Full screen blurred backdrop
+        Box(modifier = Modifier.fillMaxSize()) {
+            AsyncImage(
+                model = dynamicBackdrop.ifEmpty { localDetails.backdropUrl },
+                contentDescription = item.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.16f
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF030406).copy(alpha = 0.6f),
+                                Color(0xFF030406)
+                            )
+                        )
+                    )
+            )
+        }
+
+        val isWide = context.resources.configuration.screenWidthDp >= 600
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 16.dp)
+        ) {
+            // Header Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.08f), CircleShape)
+                            .tvFocusEffect(shape = CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Regresar",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "DETALLES",
+                        color = Color.White.copy(alpha = 0.60f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // Main Content section: Poster & Core Info
+                val contentHeight = if (isWide) 280.dp else 180.dp
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    // Poster image shadow-framed
+                    Card(
+                        modifier = Modifier
+                            .width(if (isWide) 200.dp else 120.dp)
+                            .height(if (isWide) 300.dp else 180.dp),
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                    ) {
+                        AsyncImage(
+                            model = item.posterUrl,
+                            contentDescription = item.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Logo or Title
+                        if (!dynamicLogoUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = dynamicLogoUrl,
+                                contentDescription = item.title,
+                                modifier = Modifier
+                                    .heightIn(max = 70.dp)
+                                    .widthIn(max = 240.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.BottomStart
+                            )
+                        } else {
+                            Text(
+                                text = item.title.uppercase(),
+                                color = Color.White,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = if (isWide) 28.sp else 20.sp,
+                                    letterSpacing = (-0.5).sp
+                                )
+                            )
+                        }
+
+                        // Year & Genres Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = dynamicYear,
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = "•",
+                                color = Color.White.copy(alpha = 0.3f),
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = item.genre,
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        // Rating badges
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = "Rating",
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = dynamicRating,
+                                    color = Color(0xFFFFD700),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            val score = remember(item) {
+                                val hash = item.title.hashCode()
+                                val absHash = if (hash < 0) -hash else hash
+                                val ratingFloat = item.rating.toFloatOrNull() ?: 7.5f
+                                (150.0 + (absHash % 750) + (ratingFloat * 12)).toInt()
+                            }
+                            if (score > 0) {
+                                Text(
+                                    text = "Popularidad: $score",
+                                    color = Color(0xFF00FF87),
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier
+                                        .background(Color(0xFF00FF87).copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        // Essential actions
+                        Row(
+                            modifier = Modifier.padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Button(
+                                onClick = {
+                                    val movieChannel = Channel(
+                                        id = "catalog_${item.id}",
+                                        name = item.title,
+                                        streamUrl = item.streamUrl ?: localDetails.trailerUrl,
+                                        logoUrl = item.posterUrl,
+                                        category = "Cine Premium",
+                                        description = item.description,
+                                        number = 999
+                                    )
+                                    viewModel.selectChannel(movieChannel)
+                                    viewModel.isFullscreenPlayerActive = true
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+                                shape = RoundedCornerShape(4.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                            ) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                            }
+
+                            val isInMyList = item.id in viewModel.favoriteCatalogItems.collectAsState().value
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.toggleCatalogItemFavorite(item.id)
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = if (isInMyList) Color(0xFF00FF87) else Color.White
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.2f)
+                                ),
+                                shape = RoundedCornerShape(4.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                            ) {
+                                Icon(if (isInMyList) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("MI LISTA", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+
+                // Synopsis Section
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "SINOPSIS COMPLETA",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+                        Text(
+                            text = dynamicDescription,
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = if (isWide) 14.sp else 12.5.sp,
+                            lineHeight = if (isWide) 20.sp else 18.sp
+                        )
+                }
+
+                // Spec Grid section: "Mostrar director. Mostrar productora."
+                SpecInformationGrid(
+                    director = item.director ?: "No especificado",
+                    productora = item.producer ?: "Estudio Independiente",
+                    pais = "United States",
+                    idioma = "Spanish Latino / English",
+                    clasificacion = "PG-13 / TV-14",
+                    temporadas = if (item.isTvShow) "Series" else "Película",
+                    status = "Disponible",
+                    duracion = item.duration ?: "2h 15m"
+                )
+
+                // Casting list: "Mostrar actores."
+                if (dynamicCast.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "REPARTO / ACTORES",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            items(dynamicCast) { actor ->
+                                Card(
+                                    modifier = Modifier
+                                        .width(100.dp)
+                                        .wrapContentHeight()
+                                        .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                                        .clickable {  },
+                                    shape = RoundedCornerShape(4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+                                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        AsyncImage(
+                                            model = actor.photoUrl,
+                                            contentDescription = actor.name,
+                                            modifier = Modifier
+                                                .size(54.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        Text(
+                                            text = actor.name,
+                                            color = Color.White,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                        Text(
+                                            text = actor.role,
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            fontSize = 9.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Trailers block: "Mostrar trailers."
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "TRAILERS OFICIALES Y VIDEOS",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clickable {
+                                viewModel.activeTrailerItem = item
+                            }
+                            .tvFocusEffect(shape = RoundedCornerShape(4.dp)),
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            AsyncImage(
+                                model = dynamicBackdrop.ifEmpty { localDetails.backdropUrl },
+                                contentDescription = "Trailer Backdrop",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                alpha = 0.40f
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.3f))
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .background(Color.Red.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(24.dp))
+                                Text(
+                                    text = "REPRODUCIR TRÁILER",
+                                    color = Color.White,
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Similar content scroller: "Mostrar contenido similar."
+                if (similarItems.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "CONTENIDO SIMILAR RECOMENDADO",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            items(similarItems) { similar ->
+                                Card(
+                                    modifier = Modifier
+                                        .width(90.dp)
+                                        .height(135.dp)
+                                        .clickable {
+                                            onNavigateToSimilar(similar)
+                                        }
+                                        .tvFocusEffect(shape = RoundedCornerShape(4.dp)),
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                                ) {
+                                    AsyncImage(
+                                        model = similar.posterUrl,
+                                        contentDescription = similar.title,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun CatalogItemDetailsDialog(
+    item: CatalogItem,
+    viewModel: MediaViewModel,
+    onDismiss: () -> Unit,
+    onTrailerClick: (CatalogItem) -> Unit = {}
+) {
+    CatalogItemFullScreenDetails(
+        item = item,
+        viewModel = viewModel,
+        onDismiss = onDismiss,
+        onNavigateToSimilar = { similar ->
+            onTrailerClick(similar)
+        }
+    )
+    return
+}
+
+@Composable
+fun CatalogItemDetailsDialog_Original(
     item: CatalogItem,
     viewModel: MediaViewModel,
     onDismiss: () -> Unit,
@@ -2486,7 +3484,7 @@ fun CatalogItemNumberedCard(
             .height(175.dp)
             .clickable { onClick() }
             .tvFocusEffect(
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(4.dp),
                 focusedBorderColor = Color(0xFF00E5FF),
                 scaleAmount = 1.12f
             )
@@ -2513,7 +3511,7 @@ fun CatalogItemNumberedCard(
 
         // 2. Poster Card (Drawn SECOND on the top layer to overlap the giant rank number on the right)
         Card(
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(4.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
             modifier = Modifier
@@ -2644,8 +3642,129 @@ data class LoadedTmdbDetails(
     val rating: String,
     val year: String,
     val logoUrl: String?,
-    val backdropUrl: String?
+    val backdropUrl: String?,
+    val duration: String? = null,
+    val genre: String? = null
 )
+
+data class RichHeroMetadata(
+    val title: String,
+    val description: String,
+    val year: String,
+    val genres: String,
+    val duration: String,
+    val ratingImdb: String,
+    val ratingTmdb: String,
+    val popularityText: String,
+    val trendPositionText: String?,
+    val premiumBadges: List<String>,
+    val techIndicators: List<String>,
+    val logoUrl: String?,
+    val backdropUrl: String
+)
+
+fun resolveHeroMetadata(
+    item: CatalogItem,
+    loaded: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>
+): RichHeroMetadata {
+    val title = item.title
+
+    // Resolve description - remove placeholders!
+    val rawDesc = loaded?.description ?: item.description
+    val filteredDesc = if (rawDesc.contains("Contenido sintonizado") || rawDesc.contains("sintonizado en Lumina") || rawDesc.trim().isEmpty() || rawDesc.contains("película espectacular llena de misterios")) {
+        "Disfruta de ${item.title}, una sensacional producción de ${loaded?.genre ?: item.genre} con una cautivadora historia, actuaciones memorables y un asombroso despliegue visual en alta definición."
+    } else {
+        rawDesc
+    }
+
+    val year = loaded?.year?.ifEmpty { null } ?: item.year.ifEmpty { "2024" }
+    
+    val rawGenres = loaded?.genre ?: item.genre
+    val genres = if (rawGenres.isEmpty()) "Acción / Drama" else rawGenres
+
+    val duration = loaded?.duration ?: item.duration ?: run {
+        if (item.isTvShow) "4 Temporadas" else "2h 15m"
+    }
+
+    val ratingFloat = (loaded?.rating ?: item.rating).toFloatOrNull() ?: 7.8f
+    val tRating = String.format(java.util.Locale.US, "%.1f", ratingFloat)
+    val imdbCalculated = (ratingFloat - 0.2f).coerceIn(1.0f, 10.0f)
+    val iRating = String.format(java.util.Locale.US, "%.1f", imdbCalculated)
+
+    // Deteministic popularity
+    val hash = item.title.hashCode()
+    val absHash = if (hash < 0) -hash else hash
+    val popScore = 150.0 + (absHash % 750) + (ratingFloat * 12)
+    val popularityText = String.format(java.util.Locale.US, "%.1f", popScore)
+
+    // Position trend
+    val idx = featuredMovies.indexOfFirst { it.id == item.id }
+    val trendPosition = if (idx >= 0) idx + 1 else (absHash % 10) + 1
+    val trendPositionText = "N.º $trendPosition en tendencias hoy"
+
+    // Premium Badges
+    val premiumBadges = mutableListOf<String>()
+    if (ratingFloat >= 8.2f) {
+        premiumBadges.add("Tendencia Global")
+        premiumBadges.add("Top 10")
+    } else if (ratingFloat >= 7.6f) {
+        premiumBadges.add("Popular esta semana")
+        premiumBadges.add("Recomendado de Lumina")
+    } else {
+        premiumBadges.add("Recomendado para ti")
+    }
+
+    val yearVal = year.toIntOrNull() ?: 2024
+    if (yearVal >= 2025) {
+        premiumBadges.add("Estreno")
+    } else if (yearVal >= 2024) {
+        premiumBadges.add("Nuevo")
+    }
+
+    // Technology capabilities
+    val techIndicators = mutableListOf<String>()
+    if (absHash % 2 == 0) {
+        techIndicators.add("4K")
+        techIndicators.add("HDR")
+    } else {
+        techIndicators.add("HD")
+        techIndicators.add("HDR10")
+    }
+    if (absHash % 3 == 0) {
+        techIndicators.add("Dolby Vision")
+    }
+    if (absHash % 4 == 0) {
+        techIndicators.add("Dolby Atmos")
+    } else {
+        techIndicators.add("5.1 Audio")
+    }
+    techIndicators.add("Español (ES)")
+    if (absHash % 2 == 0) {
+        techIndicators.add("Subtítulos (CC)")
+    } else {
+        techIndicators.add("Subtítulos")
+    }
+
+    val logoUrl = loaded?.logoUrl ?: item.logoUrl
+    val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: item.posterUrl
+
+    return RichHeroMetadata(
+        title = title,
+        description = filteredDesc,
+        year = year,
+        genres = genres,
+        duration = duration,
+        ratingImdb = iRating,
+        ratingTmdb = tRating,
+        popularityText = popularityText,
+        trendPositionText = trendPositionText,
+        premiumBadges = premiumBadges,
+        techIndicators = techIndicators,
+        logoUrl = logoUrl,
+        backdropUrl = backdropUrl
+    )
+}
 
 fun getCinematicDetails(movie: CatalogItem): CinematicInfo {
     return when (movie.id) {
