@@ -206,7 +206,7 @@ fun HomeScreen(
 
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 500.dp else 380.dp
+    val bannerHeight = if (isWideLayout) 300.dp else 200.dp
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         // --- 1. LISTADO DESLIZANTE DE CATEGORÍAS EN PRIMERA PLANA (SCROLL UNDER THE BANNER) ---
