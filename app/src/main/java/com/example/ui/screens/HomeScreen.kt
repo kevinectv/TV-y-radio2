@@ -206,8 +206,7 @@ fun HomeScreen(
 
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 300.dp else 200.dp
-
+    val bannerHeight = if (isWideLayout) 400.dp else 300.dp
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         // --- 1. LISTADO DESLIZANTE DE CATEGORÍAS EN PRIMERA PLANA (SCROLL UNDER THE BANNER) ---
         LazyColumn(
@@ -538,13 +537,13 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 16.dp),
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.Bottom,
+                        .wrapContentHeight(),
+                    verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start
                 ) {
                     // 1. PREMIUM BADGES ROW (Constant height container to secure bounds of elements)
@@ -846,15 +845,15 @@ fun HomeScreen(
                                 containerColor = Color(0xFF00E5FF),
                                 contentColor = Color.Black
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                                .height(32.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                         ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("REPRODUCIR", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("REPRODUCIR", fontSize = 11.sp, fontWeight = FontWeight.Black)
                         }
 
                         OutlinedButton(
@@ -863,15 +862,15 @@ fun HomeScreen(
                             },
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                                .height(32.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                         ) {
-                            Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("VER TRÁILER", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("VER TRÁILER", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
 
                         val isInMyList = targetMovie.id in favoriteCatalogItems
@@ -887,21 +886,21 @@ fun HomeScreen(
                                 1.dp,
                                 if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.3f)
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                                .height(32.dp)
+                                .tvFocusEffect(shape = RoundedCornerShape(6.dp))
                         ) {
                             Icon(
                                 imageVector = if (isInMyList) Icons.Filled.Check else Icons.Filled.Add,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "MI LISTA", 
-                                fontSize = 11.5.sp, 
+                                text = if (isInMyList) "EN MI LISTA" else "MI LISTA", 
+                                fontSize = 10.sp, 
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1061,13 +1060,13 @@ fun HomeHeroBanner(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 16.dp),
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.Bottom,
+                        .wrapContentHeight(),
+                    verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start
                 ) {
                     // 1. PREMIUM BADGES ROW

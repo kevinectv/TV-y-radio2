@@ -1,0 +1,45 @@
+831:                        Button(
+845:                            colors = ButtonDefaults.buttonColors(
+860:                        OutlinedButton(
+864:                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+878:                        OutlinedButton(
+883:                            colors = ButtonDefaults.outlinedButtonColors(
+909:                        OutlinedButton(
+913:                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+1354:                        Button(
+1368:                            colors = ButtonDefaults.buttonColors(
+1383:                        OutlinedButton(
+1387:                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+1401:                        OutlinedButton(
+1406:                            colors = ButtonDefaults.outlinedButtonColors(
+1432:                        OutlinedButton(
+1436:                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+1676:                    IconButton(
+1788:                    IconButton(
+2140:                    IconButton(
+2299:                            Button(
+2313:                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+2324:                            OutlinedButton(
+2328:                                colors = ButtonDefaults.outlinedButtonColors(
+2769:                            // Close Button
+2770:                            IconButton(
+3151:        Button(
+3156:            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000), contentColor = Color.White),
+3167:        Button(
+3182:            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
+3193:        Button(
+3209:            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FF87), contentColor = Color.Black),
+3220:        OutlinedButton(
+3224:            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+3236:        OutlinedButton(
+3240:            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+3252:        OutlinedButton(
+3256:            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+3268:        OutlinedButton(
+3283:            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+3965:                            IconButton(
+4024:                        IconButton(
+4045:                        IconButton(
+4069:                        IconButton(
+4134:                                IconButton(
+4151:                                IconButton(
