@@ -1857,38 +1857,9 @@ fun CatalogItemHomeCard(
         else -> 205.dp
     }
 
-    var isFocused by remember { mutableStateOf(false) }
-    var showInlineVideo by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(isFocused) {
-        if (isFocused) {
-            kotlinx.coroutines.delay(1000)
-            showInlineVideo = true
-        } else {
-            showInlineVideo = false
-        }
-    }
-
-    val cinematicDetails = remember(item.id) { getCinematicDetails(item) }
-    val hasTrailer = cinematicDetails.trailerUrl.isNotEmpty()
-
-    val animatedWidth by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (showInlineVideo && hasTrailer) 240.dp else cardWidth,
-        animationSpec = androidx.compose.animation.core.tween(350),
-        label = "inline_video_width"
-    )
-
-    val appliedModifier = if (modifier == Modifier) {
-        Modifier.width(animatedWidth)
-    } else modifier
     Card(
-        modifier = appliedModifier
-            .onFocusChanged { state ->
-                isFocused = state.isFocused || state.hasFocus
-                if (isFocused) {
-                    onFocus()
-                }
-            }
+        modifier = modifier
+            .width(cardWidth)
             .clickable { onClick() }
             .tvFocusEffect(
                 shape = RoundedCornerShape(4.dp),
@@ -1905,67 +1876,13 @@ fun CatalogItemHomeCard(
                     .fillMaxWidth()
                     .height(imageHeight)
             ) {
-                if (showInlineVideo && hasTrailer) {
-                    var isReady by remember { mutableStateOf(false) }
-                    AndroidView(
-                        factory = { ctx ->
-                            android.widget.VideoView(ctx).apply {
-                                layoutParams = android.view.ViewGroup.LayoutParams(
-                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                                )
-                                isFocusable = false
-                                isFocusableInTouchMode = false
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .focusable(false),
-                        update = { videoView ->
-                            val url = cinematicDetails.trailerUrl
-                            if (videoView.tag != url) {
-                                videoView.tag = url
-                                try {
-                                    videoView.stopPlayback()
-                                    videoView.setVideoPath(url)
-                                    videoView.setOnPreparedListener { mp ->
-                                        mp.isLooping = true
-                                        mp.setVolume(0f, 0f)
-                                        videoView.start()
-                                        videoView.clearFocus()
-                                        isReady = true
-                                    }
-                                    videoView.setOnErrorListener { _, _, _ -> true }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        },
-                        onRelease = { videoView ->
-                            try {
-                                videoView.stopPlayback()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                    )
-                    if (!isReady) {
-                        AsyncImage(
-                            model = cinematicDetails.backdropUrl,
-                            contentDescription = item.title,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                } else {
-                    // Movie/Show Poster
-                    AsyncImage(
-                        model = item.posterUrl,
-                        contentDescription = item.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                // Movie/Show Poster
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
 
                 // Gold Rating Overlay Tag
                 Row(
