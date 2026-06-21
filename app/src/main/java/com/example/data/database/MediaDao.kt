@@ -78,6 +78,16 @@ interface MediaDao {
 
     @Query("DELETE FROM epg_sources WHERE id = :id")
     suspend fun deleteEpgSource(id: String)
+    
+    // EPG Programs Queries
+    @Query("SELECT * FROM epg_programs WHERE channelId = :channelId")
+    suspend fun getEpgProgramsByChannel(channelId: String): List<EpgProgramEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEpgPrograms(programs: List<EpgProgramEntity>)
+
+    @Query("DELETE FROM epg_programs WHERE channelId = :channelId")
+    suspend fun deleteEpgProgramsByChannel(channelId: String)
 
     // Channel Queries
     @Query("SELECT * FROM channels ORDER BY number ASC, name ASC")

@@ -8,7 +8,11 @@ import com.example.data.database.ProfileEntity
 import com.example.data.database.EpgSourceEntity
 import com.example.data.database.ChannelEntity
 import com.example.data.database.RadioStationEntity
+import com.example.data.database.EpgProgramEntity
 import com.example.data.model.Channel
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
+import java.io.InputStream
 import com.example.data.model.EPGProgram
 import com.example.data.model.RadioStation
 import kotlinx.coroutines.flow.Flow
@@ -72,8 +76,16 @@ class MediaRepository(private val mediaDao: MediaDao) {
     // Predefined programs covering a standard timeline. Empty list as test channels are removed
     val programsList = emptyList<EPGProgram>()
 
+    // Cached EPG programs
+    private val epgCache = java.util.concurrent.ConcurrentHashMap<String, List<EPGProgram>>()
+
     // Dynamic EPG generation so the channel ALWAYS has complete program info details!
     fun getProgramsForChannel(channelId: String): List<EPGProgram> {
+        // Try getting from cache
+        if (epgCache.containsKey(channelId)) {
+            return epgCache[channelId] ?: emptyList()
+        }
+
         val seed = channelId.hashCode().toLong()
         val random = java.util.Random(seed)
         
@@ -404,9 +416,79 @@ class MediaRepository(private val mediaDao: MediaDao) {
         if (!response.isSuccessful) throw Exception("Failed to fetch EPG")
         
         val inputStream = response.body?.byteStream() ?: throw Exception("Empty EPG response")
-        // Basic XMLTV Parsing logic would go here, updating the database
-        // For now, setting status to Success as a placeholder, as parsing XMLTV is complex
+        
+        val programs = parseXmltv(inputStream)
+        
+        // Clear old programs
+        // For simplicity, let's just delete all programs from this source if we had that,
+        // or just insert new ones.
+        mediaDao.insertEpgPrograms(programs)
+        
+        // Update cache
+        programs.groupBy { it.channelId }.forEach { (channelId, channelPrograms) ->
+            epgCache[channelId] = channelPrograms.map { entity ->
+                EPGProgram(
+                    id = entity.id,
+                    channelId = entity.channelId,
+                    title = entity.title,
+                    description = entity.description,
+                    startTime = entity.startTime,
+                    endTime = entity.endTime,
+                    startHourDecimal = entity.startHourDecimal,
+                    durationHours = entity.durationHours,
+                    thumbnailUrl = entity.thumbnailUrl,
+                    category = entity.category
+                )
+            }
+        }
+        
         mediaDao.insertEpgSource(epgSource.copy(syncStatus = "Success", lastSynced = System.currentTimeMillis()))
+    }
+
+    private fun parseXmltv(inputStream: InputStream): List<EpgProgramEntity> {
+        val programs = mutableListOf<EpgProgramEntity>()
+        try {
+            val factory = XmlPullParserFactory.newInstance()
+            val parser = factory.newPullParser()
+            parser.setInput(inputStream, "UTF-8")
+            
+            var eventType = parser.eventType
+            var currentProgram: EpgProgramEntity? = null
+            
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                when (eventType) {
+                    XmlPullParser.START_TAG -> {
+                        if (parser.name == "programme") {
+                            val channelId = parser.getAttributeValue(null, "channel") ?: "unknown"
+                            currentProgram = EpgProgramEntity(
+                                id = "${channelId}_${System.currentTimeMillis()}_${programs.size}",
+                                channelId = channelId,
+                                title = "",
+                                description = "",
+                                startTime = parser.getAttributeValue(null, "start") ?: "",
+                                endTime = parser.getAttributeValue(null, "stop") ?: "",
+                                startHourDecimal = 0f,
+                                durationHours = 1.0f
+                            )
+                        } else if (parser.name == "title" && currentProgram != null) {
+                            currentProgram = currentProgram.copy(title = parser.nextText())
+                        } else if (parser.name == "desc" && currentProgram != null) {
+                            currentProgram = currentProgram.copy(description = parser.nextText())
+                        }
+                    }
+                    XmlPullParser.END_TAG -> {
+                        if (parser.name == "programme" && currentProgram != null) {
+                            programs.add(currentProgram)
+                            currentProgram = null
+                        }
+                    }
+                }
+                eventType = parser.next()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return programs
     }
 
     // Playlist & EPG Manager actions
