@@ -550,12 +550,12 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(26.dp),
+                            .height(22.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             if (richMeta.trendPositionText != null) {
                                 Row(
@@ -565,22 +565,22 @@ fun HomeScreen(
                                             brush = Brush.horizontalGradient(
                                                 colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
                                             ),
-                                            shape = RoundedCornerShape(24.dp)
+                                            shape = RoundedCornerShape(20.dp)
                                         )
-                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.TrendingUp,
                                         contentDescription = "Trend Position",
                                         tint = Color.White,
-                                        modifier = Modifier.size(12.dp)
+                                        modifier = Modifier.size(10.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = richMeta.trendPositionText.uppercase(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 9.sp,
+                                        fontSize = 8.sp,
                                         letterSpacing = 0.5.sp
                                     )
                                 }
@@ -1837,23 +1837,23 @@ fun CatalogItemHomeCard(
     onClick: () -> Unit
 ) {
     val cardWidth = when (layoutType) {
-        "Horizontal Poster Row", "Horizontal" -> 145.dp
-        "Vertical Poster Row", "Vertical" -> 165.dp
-        "Landscape Row" -> 220.dp
-        "Banner Row" -> 270.dp
-        "Large Featured Row" -> 210.dp
-        "Compact Row" -> 115.dp
-        else -> 145.dp
+        "Horizontal Poster Row", "Horizontal" -> 130.dp
+        "Vertical Poster Row", "Vertical" -> 150.dp
+        "Landscape Row" -> 200.dp
+        "Banner Row" -> 240.dp
+        "Large Featured Row" -> 190.dp
+        "Compact Row" -> 100.dp
+        else -> 130.dp
     }
     
     val imageHeight = when (layoutType) {
-        "Horizontal Poster Row", "Horizontal" -> 205.dp
-        "Vertical Poster Row", "Vertical" -> 235.dp
-        "Landscape Row" -> 125.dp
-        "Banner Row" -> 100.dp
-        "Large Featured Row" -> 290.dp
-        "Compact Row" -> 165.dp
-        else -> 205.dp
+        "Horizontal Poster Row", "Horizontal" -> 180.dp
+        "Vertical Poster Row", "Vertical" -> 210.dp
+        "Landscape Row" -> 110.dp
+        "Banner Row" -> 90.dp
+        "Large Featured Row" -> 260.dp
+        "Compact Row" -> 140.dp
+        else -> 180.dp
     }
 
     Card(
@@ -2291,8 +2291,8 @@ fun CatalogItemFullScreenDetails(
 
                         // Essential actions
                         Row(
-                            modifier = Modifier.padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Button(
@@ -2311,12 +2311,12 @@ fun CatalogItemFullScreenDetails(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
                                 shape = RoundedCornerShape(4.dp),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
                             ) {
-                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 10.sp)
                             }
 
                             val isInMyList = item.id in viewModel.favoriteCatalogItems.collectAsState().value
@@ -2332,12 +2332,12 @@ fun CatalogItemFullScreenDetails(
                                     if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.2f)
                                 ),
                                 shape = RoundedCornerShape(4.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
                             ) {
-                                Icon(if (isInMyList) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Icon(if (isInMyList) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(12.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("MI LISTA", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                Text("MI LISTA", fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             }
                         }
                     }

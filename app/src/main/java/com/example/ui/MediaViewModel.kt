@@ -660,6 +660,17 @@ class MediaViewModel(
         }
     }
 
+    fun syncEpgSource(source: EpgSourceEntity, onComplete: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.insertEpgSource(source.copy(syncStatus = "Syncing..."))
+            val success = repository.syncEpgSource(source)
+            if (!success) {
+                repository.insertEpgSource(source.copy(syncStatus = "Error"))
+            }
+            onComplete(success)
+        }
+    }
+    
     // EPG Database CRUD handlers
     fun addEpgSource(source: EpgSourceEntity) {
         viewModelScope.launch {

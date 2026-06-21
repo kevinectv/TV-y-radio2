@@ -75,16 +75,8 @@ fun IptvSourcesScreen(
     }
 
     val triggerSyncEpg = { epg: EpgSourceEntity ->
-        coroutineScope.launch {
-            activelySyncingEpgId = epg.id
-            viewModel.updateEpgSource(epg.copy(syncStatus = "Syncing..."))
-            delay(1000)
-            viewModel.updateEpgSource(
-                epg.copy(
-                    syncStatus = "Success",
-                    lastSynced = System.currentTimeMillis()
-                )
-            )
+        activelySyncingEpgId = epg.id
+        viewModel.syncEpgSource(epg) { success ->
             activelySyncingEpgId = null
         }
     }
@@ -114,21 +106,14 @@ fun IptvSourcesScreen(
             
             syncProgress = 0.80f
             syncStatusText = "Sincronizando Guías EPG XMLTV..."
-            epgSources.filter { it.isEnabled }.forEach {
-                viewModel.updateEpgSource(it.copy(syncStatus = "Syncing..."))
+            val sources = epgSources.filter { it.isEnabled }
+            sources.forEach { source ->
+                viewModel.syncEpgSource(source)
             }
-            delay(900)
+            delay(1500)
             
             syncProgress = 0.90f
-            syncStatusText = "Indexando programas..."
-            epgSources.filter { it.isEnabled }.forEach {
-                viewModel.updateEpgSource(
-                    it.copy(
-                        syncStatus = "Success",
-                        lastSynced = System.currentTimeMillis()
-                    )
-                )
-            }
+            syncStatusText = "Actualizando estado de EPG..."
             delay(500)
             
             syncProgress = 1.0f

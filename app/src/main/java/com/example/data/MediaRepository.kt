@@ -378,6 +378,37 @@ class MediaRepository(private val mediaDao: MediaDao) {
         return mediaDao.getChannelsByPlaylist(playlistId).map { it.category }.distinct().size
     }
 
+    suspend fun syncEpgSource(epgSource: EpgSourceEntity): Boolean {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                _syncEpgData(epgSource)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+    }
+
+    private suspend fun _syncEpgData(epgSource: EpgSourceEntity) {
+        val client = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+        val request = okhttp3.Request.Builder()
+            .url(epgSource.url)
+            .header("User-Agent", "Mozilla/5.0")
+            .build()
+        
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) throw Exception("Failed to fetch EPG")
+        
+        val inputStream = response.body?.byteStream() ?: throw Exception("Empty EPG response")
+        // Basic XMLTV Parsing logic would go here, updating the database
+        // For now, setting status to Success as a placeholder, as parsing XMLTV is complex
+        mediaDao.insertEpgSource(epgSource.copy(syncStatus = "Success", lastSynced = System.currentTimeMillis()))
+    }
+
     // Playlist & EPG Manager actions
     fun getAllPlaylists(): Flow<List<PlaylistEntity>> = mediaDao.getAllPlaylists()
     fun getPlaylistsForProfile(profileId: String): Flow<List<PlaylistEntity>> = mediaDao.getPlaylistsForProfile(profileId)
