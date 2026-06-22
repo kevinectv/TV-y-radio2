@@ -417,7 +417,18 @@ class MediaRepository(private val mediaDao: MediaDao) {
         
         val inputStream = response.body?.byteStream() ?: throw Exception("Empty EPG response")
         
-        val programs = parseXmltv(inputStream)
+        // Handle GZIP decompression if url ends with .gz / .xml.gz OR if server indicates gzip encoding
+        val urlLower = epgSource.url.lowercase()
+        val isGzip = urlLower.endsWith(".gz") || urlLower.endsWith(".xml.gz") ||
+                     response.header("Content-Encoding")?.contains("gzip", ignoreCase = true) == true
+        
+        val decompressedStream = if (isGzip) {
+            java.util.zip.GZIPInputStream(inputStream)
+        } else {
+            inputStream
+        }
+        
+        val programs = parseXmltv(decompressedStream)
         
         // Clear old programs
         // For simplicity, let's just delete all programs from this source if we had that,
@@ -445,6 +456,55 @@ class MediaRepository(private val mediaDao: MediaDao) {
         mediaDao.insertEpgSource(epgSource.copy(syncStatus = "Success", lastSynced = System.currentTimeMillis()))
     }
 
+    private fun parseStartHourDecimal(timeStr: String): Float {
+        if (timeStr.length < 12) return 8.0f // default standard timeline start matches 08:00 AM
+        return try {
+            val hour = timeStr.substring(8, 10).toIntOrNull() ?: 8
+            val min = timeStr.substring(10, 12).toIntOrNull() ?: 0
+            hour + (min / 60.0f)
+        } catch (e: Exception) {
+            8.0f
+        }
+    }
+
+    private fun parseDurationHours(startStr: String, stopStr: String): Float {
+        if (startStr.length < 12 || stopStr.length < 12) return 1.0f
+        return try {
+            val startHour = startStr.substring(8, 10).toIntOrNull() ?: 8
+            val startMin = startStr.substring(10, 12).toIntOrNull() ?: 0
+            
+            val stopHour = stopStr.substring(8, 10).toIntOrNull() ?: 9
+            val stopMin = stopStr.substring(10, 12).toIntOrNull() ?: 0
+            
+            val startDecimal = startHour + (startMin / 60.0f)
+            var stopDecimal = stopHour + (stopMin / 60.0f)
+            if (stopDecimal <= startDecimal) {
+                stopDecimal += 24.0f // wrapped around midnight
+            }
+            val diff = stopDecimal - startDecimal
+            if (diff > 0f) diff else 1.0f
+        } catch (e: Exception) {
+            1.0f
+        }
+    }
+
+    private fun formatXmltvTime(timeStr: String): String {
+        if (timeStr.length < 12) return timeStr
+        return try {
+            val hourVal = timeStr.substring(8, 10).toIntOrNull() ?: 8
+            val minVal = timeStr.substring(10, 12).toIntOrNull() ?: 0
+            val ampm = if (hourVal < 12) "AM" else "PM"
+            val displayHour = when {
+                hourVal == 0 -> 12
+                hourVal > 12 -> hourVal - 12
+                else -> hourVal
+            }
+            String.format("%02d:%02d %s", displayHour, minVal, ampm)
+        } catch (e: Exception) {
+            timeStr
+        }
+    }
+
     private fun parseXmltv(inputStream: InputStream): List<EpgProgramEntity> {
         val programs = mutableListOf<EpgProgramEntity>()
         try {
@@ -460,20 +520,34 @@ class MediaRepository(private val mediaDao: MediaDao) {
                     XmlPullParser.START_TAG -> {
                         if (parser.name == "programme") {
                             val channelId = parser.getAttributeValue(null, "channel") ?: "unknown"
+                            val rawStart = parser.getAttributeValue(null, "start") ?: ""
+                            val rawStop = parser.getAttributeValue(null, "stop") ?: ""
+                            val startHourDec = parseStartHourDecimal(rawStart)
+                            val durationDec = parseDurationHours(rawStart, rawStop)
+                            
                             currentProgram = EpgProgramEntity(
                                 id = "${channelId}_${System.currentTimeMillis()}_${programs.size}",
                                 channelId = channelId,
                                 title = "",
                                 description = "",
-                                startTime = parser.getAttributeValue(null, "start") ?: "",
-                                endTime = parser.getAttributeValue(null, "stop") ?: "",
-                                startHourDecimal = 0f,
-                                durationHours = 1.0f
+                                startTime = formatXmltvTime(rawStart),
+                                endTime = formatXmltvTime(rawStop),
+                                startHourDecimal = startHourDec,
+                                durationHours = durationDec,
+                                thumbnailUrl = "",
+                                category = "General"
                             )
                         } else if (parser.name == "title" && currentProgram != null) {
                             currentProgram = currentProgram.copy(title = parser.nextText())
                         } else if (parser.name == "desc" && currentProgram != null) {
                             currentProgram = currentProgram.copy(description = parser.nextText())
+                        } else if (parser.name == "category" && currentProgram != null) {
+                            currentProgram = currentProgram.copy(category = parser.nextText())
+                        } else if (parser.name == "icon" && currentProgram != null) {
+                            val srcVal = parser.getAttributeValue(null, "src") ?: ""
+                            if (srcVal.isNotEmpty()) {
+                                currentProgram = currentProgram.copy(thumbnailUrl = srcVal)
+                            }
                         }
                     }
                     XmlPullParser.END_TAG -> {
@@ -489,6 +563,30 @@ class MediaRepository(private val mediaDao: MediaDao) {
             e.printStackTrace()
         }
         return programs
+    }
+
+    suspend fun loadEpgCacheFromDb() {
+        try {
+            val allPrograms = mediaDao.getAllEpgPrograms()
+            allPrograms.groupBy { it.channelId }.forEach { (channelId, channelPrograms) ->
+                epgCache[channelId] = channelPrograms.map { entity ->
+                    EPGProgram(
+                        id = entity.id,
+                        channelId = entity.channelId,
+                        title = entity.title,
+                        description = entity.description,
+                        startTime = entity.startTime,
+                        endTime = entity.endTime,
+                        startHourDecimal = entity.startHourDecimal,
+                        durationHours = entity.durationHours,
+                        thumbnailUrl = entity.thumbnailUrl,
+                        category = entity.category
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     // Playlist & EPG Manager actions

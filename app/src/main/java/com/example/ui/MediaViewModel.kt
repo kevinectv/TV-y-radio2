@@ -114,6 +114,9 @@ class MediaViewModel(
 
     init {
         loadPremiumMetadata()
+        viewModelScope.launch {
+            repository.loadEpgCacheFromDb()
+        }
     }
 
     private fun loadPremiumMetadata() {

@@ -80,6 +80,9 @@ interface MediaDao {
     suspend fun deleteEpgSource(id: String)
     
     // EPG Programs Queries
+    @Query("SELECT * FROM epg_programs")
+    suspend fun getAllEpgPrograms(): List<EpgProgramEntity>
+
     @Query("SELECT * FROM epg_programs WHERE channelId = :channelId")
     suspend fun getEpgProgramsByChannel(channelId: String): List<EpgProgramEntity>
 
