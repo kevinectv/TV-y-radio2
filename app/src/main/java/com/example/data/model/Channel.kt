@@ -7,5 +7,7 @@ data class Channel(
     val logoUrl: String,
     val category: String,
     val description: String,
-    val number: Int
+    val number: Int,
+    val tvgId: String = "",
+    val tvgName: String = ""
 )

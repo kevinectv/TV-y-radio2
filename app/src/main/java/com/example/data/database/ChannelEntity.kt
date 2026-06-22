@@ -12,5 +12,7 @@ data class ChannelEntity(
     val logoUrl: String,
     val category: String,
     val description: String = "",
-    val number: Int = 0
+    val number: Int = 0,
+    val tvgId: String = "",
+    val tvgName: String = ""
 )

@@ -79,11 +79,58 @@ class MediaRepository(private val mediaDao: MediaDao) {
     // Cached EPG programs
     private val epgCache = java.util.concurrent.ConcurrentHashMap<String, List<EPGProgram>>()
 
+    // Cached Channel entities to avoid main thread database queries during EPG lookup
+    private val channelCache = java.util.concurrent.ConcurrentHashMap<String, ChannelEntity>()
+
     // Dynamic EPG generation so the channel ALWAYS has complete program info details!
     fun getProgramsForChannel(channelId: String): List<EPGProgram> {
-        // Try getting from cache
+        // Try getting directly from cache (if channelId itself matched)
         if (epgCache.containsKey(channelId)) {
             return epgCache[channelId] ?: emptyList()
+        }
+
+        // Try getting Channel Entity from in-memory cache to maintain fast, non-blocking UI rendering
+        val channel = channelCache[channelId]
+
+        if (channel != null) {
+            val keysToTry = listOfNotNull(
+                channel.tvgId,
+                channel.tvgName,
+                channel.name,
+                channel.tvgId.trim(),
+                channel.tvgName.trim(),
+                channel.name.trim()
+            ).distinct()
+
+            for (key in keysToTry) {
+                if (key.isNotEmpty()) {
+                    // Try exact key matching first
+                    if (epgCache.containsKey(key)) {
+                        val originalPrograms = epgCache[key] ?: emptyList()
+                        return originalPrograms.map { it.copy(channelId = channelId) } // copy with channelId for safe binding in UI
+                    }
+                    
+                    // Try case-insensitive matching
+                    val foundKey = epgCache.keys.find { it.equals(key, ignoreCase = true) }
+                    if (foundKey != null) {
+                        val originalPrograms = epgCache[foundKey] ?: emptyList()
+                        return originalPrograms.map { it.copy(channelId = channelId) }
+                    }
+                }
+            }
+            
+            // Also normalized name matching: removing non-alphanumeric characters, spaces and lowercase
+            val normalizedChannelName = channel.name.lowercase().replace(Regex("[^a-z0-9]"), "")
+            if (normalizedChannelName.isNotEmpty()) {
+                val foundKey = epgCache.keys.find { k ->
+                    val normalizedCacheKey = k.lowercase().replace(Regex("[^a-z0-9]"), "")
+                    normalizedCacheKey == normalizedChannelName && normalizedCacheKey.isNotEmpty()
+                }
+                if (foundKey != null) {
+                    val originalPrograms = epgCache[foundKey] ?: emptyList()
+                    return originalPrograms.map { it.copy(channelId = channelId) }
+                }
+            }
         }
 
         val seed = channelId.hashCode().toLong()
@@ -98,7 +145,7 @@ class MediaRepository(private val mediaDao: MediaDao) {
             "Disfruta de la mejor recopilación de contenido en transmisión continua y en alta definición para toda la familia.",
             "Análisis detallados, comentarios en directo y cobertura completa de toda la actualidad nacional e internacional.",
             "Una mirada profunda a los secretos de la naturaleza, la ciencia moderna y los hitos históricos del planeta entero.",
-            "Los mejores momentos, programación especial, entrevistas exclusivas y entretenimiento asegurado las 24 horas del día."
+            "Los mejores momentos, programación especial, interviews exclusivas y entretenimiento asegurado las 24 horas del día."
         )
         val thumbnails = listOf(
             "https://images.unsplash.com/photo-1598257006458-087169a1f08d?q=80&w=300",
@@ -203,6 +250,7 @@ class MediaRepository(private val mediaDao: MediaDao) {
         return mediaDao.getAllChannelEntities().combine(mediaDao.getPlaylistsForProfile(profileId)) { dbChans, playlists ->
             val enabledPlaylistIds = playlists.filter { it.isEnabled }.map { it.id }.toSet()
             val dynamicList = dbChans.filter { it.playlistId in enabledPlaylistIds }.map { entity ->
+                channelCache[entity.id] = entity
                 Channel(
                     id = entity.id,
                     name = entity.name,
@@ -210,7 +258,9 @@ class MediaRepository(private val mediaDao: MediaDao) {
                     logoUrl = entity.logoUrl,
                     category = entity.category,
                     description = entity.description.ifEmpty { "Canal de la lista IPTV" },
-                    number = entity.number
+                    number = entity.number,
+                    tvgId = entity.tvgId,
+                    tvgName = entity.tvgName
                 )
             }
             channelsList + dynamicList
@@ -310,6 +360,8 @@ class MediaRepository(private val mediaDao: MediaDao) {
             var currentName = ""
             var currentLogo = ""
             var currentCategory = "General"
+            var currentTvgId = ""
+            var currentTvgName = ""
             var index = 1
             
             for (line in lines) {
@@ -324,6 +376,8 @@ class MediaRepository(private val mediaDao: MediaDao) {
                     
                     currentLogo = extractAttribute(trimmed, "tvg-logo")
                     currentCategory = extractAttribute(trimmed, "group-title")
+                    currentTvgId = extractAttribute(trimmed, "tvg-id")
+                    currentTvgName = extractAttribute(trimmed, "tvg-name")
                     if (currentCategory.isEmpty()) {
                         currentCategory = "General"
                     }
@@ -345,12 +399,16 @@ class MediaRepository(private val mediaDao: MediaDao) {
                             logoUrl = currentLogo,
                             category = currentCategory,
                             description = "Canal de la lista IPTV",
-                            number = 100 + index
+                            number = 100 + index,
+                            tvgId = currentTvgId,
+                            tvgName = currentTvgName
                         )
                     )
                     currentName = ""
                     currentLogo = ""
                     currentCategory = "General"
+                    currentTvgId = ""
+                    currentTvgName = ""
                     index++
                 }
             }
@@ -566,6 +624,16 @@ class MediaRepository(private val mediaDao: MediaDao) {
     }
 
     suspend fun loadEpgCacheFromDb() {
+        try {
+            // First load all channel entities into memory cache to allow instant synchronous lookup
+            val allChans = mediaDao.getAllChannelEntitiesList()
+            allChans.forEach { entity ->
+                channelCache[entity.id] = entity
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         try {
             val allPrograms = mediaDao.getAllEpgPrograms()
             allPrograms.groupBy { it.channelId }.forEach { (channelId, channelPrograms) ->

@@ -93,6 +93,9 @@ interface MediaDao {
     suspend fun deleteEpgProgramsByChannel(channelId: String)
 
     // Channel Queries
+    @Query("SELECT * FROM channels WHERE id = :id LIMIT 1")
+    suspend fun getChannelById(id: String): ChannelEntity?
+
     @Query("SELECT * FROM channels ORDER BY number ASC, name ASC")
     fun getAllChannelEntities(): Flow<List<ChannelEntity>>
 
