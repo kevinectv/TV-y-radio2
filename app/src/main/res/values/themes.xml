@@ -7,4 +7,11 @@
         <item name="android:windowBackground">#020202</item>
     </style>
 
+    <!-- Seamless starting splash theme using official AndroidX SplashScreen API -->
+    <style name="Theme.MyApplication.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyApplication</item>
+    </style>
+
 </resources>

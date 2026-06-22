@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import com.example.data.MediaRepository
 import com.example.data.database.AppDatabase
@@ -30,33 +31,56 @@ import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
 
+    private var isReady = false
+
+    // Lazy initializations to completely offload heavy constructor tasks from onCreate()
+    private val database by lazy { AppDatabase.getDatabase(applicationContext) }
+    private val repository by lazy { MediaRepository(database.mediaDao()) }
+    private val sharedPrefs by lazy { getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
+    private val factory by lazy { MediaViewModelFactory(repository, sharedPrefs) }
+    private val viewModel by lazy {
+        val vm = ViewModelProvider(this, factory)[MediaViewModel::class.java]
+        vm.updateManager = com.example.data.util.UpdateManager(applicationContext)
+        vm.catalogRepository = com.example.data.CatalogRepository(applicationContext)
+        vm
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        // Sincronizar el splash nativo de AndroidX con Compose
+        splashScreen.setKeepOnScreenCondition { !isReady }
+        
         enableEdgeToEdge()
 
-        // Initializing Lumina Play IPTV - Stable Signed Release v2.0.2
-        val database = AppDatabase.getDatabase(this)
-        val mediaDao = database.mediaDao()
-        val repository = MediaRepository(mediaDao)
-        val sharedPrefs = getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val factory = MediaViewModelFactory(repository, sharedPrefs)
-        
-        val viewModel = ViewModelProvider(this, factory)[MediaViewModel::class.java]
-        viewModel.updateManager = com.example.data.util.UpdateManager(applicationContext)
-        viewModel.catalogRepository = com.example.data.CatalogRepository(applicationContext)
-
         setContent {
+            // Mark as ready once Compose renders its first frame so the native splash is dismissed smoothly
+            LaunchedEffect(Unit) {
+                isReady = true
+            }
+
+            // Force high-comfort dark theme during the splash screen so startup is completely seamless
             MyApplicationTheme(
-                darkTheme = viewModel.isDarkTheme,
-                dynamicColor = false // Keep high comfort premium dark colors stable
+                darkTheme = true,
+                dynamicColor = false
             ) {
                 var showSplash by remember { mutableStateOf(true) }
+                var splashCompleted by remember { mutableStateOf(false) }
 
                 Box(modifier = Modifier.fillMaxSize().background(Color(0xFF020202))) {
-                    if (viewModel.showProfileSelector) {
-                        ProfileSelectionScreen(viewModel = viewModel)
-                    } else {
-                        LuminaAppShell(viewModel = viewModel)
+                    if (splashCompleted) {
+                        // Dynamically resolve user profile preferences only after the splash screen finishes
+                        MyApplicationTheme(
+                            darkTheme = viewModel.isDarkTheme,
+                            dynamicColor = false
+                        ) {
+                            if (viewModel.showProfileSelector) {
+                                ProfileSelectionScreen(viewModel = viewModel)
+                            } else {
+                                LuminaAppShell(viewModel = viewModel)
+                            }
+                        }
                     }
 
                     AnimatedVisibility(
@@ -65,7 +89,10 @@ class MainActivity : ComponentActivity() {
                         exit = fadeOut(animationSpec = tween(700))
                     ) {
                         SplashScreen(
-                            onSplashFinished = { showSplash = false }
+                            onSplashFinished = {
+                                showSplash = false
+                                splashCompleted = true
+                            }
                         )
                     }
                 }

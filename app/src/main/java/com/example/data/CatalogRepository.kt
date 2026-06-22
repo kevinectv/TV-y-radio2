@@ -27,9 +27,10 @@ class CatalogRepository(private val context: Context) {
     val engine by lazy { LuminaCatalogEngine(context, this) }
 
     init {
-        loadCatalogs()
-        // Run lazy sync on startup so any empty remote catalogs can fetch actual data in background
+        // Run any disk operations (loadCatalogs) and sync asynchronously so we don't block the main thread on startup
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            loadCatalogs()
+            
             var needsSave = false
             val current = _catalogs.value.map { cat ->
                 val hasNoDefaultMock = cat.url.isNotEmpty() && 
