@@ -665,10 +665,12 @@ class MediaViewModel(
 
     fun syncEpgSource(source: EpgSourceEntity, onComplete: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
-            repository.insertEpgSource(source.copy(syncStatus = "Syncing..."))
-            val success = repository.syncEpgSource(source)
+            val pId = source.profileId.ifEmpty { activeProfile?.id ?: "" }
+            val sourceWithProfile = source.copy(profileId = pId)
+            repository.insertEpgSource(sourceWithProfile.copy(syncStatus = "Syncing..."))
+            val success = repository.syncEpgSource(sourceWithProfile)
             if (!success) {
-                repository.insertEpgSource(source.copy(syncStatus = "Error"))
+                repository.insertEpgSource(sourceWithProfile.copy(syncStatus = "Error"))
             }
             onComplete(success)
         }
