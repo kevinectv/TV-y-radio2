@@ -300,7 +300,8 @@ data class SyncResult(
 
         val rawUrl = catalog.url.trim()
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val tmdbKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val rawTmdbKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val tmdbKey = if (rawTmdbKey.isEmpty() || rawTmdbKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawTmdbKey
         val traktKey = prefs.getString("trakt_api_key", "")?.trim() ?: ""
         val mdblistKey = prefs.getString("mdblist_api_key", "")?.trim() ?: ""
         

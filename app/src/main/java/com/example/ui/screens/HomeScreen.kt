@@ -126,7 +126,8 @@ fun HomeScreen(
         activeHeroLoadedDetails = null
         
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val apiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val rawApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
         
         // 1. Try reading straight from Lumina Catalog Engine cache fields
         if (currentMovie.backdropUrl != null || currentMovie.logoUrl != null || currentMovie.castJson != null) {
@@ -2269,7 +2270,8 @@ fun CatalogItemDetailsDialog_Original(
 
     LaunchedEffect(item) {
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val apiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val rawApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+        val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
         
         // 1. Try reading straight from Lumina Catalog Engine cache fields
         val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->

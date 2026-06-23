@@ -52,7 +52,8 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
      * Enriches a single Catalog Item with all TMDB Metadata (Logo, Backdrop, Trailer, Cast, Director, etc.)
      * and returns the enriched item.
      */
-    suspend fun enrichCatalogItem(item: CatalogItem, apiKey: String): CatalogItem = withContext(Dispatchers.IO) {
+    suspend fun enrichCatalogItem(item: CatalogItem, rawApiKey: String): CatalogItem = withContext(Dispatchers.IO) {
+        val apiKey = if (rawApiKey.trim().isEmpty() || rawApiKey.trim() == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey.trim()
         if (apiKey.isEmpty()) return@withContext item
         
         // If it's already enriched completely, we don't need to re-query
@@ -319,7 +320,8 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
 
         try {
             val prefs = context.getSharedPreferences("lumina_prefs", Context.MODE_PRIVATE)
-            val apiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+            val userApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
+            val apiKey = if (userApiKey.isEmpty() || userApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else userApiKey
             if (apiKey.isEmpty()) {
                 _isEnriching.value = false
                 return@withContext false
