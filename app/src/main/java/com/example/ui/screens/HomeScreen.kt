@@ -130,7 +130,7 @@ fun HomeScreen(
         val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
         
         // 1. Try reading straight from Lumina Catalog Engine cache fields
-        if (currentMovie.backdropUrl != null || currentMovie.logoUrl != null || currentMovie.castJson != null) {
+        if (!currentMovie.logoUrl.isNullOrEmpty() && !currentMovie.castJson.isNullOrEmpty()) {
             activeHeroLogoUrl = currentMovie.logoUrl
             activeHeroLoadedDetails = LoadedTmdbDetails(
                 description = currentMovie.description,
@@ -161,6 +161,18 @@ fun HomeScreen(
                         duration = enriched.duration,
                         genre = enriched.genre
                     )
+
+                    // Persist enriched hero item back to catalogs list asynchronously
+                    viewModel.catalogRepository?.let { repo ->
+                        val currentList = repo.catalogs.value.map { cat ->
+                            val hasItem = cat.items.any { it.id == currentMovie.id }
+                            if (hasItem) {
+                                val newItems = cat.items.map { if (it.id == currentMovie.id) enriched else it }
+                                cat.copy(items = newItems)
+                            } else cat
+                        }
+                        repo.saveCatalogsList(currentList)
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -2277,7 +2289,7 @@ fun CatalogItemDetailsDialog_Original(
         val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
             ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
         }
-        if (item.backdropUrl != null || item.logoUrl != null || cachedCast.isNotEmpty()) {
+        if (!item.logoUrl.isNullOrEmpty() && cachedCast.isNotEmpty()) {
             if (!item.backdropUrl.isNullOrEmpty()) {
                 dynamicBackdrop = item.backdropUrl
             }
