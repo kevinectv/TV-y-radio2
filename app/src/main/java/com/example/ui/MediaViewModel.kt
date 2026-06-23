@@ -101,6 +101,8 @@ class MediaViewModel(
     var currentTab by mutableStateOf(AppTab.HOME)
         private set
 
+    val selectedDetailsItem = MutableStateFlow<com.example.data.model.CatalogItem?>(null)
+
     fun selectTab(tab: AppTab) {
         currentTab = tab
     }

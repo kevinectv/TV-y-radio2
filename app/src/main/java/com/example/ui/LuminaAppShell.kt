@@ -39,6 +39,7 @@ import com.example.ui.components.tvFocusEffect
 import com.example.ui.components.CharacterAvatar
 import com.example.ui.screens.ProfileSelectionScreen
 import com.example.ui.screens.*
+import com.example.data.model.CatalogItem
 import kotlinx.coroutines.delay
 import java.util.*
 import coil.compose.AsyncImage
@@ -72,6 +73,8 @@ fun LuminaAppShell(
             delay(1000)
         }
     }
+
+    val selectedDetailsItem by viewModel.selectedDetailsItem.collectAsState()
 
 
 
@@ -368,6 +371,27 @@ fun LuminaAppShell(
                 .zIndex(100f)
         ) {
             FullscreenPlayerScreen(viewModel = viewModel)
+        }
+
+        // 5. NUEVA PANTALLA DE DETALLES A PANTALLA COMPLETA (NETFLIX STYLE)
+        AnimatedVisibility(
+            visible = selectedDetailsItem != null,
+            enter = fadeIn(animationSpec = tween(350)) + scaleIn(initialScale = 0.95f),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.95f),
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(98f)
+        ) {
+            selectedDetailsItem?.let { item ->
+                CatalogItemFullScreenDetails(
+                    item = item,
+                    viewModel = viewModel,
+                    onDismiss = { viewModel.selectedDetailsItem.value = null },
+                    onNavigateToSimilar = { newItem ->
+                        viewModel.selectedDetailsItem.value = newItem
+                    }
+                )
+            }
         }
 
 

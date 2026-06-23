@@ -203,87 +203,98 @@ fun HomeScreen(
             }
         }
     }
-
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 400.dp else 300.dp
+    val bannerHeight = if (isWideLayout) 300.dp else 220.dp
+
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
-        // --- 1. LISTADO DESLIZANTE DE CATEGORÍAS EN PRIMERA PLANA (SCROLL UNDER THE BANNER) ---
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 90.dp)
-        ) {
-            item {
-                HomeHeroBanner(
-                    currentMovie = currentMovie,
-                    activeHeroLoadedDetails = activeHeroLoadedDetails,
-                    featuredMovies = featuredMovies,
-                    favoriteCatalogItems = favoriteCatalogItems,
-                    bannerHeight = bannerHeight,
-                    isWideLayout = isWideLayout,
-                    viewModel = viewModel,
-                    scrollState = listState,
-                    onTrailerClick = { activeTrailerItem = it },
-                    onDetailsClick = { selectedCatalogItem = it }
+        // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(750),
+            label = "home_full_backdrop",
+            modifier = Modifier.fillMaxSize()
+        ) { movie ->
+            val movieDetails = getCinematicDetails(movie)
+            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: movieDetails.backdropUrl
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = backdropUrlToUse,
+                    contentDescription = movie.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Cinematic horizontal dark gradient to protect left-aligned text of Hero Banner
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.95f),
+                                    Color.Black.copy(alpha = 0.82f),
+                                    Color.Black.copy(alpha = 0.35f),
+                                    Color.Transparent
+                                ),
+                                endX = 1200f
+                            )
+                        )
+                )
+
+                // Cinematic vertical dark gradient to smoothly fade to pure black at bottom
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.30f),
+                                    Color.Black.copy(alpha = 0.55f),
+                                    Color(0xFF030406)
+                                )
+                            )
+                        )
                 )
             }
+        }
 
-            // Dynamic Home Cinema Rows (All user custom lists & active templates in their chosen order)
-            val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
-
-            if (homeCatalogs.isEmpty()) {
-                if (progressItems.isNotEmpty()) {
-                    item {
-                        HomeSectionRowHeader(
-                            title = "CONTINUE WATCHING",
-                            icon = Icons.Filled.PlayCircle,
-                            color = Color(0xFF00FF87)
-                        )
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                        ) {
-                            items(progressItems) { (item, progressVal) ->
-                                CatalogItemHomeCard(
-                                    item = item,
-                                    layoutType = "Landscape Row",
-                                    isFavorite = item.id in favoriteCatalogItems,
-                                    progress = progressVal,
-                                    onFocus = {
-                                        activeHeroMovie = item
-                                    },
-                                    onClick = {
-                                        activeHeroMovie = item
-                                        selectedCatalogItem = item
-                                    }
-                                )
-                            }
-                        }
-                    }
+        // --- 2. MAIN STRUCTURAL LAYOUT WITH FIXED HERO BANNER AND SCROLLING ROWS ---
+        Column(modifier = Modifier.fillMaxSize()) {
+            // A) Fixed Hero Banner (At the top, doesn't scroll/compress/cut, clickable)
+            HomeHeroBanner(
+                currentMovie = currentMovie,
+                activeHeroLoadedDetails = activeHeroLoadedDetails,
+                featuredMovies = featuredMovies,
+                favoriteCatalogItems = favoriteCatalogItems,
+                bannerHeight = bannerHeight,
+                isWideLayout = isWideLayout,
+                viewModel = viewModel,
+                scrollState = listState,
+                onTrailerClick = { movie ->
+                    activeTrailerItem = movie
+                },
+                onDetailsClick = { movie ->
+                    viewModel.selectedDetailsItem.value = movie
                 }
-            } else {
-                homeCatalogs.forEachIndexed { index, catalog ->
-                    if (catalog.items.isNotEmpty()) {
-                        item {
-                            DrawCatalogRow(
-                                catalog = catalog,
-                                favoriteCatalogItems = favoriteCatalogItems,
-                                seenProgress = seenProgress,
-                                onFocus = { activeHeroMovie = it },
-                                onClick = { clickedItem ->
-                                    activeHeroMovie = clickedItem
-                                    selectedCatalogItem = clickedItem
-                                }
-                            )
-                        }
-                    }
+            )
 
-                    // Inject Continue Watching under the first dynamic row
-                    if (index == 0 && progressItems.isNotEmpty()) {
+            // B) Scrollable Content Rows (Sourced purely from Catalog Engine)
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(bottom = 90.dp)
+            ) {
+                val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
+
+                if (homeCatalogs.isEmpty()) {
+                    if (progressItems.isNotEmpty()) {
                         item {
                             HomeSectionRowHeader(
-                                title = "CONTINUE WATCHING",
+                                title = "⏱️ CONTINUAR VIENDO",
                                 icon = Icons.Filled.PlayCircle,
                                 color = Color(0xFF00FF87)
                             )
@@ -297,180 +308,73 @@ fun HomeScreen(
                                         layoutType = "Landscape Row",
                                         isFavorite = item.id in favoriteCatalogItems,
                                         progress = progressVal,
-                                        onFocus = {
-                                            activeHeroMovie = item
-                                        },
+                                        onFocus = { activeHeroMovie = item },
                                         onClick = {
                                             activeHeroMovie = item
-                                            selectedCatalogItem = item
+                                            viewModel.selectedDetailsItem.value = item
                                         }
                                     )
                                 }
                             }
                         }
                     }
-                }
-            }
-
-
-        // --- SUB-HEADER: RECREACIÓN TELEVISIVA Y DE EMISORAS DE RADIO (DESPLAZADA AL FONDO) ---
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider(
-                color = Color.White.copy(alpha = 0.08f),
-                thickness = 1.dp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-        }
-
-        // 3. RECENTS SECTION (HORIZONTAL SCROLLER)
-        val hasRecents = recentChans.isNotEmpty() || recentRadios.isNotEmpty()
-        if (hasRecents) {
-            item {
-                HomeSectionRowHeader(title = "REPRODUCIDO RECIENTEMENTE", icon = Icons.Filled.History, color = Color.White.copy(alpha = 0.7f))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    items(recentChans) { chan ->
-                        ChannelHomeCard(
-                            channel = chan,
-                            viewModel = viewModel,
-                            onPlayClick = {
-                                viewModel.selectChannel(chan)
-                                viewModel.selectTab(AppTab.TV)
+                } else {
+                    homeCatalogs.forEachIndexed { index, catalog ->
+                        if (catalog.items.isNotEmpty()) {
+                            item {
+                                val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
+                                DrawCatalogRow(
+                                    catalog = catalog,
+                                    favoriteCatalogItems = favoriteCatalogItems,
+                                    seenProgress = seenProgress,
+                                    customTitle = displayName,
+                                    customIcon = displayIcon,
+                                    onFocus = { activeHeroMovie = it },
+                                    onClick = { clickedItem ->
+                                        activeHeroMovie = clickedItem
+                                        viewModel.selectedDetailsItem.value = clickedItem
+                                    }
+                                )
                             }
-                        )
-                    }
+                        }
 
-                    items(recentRadios) { rad ->
-                        RadioHomeCard(
-                            station = rad,
-                            viewModel = viewModel,
-                            onPlayClick = {
-                                viewModel.selectRadioStation(rad)
-                                viewModel.selectTab(AppTab.RADIO)
+                        // Inject Continue Watching under the first dynamic row
+                        if (index == 0 && progressItems.isNotEmpty()) {
+                            item {
+                                HomeSectionRowHeader(
+                                    title = "⏱️ CONTINUAR VIENDO",
+                                    icon = Icons.Filled.PlayCircle,
+                                    color = Color(0xFF00FF87)
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                ) {
+                                    items(progressItems) { (item, progressVal) ->
+                                        CatalogItemHomeCard(
+                                            item = item,
+                                            layoutType = "Landscape Row",
+                                            isFavorite = item.id in favoriteCatalogItems,
+                                            progress = progressVal,
+                                            onFocus = { activeHeroMovie = item },
+                                            onClick = {
+                                                activeHeroMovie = item
+                                                viewModel.selectedDetailsItem.value = item
+                                            }
+                                        )
+                                    }
+                                }
                             }
-                        )
+                        }
                     }
-                }
-            }
-        }
-
-        // 4. FAVORITES WATCHLIST (HORIZONTAL SCROLLER)
-        val hasFavorites = favoriteChans.isNotEmpty() || favoriteRadios.isNotEmpty()
-        if (hasFavorites) {
-            item {
-                HomeSectionRowHeader(title = "MIS FAVORITOS GUARDADOS", icon = Icons.Filled.Favorite, color = Color.White.copy(alpha = 0.7f))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    items(favoriteChans) { chan ->
-                        ChannelHomeCard(
-                            channel = chan,
-                            viewModel = viewModel,
-                            onPlayClick = {
-                                viewModel.selectChannel(chan)
-                                viewModel.selectTab(AppTab.TV)
-                            }
-                        )
-                    }
-
-                    items(favoriteRadios) { rad ->
-                        RadioHomeCard(
-                            station = rad,
-                            viewModel = viewModel,
-                            onPlayClick = {
-                                viewModel.selectRadioStation(rad)
-                                viewModel.selectTab(AppTab.RADIO)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // 5. CANALES POPULARES IPTV (DESPLAZADOS AL RECLUSO)
-        item {
-            HomeSectionRowHeader(title = "CANALES POPULARES IPTV", icon = Icons.Filled.Tv, color = Color.White.copy(alpha = 0.7f))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                items(allChannels) { chan ->
-                    ChannelHomeCard(
-                        channel = chan,
-                        viewModel = viewModel,
-                        onPlayClick = {
-                            viewModel.selectChannel(chan)
-                            viewModel.selectTab(AppTab.TV)
-                        }
-                    )
-                }
-            }
-        }
-
-        // 6. RADIO POPULARES (DESPLAZADOS ABAJO)
-        item {
-            HomeSectionRowHeader(title = "EMISORAS DE RADIO POPULARES", icon = Icons.Filled.Radio, color = Color.White.copy(alpha = 0.7f))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                items(viewModel.repository.radioStationsList) { rad ->
-                    RadioHomeCard(
-                        station = rad,
-                        viewModel = viewModel,
-                        onPlayClick = {
-                            viewModel.selectRadioStation(rad)
-                            viewModel.selectTab(AppTab.RADIO)
-                        }
-                    )
-                }
-            }
-        }
-
-        // 7. RECOMMENDED STREAMING (ABSOLUTE BOTTOM)
-        item {
-            HomeSectionRowHeader(title = "RECOMENDADOS PARA TI", icon = Icons.Filled.AutoAwesome, color = Color.White.copy(alpha = 0.7f))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                // Blend channels and radios
-                items(allChannels.takeLast(3)) { chan ->
-                    ChannelHomeCard(
-                        channel = chan,
-                        viewModel = viewModel,
-                        onPlayClick = {
-                            viewModel.selectChannel(chan)
-                            viewModel.selectTab(AppTab.TV)
-                        }
-                    )
-                }
-
-                items(viewModel.repository.radioStationsList.takeLast(2)) { rad ->
-                    RadioHomeCard(
-                        station = rad,
-                        viewModel = viewModel,
-                        onPlayClick = {
-                            viewModel.selectRadioStation(rad)
-                            viewModel.selectTab(AppTab.RADIO)
-                        }
-                    )
                 }
             }
         }
     }
 
-    // --- 2. HERO BANNER FIJO (Fixed Hero Banner on top layer) ---
-    if (false) Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(bannerHeight)
-            .background(Color(0xFF030406))
-    ) {
+    // DELETED BLOCK START
+    if (false) {
+    } else if (false) {
         // A) Backdrop Image Layer with Crossfade
         Crossfade(
             targetState = currentMovie,
@@ -926,20 +830,6 @@ fun HomeScreen(
             }
         }
     }
-}
-
-    if (selectedCatalogItem != null) {
-        CatalogItemDetailsDialog(
-            item = selectedCatalogItem!!,
-            viewModel = viewModel,
-            onDismiss = {
-                selectedCatalogItem = null
-            },
-            onTrailerClick = { clickedItem ->
-                activeTrailerItem = clickedItem
-            }
-        )
-    }
 
     val trailerToShow = activeTrailerItem ?: viewModel.activeTrailerItem
     if (trailerToShow != null) {
@@ -967,86 +857,19 @@ fun HomeHeroBanner(
     onDetailsClick: (CatalogItem) -> Unit
 ) {
     val context = LocalContext.current
-
-    val parallaxOffset by remember(scrollState) {
-        derivedStateOf {
-            if (scrollState.firstVisibleItemIndex == 0) {
-                scrollState.firstVisibleItemScrollOffset * 0.45f
-            } else {
-                0f
-            }
-        }
-    }
+    val parallaxOffset = 0f
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(bannerHeight)
-            .background(Color(0xFF030406))
+            .clickable { onDetailsClick(currentMovie) }
+            .tvFocusEffect(
+                shape = RoundedCornerShape(8.dp),
+                focusedBorderColor = Color(0xFF00E5FF),
+                scaleAmount = 1.02f
+            )
     ) {
-        // A) Backdrop Image Layer with Crossfade (With custom parallax movement)
-        Crossfade(
-            targetState = currentMovie,
-            animationSpec = tween(650),
-            label = "hero_backdrop_fade",
-            modifier = Modifier
-                .graphicsLayer {
-                    translationY = parallaxOffset
-                }
-        ) { movie ->
-            val movieDetails = getCinematicDetails(movie)
-            val backdropUrlToUse = if (movie == currentMovie) {
-                activeHeroLoadedDetails?.backdropUrl ?: movieDetails.backdropUrl
-            } else {
-                movieDetails.backdropUrl
-            }
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 10.dp) // Premium margins around image to keep it beautiful & balanced
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
-            ) {
-                AsyncImage(
-                    model = backdropUrlToUse,
-                    contentDescription = movie.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                // Cinematic Gradients (horizontal for text readability, vertical for fusion with list)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.98f),
-                                    Color.Black.copy(alpha = 0.85f),
-                                    Color.Black.copy(alpha = 0.40f),
-                                    Color.Transparent
-                                ),
-                                endX = 1100f
-                            )
-                        )
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.40f),
-                                    Color.Black.copy(alpha = 0.90f) // Matches background slate
-                                )
-                            )
-                        )
-                )
-            }
-        }
 
         // B) Hero Content Panel with Crossfade (title, ratings, buttons)
         Crossfade(
@@ -1342,109 +1165,7 @@ fun HomeHeroBanner(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // 7. CORE PREMIUM FUNCTIONAL BUTTONS
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Button(
-                            onClick = {
-                                val movieChannel = Channel(
-                                    id = "movie_${targetMovie.id}",
-                                    name = targetMovie.title,
-                                    streamUrl = targetMovie.streamUrl ?: getCinematicDetails(targetMovie).trailerUrl,
-                                    logoUrl = targetMovie.posterUrl,
-                                    category = "Cine Premium",
-                                    description = targetMovie.description,
-                                    number = 999
-                                )
-                                viewModel.selectChannel(movieChannel)
-                                viewModel.isFullscreenPlayerActive = true
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF00E5FF),
-                                contentColor = Color.Black
-                            ),
-                            shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("REPRODUCIR", fontSize = 12.sp, fontWeight = FontWeight.Black)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                onTrailerClick(targetMovie)
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                            shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                        ) {
-                            Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("VER TRÁILER", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        val isInMyList = targetMovie.id in favoriteCatalogItems
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.toggleCatalogItemFavorite(targetMovie.id)
-                                Toast.makeText(context, if (!isInMyList) "Añadida a Mi Lista" else "Quitada de Mi Lista", Toast.LENGTH_SHORT).show()
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = if (isInMyList) Color(0xFF00FF87) else Color.White
-                            ),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.3f)
-                            ),
-                            shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                        ) {
-                            Icon(
-                                imageVector = if (isInMyList) Icons.Filled.Check else Icons.Filled.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "MI LISTA", 
-                                fontSize = 11.5.sp, 
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                onDetailsClick(targetMovie)
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
-                            shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            modifier = Modifier
-                                .height(40.dp)
-                                .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                        ) {
-                            Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("DETALLES", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
         }
@@ -1966,30 +1687,6 @@ fun CatalogItemHomeCard(
                         }
                     }
                 }
-            }
-
-            // Title padding segment
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp)
-            ) {
-                Text(
-                    text = item.title,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = item.genre,
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 8.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
     }
@@ -4172,4 +3869,21 @@ fun formatSeconds(ms: Int): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
+}
+
+private fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
+    val cleanName = name.trim().lowercase()
+    return when {
+        cleanName.contains("tendencia") || cleanName.contains("trending") -> Pair("🔥 Tendencias", Icons.Filled.TrendingUp)
+        cleanName.contains("popular") -> Pair("🎬 Películas Populares", Icons.Filled.Movie)
+        cleanName.contains("cine") || cleanName.contains("película") || cleanName.contains("movie") -> Pair("🎥 Cine Estelar", Icons.Filled.Movie)
+        cleanName.contains("serie") || cleanName.contains("show") || cleanName.contains("tv") -> Pair("📺 Series Premium", Icons.Filled.Tv)
+        cleanName.contains("anime") -> Pair("🌸 Anime Estelar", Icons.Filled.Movie)
+        cleanName.contains("favorito") || cleanName.contains("lista") -> Pair("⭐ Mi Lista", Icons.Filled.Star)
+        cleanName.contains("recomenda") -> Pair("✨ Recomendados para ti", Icons.Filled.ThumbUp)
+        else -> {
+            val capitalized = name.split(" ").map { it.replaceFirstChar { char -> char.uppercase() } }.joinToString(" ")
+            Pair("🍿 $capitalized", Icons.Filled.VideoLibrary)
+        }
+    }
 }
