@@ -69,16 +69,36 @@ fun SettingsScreen(
     viewModel: MediaViewModel,
     modifier: Modifier = Modifier
 ) {
-    var showIptvSources by remember { mutableStateOf(false) }
+    var activeSubScreen by remember { mutableStateOf("main") }
 
-    if (showIptvSources) {
-        IptvSourcesScreen(
-            viewModel = viewModel,
-            onBack = { showIptvSources = false },
-            modifier = modifier
-        )
-    } else {
-        SettingsWorkspace(viewModel = viewModel, onOpenSources = { showIptvSources = true }, modifier = modifier)
+    when (activeSubScreen) {
+        "iptv" -> {
+            IptvSourcesScreen(
+                viewModel = viewModel,
+                onBack = { activeSubScreen = "main" },
+                modifier = modifier
+            )
+        }
+        "api_settings" -> {
+            ApiSettingsScreen(
+                onBack = { activeSubScreen = "main" }
+            )
+        }
+        "diagnostics" -> {
+            CatalogDiagnosticsScreen(
+                viewModel = viewModel,
+                onBack = { activeSubScreen = "main" }
+            )
+        }
+        else -> {
+            SettingsWorkspace(
+                viewModel = viewModel,
+                onOpenSources = { activeSubScreen = "iptv" },
+                onOpenApiSettings = { activeSubScreen = "api_settings" },
+                onOpenDiagnostics = { activeSubScreen = "diagnostics" },
+                modifier = modifier
+            )
+        }
     }
 }
 
@@ -87,6 +107,8 @@ fun SettingsScreen(
 fun SettingsWorkspace(
     viewModel: MediaViewModel,
     onOpenSources: () -> Unit,
+    onOpenApiSettings: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -217,7 +239,11 @@ fun SettingsWorkspace(
                                     IptvSourcesPaneContent(onOpenSources = onOpenSources)
                                 }
                                 SettingCategory.CATALOGS -> {
-                                    CatalogsPaneContent(viewModel = viewModel)
+                                    CatalogsPaneContent(
+                                        viewModel = viewModel,
+                                        onOpenApiSettings = onOpenApiSettings,
+                                        onOpenDiagnostics = onOpenDiagnostics
+                                    )
                                 }
                                 SettingCategory.EPG -> {
                                     EpgPaneContent(
@@ -387,7 +413,11 @@ fun SettingsWorkspace(
                                 IptvSourcesPaneContent(onOpenSources = onOpenSources)
                             }
                             SettingCategory.CATALOGS -> {
-                                CatalogsPaneContent(viewModel = viewModel)
+                                CatalogsPaneContent(
+                                    viewModel = viewModel,
+                                    onOpenApiSettings = onOpenApiSettings,
+                                    onOpenDiagnostics = onOpenDiagnostics
+                                )
                             }
                             SettingCategory.EPG -> {
                                 EpgPaneContent(
@@ -2476,7 +2506,11 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CatalogsPaneContent(viewModel: MediaViewModel) {
+fun CatalogsPaneContent(
+    viewModel: MediaViewModel,
+    onOpenApiSettings: () -> Unit,
+    onOpenDiagnostics: () -> Unit
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val catalogs by viewModel.catalogsStateFlow.collectAsState()
@@ -2648,29 +2682,11 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                 }
             }
 
-            var showApiKeysDialog by remember { mutableStateOf(false) }
-            if (showApiKeysDialog) {
-                ApiKeysDialog(
-                    onDismiss = { showApiKeysDialog = false },
-                    onSave = { tmdb, trakt, mdblist ->
-                        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-                        prefs.edit()
-                            .putString("tmdb_api_key", tmdb)
-                            .putString("trakt_api_key", trakt)
-                            .putString("mdblist_api_key", mdblist)
-                            .apply()
-                        showApiKeysDialog = false
-                        Toast.makeText(context, "API Keys guardadas. Sincronizando datos premium...", Toast.LENGTH_SHORT).show()
-                        viewModel.syncAllCatalogs()
-                    }
-                )
-            }
-
             Card(
                 modifier = Modifier
                     .weight(1f)
                     .tvFocusEffect(shape = RoundedCornerShape(12.dp))
-                    .clickable { showApiKeysDialog = true },
+                    .clickable { onOpenApiSettings() },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFED1C24).copy(alpha = 0.12f)),
                 border = BorderStroke(1.5.dp, Color(0xFFED1C24).copy(alpha = 0.4f))
@@ -2690,8 +2706,47 @@ fun CatalogsPaneContent(viewModel: MediaViewModel) {
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Configurar API Keys (TMDB)",
+                        text = "Configurar API Keys",
                         color = Color(0xFFED1C24),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+        }
+
+        // Diagnóstico y Depuración Card Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+                    .clickable { onOpenDiagnostics() },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.08f)),
+                border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.25f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Build,
+                        contentDescription = "Diagnóstico",
+                        tint = Color(0xFF00E5FF),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Diagnóstico de Catálogos y Caché Local",
+                        color = Color(0xFF00E5FF),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.5.sp
