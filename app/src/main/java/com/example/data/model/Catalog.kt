@@ -38,5 +38,9 @@ data class CatalogItem(
     val director: String? = null,
     val producer: String? = null,
     val duration: String? = null,
-    val castJson: String? = null
+    val castJson: String? = null,
+    val imdbRating: String? = null,
+    val languages: String? = null,
+    val subtitles: String? = null,
+    val extraImagesJson: String? = null
 )

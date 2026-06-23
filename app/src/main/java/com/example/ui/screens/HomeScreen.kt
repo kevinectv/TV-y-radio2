@@ -2075,7 +2075,8 @@ fun CatalogItemFullScreenDetails(
                     director = item.director ?: "No especificado",
                     productora = item.producer ?: "Estudio Independiente",
                     pais = "United States",
-                    idioma = "Spanish Latino / English",
+                    idioma = item.languages ?: "Español Latino / Inglés",
+                    subtitulos = item.subtitles ?: "Español Latino / Inglés",
                     clasificacion = "PG-13 / TV-14",
                     temporadas = if (item.isTvShow) "Series" else "Película",
                     status = "Disponible",
@@ -2139,6 +2140,46 @@ fun CatalogItemFullScreenDetails(
                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Additional Images gallery
+                val extraImages = remember(item) {
+                    item.extraImagesJson?.split(";;")?.filter { it.isNotEmpty() } ?: emptyList()
+                }
+                if (extraImages.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "IMÁGENES ADICIONALES Y CAPTURAS",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            items(extraImages) { imageUrl ->
+                                Card(
+                                    modifier = Modifier
+                                        .width(180.dp)
+                                        .height(101.dp)
+                                        .tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                                        .clickable { },
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                                ) {
+                                    AsyncImage(
+                                        model = imageUrl,
+                                        contentDescription = "Captura",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
                                 }
                             }
                         }
@@ -3009,6 +3050,7 @@ fun SpecInformationGrid(
     productora: String,
     pais: String,
     idioma: String,
+    subtitulos: String = "Español Latino / Inglés",
     clasificacion: String,
     temporadas: String,
     status: String,
@@ -3019,6 +3061,7 @@ fun SpecInformationGrid(
         Pair("Productora", productora),
         Pair("País de Origen", pais),
         Pair("Audio / Idioma", idioma),
+        Pair("Subtítulos", subtitulos),
         Pair("Clasificación", clasificacion),
         Pair("Episodios / Duración", "$temporadas ($duracion)"),
         Pair("Estado de Emisión", status)
@@ -3514,7 +3557,7 @@ fun TrailerYoutubePlayerDialog(
 ) {
     val context = LocalContext.current
     val details = remember(item) { getCinematicDetails(item) }
-    val videoUrl = remember(item) { item.streamUrl ?: details.trailerUrl }
+    val videoUrl = remember(item) { item.trailerUrl ?: item.streamUrl ?: details.trailerUrl }
     
     var isPlaying by remember { mutableStateOf(true) }
     var currentPosition by remember { mutableStateOf(0) }
