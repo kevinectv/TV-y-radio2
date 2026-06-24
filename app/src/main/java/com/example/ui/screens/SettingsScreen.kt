@@ -2641,6 +2641,56 @@ fun CatalogsPaneContent(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Divider(color = Color.White.copy(alpha = 0.06f))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                val lastSyncTime by viewModel.lastSyncTime.collectAsState()
+                val storedItemsCount by viewModel.storedItemsCount.collectAsState()
+                val cacheSize by viewModel.cacheSize.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    viewModel.catalogRepository?.updateStats()
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "PERSISTENCIA LOCAL (ROOM DATABASE)",
+                        color = Color(0xFF00E5FF),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        letterSpacing = 1.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Sincronización
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Última Sincro", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(lastSyncTime, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    // Elementos
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Almacenados", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("$storedItemsCount items", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    // Caché
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Tamaño Caché", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(cacheSize, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
 

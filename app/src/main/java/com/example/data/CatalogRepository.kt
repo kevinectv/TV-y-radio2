@@ -282,17 +282,56 @@ class CatalogRepository(private val context: Context) {
         true
     }
 
-    suspend fun refreshLocalCatalogs() = withContext(Dispatchers.IO) {
+    suspend fun refreshLocalCatalogs(force: Boolean = false) = withContext(Dispatchers.IO) {
         val current = _catalogs.value
+        if (current.isEmpty()) return@withContext
+
+        // Map through each catalog and either update synchronously or trigger background synchronization
         val updated = current.map { cat ->
             val isCustomUrl = cat.url.isNotEmpty() && !cat.url.contains("lumina.app") && cat.url.startsWith("http", ignoreCase = true)
             if (cat.sourceType == "Local" || cat.sourceType == "Custom" || isCustomUrl || cat.url.isEmpty()) {
-                val result = fetchItemsForCatalog(cat)
-                val updatedItems = if (result.items.isEmpty() && cat.items.isNotEmpty()) cat.items else result.items
-                cat.copy(items = updatedItems, status = result.status, lastUpdated = result.lastUpdated)
+                if (cat.items.isNotEmpty() && !force) {
+                    // Smart background synchronization: don't block, fetch and update only if items have modified/new metadata
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val result = fetchItemsForCatalog(cat)
+                            if (result.items.isNotEmpty()) {
+                                val currentItemIds = cat.items.map { it.id }.toSet()
+                                val newItemIds = result.items.map { it.id }.toSet()
+                                
+                                val hasChanges = result.items.any { newItem ->
+                                    val existing = cat.items.find { it.id == newItem.id }
+                                    existing == null || existing.title != newItem.title || existing.posterUrl != newItem.posterUrl
+                                } || (newItemIds != currentItemIds)
+                                
+                                if (hasChanges) {
+                                    val updatedCat = cat.copy(
+                                        items = result.items,
+                                        status = result.status,
+                                        lastUpdated = result.lastUpdated
+                                    )
+                                    val updatedList = _catalogs.value.map { if (it.id == cat.id) updatedCat else it }
+                                    saveCatalogsToDbSync(updatedList)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    cat // return current immediately
+                } else {
+                    // Fetch synchronously if empty or forced
+                    val result = fetchItemsForCatalog(cat)
+                    val updatedItems = if (result.items.isEmpty() && cat.items.isNotEmpty()) cat.items else result.items
+                    cat.copy(items = updatedItems, status = result.status, lastUpdated = result.lastUpdated)
+                }
             } else cat
         }
-        saveCatalogsList(updated)
+        
+        // If any catalogs were updated synchronously (e.g. empty ones or forced ones), save them
+        if (updated != current) {
+            saveCatalogsToDbSync(updated)
+        }
     }
 
     private fun createDefaultCatalogs(): List<Catalog> {

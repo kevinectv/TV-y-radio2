@@ -40,12 +40,14 @@ fun CatalogDiagnosticsScreen(
     val cacheManager = remember { CatalogCacheManager(context) }
 
     val diagnosticsState by syncManager.diagnostics.collectAsState()
+    val storedItemsCount by viewModel.storedItemsCount.collectAsState()
     var cacheSizeStr by remember { mutableStateOf(cacheManager.getCacheSizeString()) }
     var isSyncing by remember { mutableStateOf(false) }
 
     // Update status on load
     LaunchedEffect(Unit) {
         syncManager.runDiagnosticCheck()
+        viewModel.catalogRepository?.updateStats()
         cacheSizeStr = cacheManager.getCacheSizeString()
     }
 
@@ -138,6 +140,19 @@ fun CatalogDiagnosticsScreen(
                             text = diagnosticsState.lastSyncTime,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Elementos Almacenados:", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        Text(
+                            text = "$storedItemsCount películas/series",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00E5FF),
                             fontSize = 13.sp
                         )
                     }

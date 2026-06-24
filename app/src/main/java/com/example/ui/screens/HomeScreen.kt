@@ -314,8 +314,8 @@ fun HomeScreen(
                                 color = Color(0xFF00FF87)
                             )
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
                             ) {
                                 items(progressItems) { (item, progressVal) ->
                                     CatalogItemHomeCard(
@@ -362,8 +362,8 @@ fun HomeScreen(
                                     color = Color(0xFF00FF87)
                                 )
                                 LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                                    contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
                                 ) {
                                     items(progressItems) { (item, progressVal) ->
                                         CatalogItemHomeCard(
@@ -897,7 +897,12 @@ fun HomeHeroBanner(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 16.dp),
+                    .padding(
+                        start = 20.dp.responsive(),
+                        end = 20.dp.responsive(),
+                        bottom = 12.dp.responsive(),
+                        top = 12.dp.responsive()
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
@@ -911,12 +916,12 @@ fun HomeHeroBanner(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(26.dp),
+                            .height(20.dp.responsive()),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
                         ) {
                             if (richMeta.trendPositionText != null) {
                                 Row(
@@ -928,20 +933,20 @@ fun HomeHeroBanner(
                                             ),
                                             shape = RoundedCornerShape(24.dp)
                                         )
-                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                        .padding(horizontal = 8.dp.responsive(), vertical = 2.dp.responsive())
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.TrendingUp,
                                         contentDescription = "Trend Position",
                                         tint = Color.White,
-                                        modifier = Modifier.size(12.dp)
+                                        modifier = Modifier.size(10.dp.responsive())
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(4.dp.responsive()))
                                     Text(
                                         text = richMeta.trendPositionText.uppercase(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 9.sp,
+                                        fontSize = 8.sp.responsive(),
                                         letterSpacing = 0.5.sp
                                     )
                                 }
@@ -959,24 +964,24 @@ fun HomeHeroBanner(
                                     text = badge.uppercase(),
                                     color = badgeColor,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 9.sp,
+                                    fontSize = 8.sp.responsive(),
                                     letterSpacing = 0.5.sp,
                                     modifier = Modifier
                                         .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                         .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive())
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(3.dp.responsive()))
 
                     // 2. LOGO OR TITLE
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(if (isWideLayout) 120.dp.responsive() else 80.dp.responsive()),
+                            .height(if (isWideLayout) 90.dp.responsive() else 64.dp.responsive()),
                         contentAlignment = Alignment.BottomStart
                     ) {
                         if (richMeta.logoUrl != null) {
@@ -984,8 +989,8 @@ fun HomeHeroBanner(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = if (isWideLayout) 120.dp.responsive() else 80.dp.responsive())
-                                    .widthIn(max = if (isWideLayout) 340.dp.responsive() else 220.dp.responsive()),
+                                    .heightIn(max = if (isWideLayout) 90.dp.responsive() else 64.dp.responsive())
+                                    .widthIn(max = if (isWideLayout) 280.dp.responsive() else 180.dp.responsive()),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.BottomStart
                             )
@@ -994,7 +999,7 @@ fun HomeHeroBanner(
                                 text = richMeta.title,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 42.sp.responsive() else 30.sp.responsive(),
+                                    fontSize = if (isWideLayout) 32.sp.responsive() else 24.sp.responsive(),
                                     color = Color.White,
                                     letterSpacing = (-1).sp,
                                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -1007,27 +1012,27 @@ fun HomeHeroBanner(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp.responsive()))
 
                     // 3. RATINGS & PRIMARY METADATA ROW
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(28.dp),
+                            .height(22.dp.responsive()),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
                         ) {
                             Text(
                                 text = richMeta.year,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp.responsive(),
                                 modifier = Modifier
                                     .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                    .padding(horizontal = 6.dp.responsive(), vertical = 1.5.dp.responsive())
                             )
 
                             Row(
@@ -1035,19 +1040,19 @@ fun HomeHeroBanner(
                                 modifier = Modifier
                                     .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                     .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Star,
                                     contentDescription = "IMDb Rating",
                                     tint = Color(0xFFFFD700),
-                                    modifier = Modifier.size(10.dp)
+                                    modifier = Modifier.size(9.dp.responsive())
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Spacer(modifier = Modifier.width(3.dp.responsive()))
                                 Text(
                                     text = "IMDb ${richMeta.ratingImdb}",
                                     color = Color(0xFFFFD700),
-                                    fontSize = 10.sp,
+                                    fontSize = 9.sp.responsive(),
                                     fontWeight = FontWeight.Black
                                 )
                             }
@@ -1057,19 +1062,19 @@ fun HomeHeroBanner(
                                 modifier = Modifier
                                     .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                     .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Star,
                                     contentDescription = "TMDB Rating",
                                     tint = Color(0xFF00FF87),
-                                    modifier = Modifier.size(10.dp)
+                                    modifier = Modifier.size(9.dp.responsive())
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Spacer(modifier = Modifier.width(3.dp.responsive()))
                                 Text(
                                     text = "TMDB ${richMeta.ratingTmdb}",
                                     color = Color(0xFF00FF87),
-                                    fontSize = 10.sp,
+                                    fontSize = 9.sp.responsive(),
                                     fontWeight = FontWeight.Black
                                 )
                             }
@@ -1078,105 +1083,105 @@ fun HomeHeroBanner(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Whatshot,
                                     contentDescription = "Popularity",
                                     tint = Color(0xFFFF2E93),
-                                    modifier = Modifier.size(11.dp)
+                                    modifier = Modifier.size(10.dp.responsive())
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(3.dp.responsive()))
                                 Text(
                                     text = richMeta.popularityText,
                                     color = Color.White.copy(alpha = 0.85f),
-                                    fontSize = 10.sp,
+                                    fontSize = 9.sp.responsive(),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(3.dp.responsive()))
 
                     // 4. SECONDARY METADATA ROW
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(24.dp),
+                            .height(18.dp.responsive()),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp.responsive())
                         ) {
                             Text(
                                 text = richMeta.genres,
                                 color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 12.sp,
+                                fontSize = 10.5.sp.responsive(),
                                 fontWeight = FontWeight.Medium
                             )
 
                             Text(
                                 text = "•",
                                 color = Color.White.copy(alpha = 0.3f),
-                                fontSize = 12.sp
+                                fontSize = 10.5.sp.responsive()
                             )
 
                             Text(
                                 text = richMeta.duration,
                                 color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 12.sp,
+                                fontSize = 10.5.sp.responsive(),
                                 fontWeight = FontWeight.Medium
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(3.dp.responsive()))
 
                     // 5. TECHNICAL CAPABILITY BADGES
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(24.dp),
+                            .height(18.dp.responsive()),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(5.dp.responsive())
                         ) {
                             richMeta.techIndicators.forEach { tech ->
                                 Text(
                                     text = tech,
                                     color = Color.White.copy(alpha = 0.65f),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp,
+                                    fontSize = 8.sp.responsive(),
                                     modifier = Modifier
                                         .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(3.dp))
                                         .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp.responsive()))
 
                     // 6. SHORT SINOPSIS
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 24.dp)
-                            .height(64.dp.responsive())
+                            .padding(end = 20.dp.responsive())
+                            .height(36.dp.responsive())
                     ) {
                         Text(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
-                            fontSize = if (isWideLayout) 13.sp.responsive() else 11.5.sp.responsive(),
-                            maxLines = 3,
-                            lineHeight = if (isWideLayout) 18.sp.responsive() else 16.sp.responsive(),
+                            fontSize = if (isWideLayout) 11.5.sp.responsive() else 10.sp.responsive(),
+                            maxLines = 2,
+                            lineHeight = if (isWideLayout) 15.sp.responsive() else 13.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 640.dp.responsive())
+                            modifier = Modifier.widthIn(max = 580.dp.responsive())
                         )
                     }
 
@@ -1224,8 +1229,8 @@ fun DrawCatalogRow(
 
     if (isSupportedRowType) {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
         ) {
             items(catalog.items.take(catalog.numItems)) { item ->
                 CatalogItemHomeCard(
@@ -1257,8 +1262,8 @@ fun DrawCatalogRow(
         )
     } else if (layoutToDraw == "Top Numerado" || layoutToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("Mejor Valorad", ignoreCase = true) || titleToDraw.contains("Top 250", ignoreCase = true)) {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp.responsive()),
+            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
         ) {
             itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
                 CatalogItemNumberedCard(
@@ -1277,8 +1282,8 @@ fun DrawCatalogRow(
         }
     } else {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
         ) {
             items(catalog.items.take(catalog.numItems)) { item ->
                 CatalogItemHomeCard(
@@ -1308,7 +1313,12 @@ fun HomeSectionRowHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 8.dp),
+            .padding(
+                start = 16.dp.responsive(),
+                end = 16.dp.responsive(),
+                top = 22.dp.responsive(),
+                bottom = 6.dp.responsive()
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left Vertical Neon Anchor Bar for high-end cinematic vibe
@@ -2097,13 +2107,13 @@ fun CatalogItemFullScreenDetails(
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                            contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(dynamicCast) { actor ->
                                 Card(
                                     modifier = Modifier
-                                        .width(100.dp)
+                                        .width(100.dp.responsive())
                                         .wrapContentHeight()
                                         .tvFocusEffect(shape = RoundedCornerShape(4.dp))
                                         .clickable {  },
@@ -2112,15 +2122,15 @@ fun CatalogItemFullScreenDetails(
                                     border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f))
                                 ) {
                                     Column(
-                                        modifier = Modifier.padding(8.dp),
+                                        modifier = Modifier.padding(8.dp.responsive()),
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        verticalArrangement = Arrangement.spacedBy(6.dp.responsive())
                                     ) {
                                         AsyncImage(
                                             model = actor.photoUrl,
                                             contentDescription = actor.name,
                                             modifier = Modifier
-                                                .size(54.dp)
+                                                .size(54.dp.responsive())
                                                 .clip(CircleShape),
                                             contentScale = ContentScale.Crop
                                         )
@@ -2163,14 +2173,14 @@ fun CatalogItemFullScreenDetails(
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                            contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(extraImages) { imageUrl ->
                                 Card(
                                     modifier = Modifier
-                                        .width(180.dp)
-                                        .height(101.dp)
+                                        .width(180.dp.responsive())
+                                        .height(101.dp.responsive())
                                         .tvFocusEffect(shape = RoundedCornerShape(4.dp))
                                         .clickable { },
                                     shape = RoundedCornerShape(4.dp),
@@ -2201,7 +2211,7 @@ fun CatalogItemFullScreenDetails(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp)
+                            .height(120.dp.responsive())
                             .clickable {
                                 viewModel.activeTrailerItem = item
                             }
@@ -2254,14 +2264,14 @@ fun CatalogItemFullScreenDetails(
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                            contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(similarItems) { similar ->
                                 Card(
                                     modifier = Modifier
-                                        .width(90.dp)
-                                        .height(135.dp)
+                                        .width(90.dp.responsive())
+                                        .height(135.dp.responsive())
                                         .clickable {
                                             onNavigateToSimilar(similar)
                                         }

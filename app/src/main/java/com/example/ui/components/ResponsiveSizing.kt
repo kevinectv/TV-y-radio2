@@ -7,19 +7,34 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Universal dynamic scaling system for Lumina.
+ * Auto-detects device classes based on screen width dp constraints.
+ */
 @Composable
-fun getResponsiveScale(): Float {
+fun calculateUiScale(): Float {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp
     return when {
-        screenWidth >= 1440 -> 1.55f  // Very Large Smart TVs / UHD
-        screenWidth >= 1200 -> 1.45f  // Large Smart TVs (Samsung, TCL 65"+ etc.)
-        screenWidth >= 960 -> 1.30f   // Standard Smart TVs (TCL, Samsung, LG 43"-55")
-        screenWidth >= 720 -> 1.18f   // Large Tablets / Wide displays
-        screenWidth >= 480 -> 1.08f   // Small Tablets / Huge Phablets / Foldables
-        screenWidth < 360 -> 0.92f    // Extremely small/narrow screens - scale down slightly to avoid narrow squishing
-        else -> 1.0f                  // Normal phone
+        // TV / Smart TV / Chromecast / Android TV / Google TV / Fire TV
+        screenWidth >= 960 -> 0.85f   // TV = 0.85f (15% visual reduction to show more content)
+        // Tablets
+        screenWidth >= 600 -> 0.92f   // Tablet = 0.92f (8% visual reduction to pack rows efficiently)
+        // Phones
+        else -> 1.0f                  // Phone = 1.0f (compact & perfectly fitted)
     }
+}
+
+/**
+ * Global scale variable mapping to calculateUiScale()
+ */
+val UiScale: Float
+    @Composable
+    get() = calculateUiScale()
+
+@Composable
+fun getResponsiveScale(): Float {
+    return UiScale
 }
 
 @Composable
@@ -31,3 +46,4 @@ fun Dp.responsive(): Dp {
 fun TextUnit.responsive(): TextUnit {
     return (this.value * getResponsiveScale()).sp
 }
+
