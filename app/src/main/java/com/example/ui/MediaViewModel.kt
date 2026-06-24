@@ -110,6 +110,40 @@ class MediaViewModel(
         }
     }
 
+    // Lumina Catalog Engine Search State & Logs
+    var catalogSearchQuery by mutableStateOf("")
+        private set
+
+    var catalogSearchResults by mutableStateOf<List<com.example.data.model.Catalog>>(emptyList())
+        private set
+
+    var catalogSearchLogs by mutableStateOf("")
+        private set
+
+    fun SearchCatalogs(query: String) {
+        catalogSearchQuery = query
+        val allStored = catalogsStateFlow.value
+        val q = query.trim()
+        if (q.isBlank()) {
+            catalogSearchResults = allStored
+            catalogSearchLogs = "Texto buscado: (Ninguno/Todos) | Catálogos disponibles: ${allStored.size} | Coincidencias encontradas: ${allStored.size} | Resultado final enviado a la UI: ${allStored.size} catálogos"
+            android.util.Log.d("LuminaCatalogEngine", catalogSearchLogs)
+            return
+        }
+        val matches = allStored.filter {
+            it.name.contains(q, ignoreCase = true) ||
+            it.sourceType.contains(q, ignoreCase = true) ||
+            it.layoutType.contains(q, ignoreCase = true) ||
+            (q.equals("Action", ignoreCase = true) && it.name.contains("Acción", ignoreCase = true)) ||
+            (q.equals("Accion", ignoreCase = true) && it.name.contains("Acción", ignoreCase = true)) ||
+            (q.equals("Top Rated", ignoreCase = true) && it.name.contains("Top Rated", ignoreCase = true)) ||
+            (q.equals("Sci-Fi", ignoreCase = true) && it.name.contains("Ciencia Ficción", ignoreCase = true))
+        }
+        catalogSearchResults = matches
+        catalogSearchLogs = "Texto buscado: '$q' | Catálogos disponibles: ${allStored.size} | Coincidencias encontradas: ${matches.size} | Resultado final enviado a la UI: ${matches.size} catálogos"
+        android.util.Log.i("LuminaCatalogEngine", catalogSearchLogs)
+    }
+
     // Selected App Tab
     var currentTab by mutableStateOf(AppTab.HOME)
         private set
