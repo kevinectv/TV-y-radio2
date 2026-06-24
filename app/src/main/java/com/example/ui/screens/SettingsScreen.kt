@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -2515,6 +2516,7 @@ fun CatalogsPaneContent(
     val coroutineScope = rememberCoroutineScope()
     val catalogs by viewModel.catalogsStateFlow.collectAsState()
 
+    var showSearchScreen by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var selectedCatalogToEdit by remember { mutableStateOf<Catalog?>(null) }
@@ -2524,6 +2526,14 @@ fun CatalogsPaneContent(
     // Sync options states
     val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
     var syncMode by remember { mutableStateOf(sharedPrefs.getString("catalog_sync_mode", "automatic") ?: "automatic") }
+
+    if (showSearchScreen) {
+        PremiumCatalogSearchScreen(
+            viewModel = viewModel,
+            onBack = { showSearchScreen = false }
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -2694,7 +2704,57 @@ fun CatalogsPaneContent(
             }
         }
 
-        // B) ADD NEW CATALOG TRIGGER (EXCLUSIVE CARD)
+        // B) PREMIUM SEARCH & ADD NEW CATALOG TRIGGERS
+        // Premium Discovery Banner (Recommended)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .tvFocusEffect(shape = RoundedCornerShape(12.dp))
+                .clickable { showSearchScreen = true },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF00FF87).copy(alpha = 0.12f)),
+            border = BorderStroke(1.5.dp, Color(0xFF00FF87).copy(alpha = 0.4f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Buscar Catálogos",
+                    tint = Color(0xFF00FF87),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "BUSCAR CATÁLOGOS PREMIUM (RECOMENDADO)",
+                        color = Color(0xFF00FF87),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Descubre e instala instantáneamente colecciones completas de Marvel, Star Wars, tendencias Anime, tops de IMDb y más, sin necesidad de copiar ni pegar URLs.",
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "Explorar",
+                    tint = Color(0xFF00FF87),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        // Secondary manual/API rows
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -2705,29 +2765,28 @@ fun CatalogsPaneContent(
                     .tvFocusEffect(shape = RoundedCornerShape(12.dp))
                     .clickable { showAddDialog = true },
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)),
-                border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.25f))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.AddCircle,
-                        contentDescription = "Añadir Catálogo",
+                        contentDescription = "Añadir Manual",
                         tint = Color(0xFF00E5FF),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Añadir Nuevo Catálogo",
+                        text = "Añadir Manualmente",
                         color = Color(0xFF00E5FF),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -2738,13 +2797,13 @@ fun CatalogsPaneContent(
                     .tvFocusEffect(shape = RoundedCornerShape(12.dp))
                     .clickable { onOpenApiSettings() },
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFED1C24).copy(alpha = 0.12f)),
-                border = BorderStroke(1.5.dp, Color(0xFFED1C24).copy(alpha = 0.4f))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFED1C24).copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, Color(0xFFED1C24).copy(alpha = 0.25f))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -2752,15 +2811,14 @@ fun CatalogsPaneContent(
                         imageVector = Icons.Default.VpnKey,
                         contentDescription = "API Keys",
                         tint = Color(0xFFED1C24),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Configurar API Keys",
                         color = Color(0xFFED1C24),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.5.sp
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -3020,6 +3078,45 @@ fun CatalogsPaneContent(
 }
 
 @Composable
+fun CompactActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    containerColor: Color = Color.White.copy(alpha = 0.05f),
+    contentColor: Color = Color.White,
+    borderColor: Color = Color.White.copy(alpha = 0.1f)
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .height(28.dp)
+            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+        shape = RoundedCornerShape(6.dp),
+        color = containerColor,
+        contentColor = contentColor,
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = text,
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = text,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
 fun CatalogItemCard(
     catalog: Catalog,
     onEdit: () -> Unit,
@@ -3031,220 +3128,260 @@ fun CatalogItemCard(
     onLayoutClick: () -> Unit
 ) {
     val sourceColor = when (catalog.sourceType) {
-        "TMDB" -> Color(0xFF01B4E4)
+        "TMDB" -> Color(0xFF00E5FF)
         "Trakt" -> Color(0xFFED1C24)
         "MDBList" -> Color(0xFFFF9800)
         "Import" -> Color(0xFF9C27B0)
-        else -> Color(0xFF4CAF50)
+        else -> Color(0xFF00FF87)
+    }
+
+    val statusColor = when (catalog.status) {
+        "Sincronizado" -> Color(0xFF00FF87)
+        "Error" -> Color(0xFFFF4D4D)
+        else -> Color(0xFFFFC107)
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .tvFocusEffect(shape = RoundedCornerShape(10.dp)),
-        shape = RoundedCornerShape(10.dp),
+            .tvFocusEffect(shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (catalog.isVisible) Color.White.copy(alpha = 0.03f) else Color.White.copy(alpha = 0.01f)
+            containerColor = if (catalog.isVisible) Color(0xFF131722) else Color(0xFF0C0F14)
         ),
         border = BorderStroke(
             1.dp,
             if (catalog.isVisible) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.03f)
         )
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .height(IntrinsicSize.Min)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = catalog.name,
-                            color = if (catalog.isVisible) Color.White else Color.White.copy(alpha = 0.4f),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        // Custom source type pill
-                        Text(
-                            text = catalog.sourceType.uppercase(),
-                            color = Color.Black,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 8.5.sp,
-                            modifier = Modifier
-                                .background(sourceColor, RoundedCornerShape(3.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-
-                        Spacer(modifier = Modifier.width(6.dp))
-
-                        // Layout Display Type pill
-                        Text(
-                            text = catalog.layoutType.uppercase(),
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 8.5.sp,
-                            modifier = Modifier
-                                .background(Color(0xFF00E5FF), RoundedCornerShape(3.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = if (catalog.url.isNotEmpty()) catalog.url else "Asociación interna por defecto",
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 10.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+            // Left vertical aesthetic indicator line
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .background(
+                        if (catalog.isVisible) sourceColor else sourceColor.copy(alpha = 0.3f),
+                        RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
                     )
-                }
+            )
 
-                // Visibility pill state
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Main Header Row
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .background(
-                                if (catalog.isVisible) Color(0xFF4CAF50) else Color.Gray,
-                                CircleShape
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = catalog.name,
+                                color = if (catalog.isVisible) Color.White else Color.White.copy(alpha = 0.4f),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                    )
-                    Text(
-                        text = if (catalog.isVisible) "Visible" else "Oculto",
-                        color = if (catalog.isVisible) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.4f),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+
+                            // Custom source type pill
+                            Text(
+                                text = catalog.sourceType.uppercase(),
+                                color = sourceColor,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 8.sp,
+                                modifier = Modifier
+                                    .background(sourceColor.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
+                                    .border(0.5.dp, sourceColor.copy(alpha = 0.3f), RoundedCornerShape(3.dp))
+                                    .padding(horizontal = 5.dp, vertical = 1.5.dp)
+                            )
+
+                            // Layout Display Type pill
+                            Text(
+                                text = catalog.layoutType.uppercase(),
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 8.sp,
+                                modifier = Modifier
+                                    .background(Color(0xFF00E5FF).copy(alpha = 0.12f), RoundedCornerShape(3.dp))
+                                    .border(0.5.dp, Color(0xFF00E5FF).copy(alpha = 0.3f), RoundedCornerShape(3.dp))
+                                    .padding(horizontal = 5.dp, vertical = 1.5.dp)
+                            )
+                        }
+                    }
+
+                    // Visibility Badge
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    if (catalog.isVisible) Color(0xFF00FF87) else Color.Gray,
+                                    CircleShape
+                                )
+                        )
+                        Text(
+                            text = if (catalog.isVisible) "Visible" else "Oculto",
+                            color = if (catalog.isVisible) Color(0xFF00FF87) else Color.White.copy(alpha = 0.4f),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Stats / Meta details in the card
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "Elementos: ${catalog.items.size}",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 10.sp
-                    )
-                    Text(
-                        text = "Estado: ${catalog.status}",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 10.sp
-                    )
-                    Text(
-                        text = "Actualizado: ${catalog.lastUpdated}",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 10.sp
-                    )
-                }
-
-                // Action buttons!
+                // Stats Section
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Update
-                    IconButton(
-                        onClick = onSync,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color.White, RoundedCornerShape(6.dp))
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.Black, modifier = Modifier.size(13.dp))
-                    }
-
-                    // Move Up
-                    IconButton(
-                        onClick = onMoveUp,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color.White, RoundedCornerShape(6.dp))
-                    ) {
-                        Icon(Icons.Default.ArrowUpward, contentDescription = "Arriba", tint = Color.Black, modifier = Modifier.size(13.dp))
-                    }
-
-                    // Move Down
-                    IconButton(
-                        onClick = onMoveDown,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color.White, RoundedCornerShape(6.dp))
-                    ) {
-                        Icon(Icons.Default.ArrowDownward, contentDescription = "Abajo", tint = Color.Black, modifier = Modifier.size(13.dp))
-                    }
-
-                    // Hide/Show Toggle
-                    IconButton(
-                        onClick = onToggleVisibility,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color.White, RoundedCornerShape(6.dp))
+                    // Element count
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
-                            imageVector = if (catalog.isVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Visibilidad",
-                            tint = Color.Black,
-                            modifier = Modifier.size(13.dp)
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.4f),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Text(
+                            text = "${catalog.items.size} ítems",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 10.5.sp
                         )
                     }
 
-                    // Edit
-                    IconButton(
+                    // Status
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = statusColor,
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Text(
+                            text = catalog.status,
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 10.5.sp
+                        )
+                    }
+
+                    // Last Sync
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.4f),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Text(
+                            text = "Sincro: ${catalog.lastUpdated}",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 10.5.sp
+                        )
+                    }
+                }
+
+                // Compact Action Bar (Scrollable Row of Action Chips)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // ✏️ Editar
+                    CompactActionButton(
+                        icon = Icons.Default.Edit,
+                        text = "✏️ Editar",
                         onClick = onEdit,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color.White, RoundedCornerShape(6.dp))
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Black, modifier = Modifier.size(13.dp))
-                    }
+                        containerColor = Color.White.copy(alpha = 0.03f),
+                        contentColor = Color.White,
+                        borderColor = Color.White.copy(alpha = 0.12f)
+                    )
 
-                    // Diseño Visual
-                    IconButton(
+                    // 🔄 Sincronizar
+                    CompactActionButton(
+                        icon = Icons.Default.Refresh,
+                        text = "🔄 Actualizar",
+                        onClick = onSync,
+                        containerColor = Color(0xFF00E5FF).copy(alpha = 0.06f),
+                        contentColor = Color(0xFF00E5FF),
+                        borderColor = Color(0xFF00E5FF).copy(alpha = 0.25f)
+                    )
+
+                    // ⬆ Subir
+                    CompactActionButton(
+                        icon = Icons.Default.ArrowUpward,
+                        text = "⬆ Subir",
+                        onClick = onMoveUp,
+                        containerColor = Color.White.copy(alpha = 0.03f),
+                        contentColor = Color.White.copy(alpha = 0.85f),
+                        borderColor = Color.White.copy(alpha = 0.1f)
+                    )
+
+                    // ⬇ Bajar
+                    CompactActionButton(
+                        icon = Icons.Default.ArrowDownward,
+                        text = "⬇ Bajar",
+                        onClick = onMoveDown,
+                        containerColor = Color.White.copy(alpha = 0.03f),
+                        contentColor = Color.White.copy(alpha = 0.85f),
+                        borderColor = Color.White.copy(alpha = 0.1f)
+                    )
+
+                    // 👁 Mostrar / Ocultar
+                    CompactActionButton(
+                        icon = if (catalog.isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        text = if (catalog.isVisible) "👁 Ocultar" else "👁 Mostrar",
+                        onClick = onToggleVisibility,
+                        containerColor = Color.White.copy(alpha = 0.03f),
+                        contentColor = if (catalog.isVisible) Color.White.copy(alpha = 0.7f) else Color(0xFF00FF87),
+                        borderColor = Color.White.copy(alpha = 0.12f)
+                    )
+
+                    // ⚙ Configurar Diseño
+                    CompactActionButton(
+                        icon = Icons.Default.Layers,
+                        text = "⚙ Diseño",
                         onClick = onLayoutClick,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color(0xFF00E5FF), RoundedCornerShape(6.dp))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Layers,
-                            contentDescription = "Diseño Visual",
-                            tint = Color.Black,
-                            modifier = Modifier.size(13.dp)
-                        )
-                    }
+                        containerColor = Color(0xFF00FF87).copy(alpha = 0.06f),
+                        contentColor = Color(0xFF00FF87),
+                        borderColor = Color(0xFF00FF87).copy(alpha = 0.25f)
+                    )
 
-                    // Delete
-                    IconButton(
+                    // 🗑 Eliminar (Danger style!)
+                    CompactActionButton(
+                        icon = Icons.Default.Delete,
+                        text = "🗑 Eliminar",
                         onClick = onDelete,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                            .background(Color.White, RoundedCornerShape(6.dp))
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Black, modifier = Modifier.size(13.dp))
-                    }
+                        containerColor = Color(0xFFFF4D4D).copy(alpha = 0.08f),
+                        contentColor = Color(0xFFFF4D4D),
+                        borderColor = Color(0xFFFF4D4D).copy(alpha = 0.3f)
+                    )
                 }
             }
         }

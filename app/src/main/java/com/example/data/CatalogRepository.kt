@@ -553,8 +553,14 @@ data class SyncResult(
             }
         }
         
+        val finalItems = if (mergedList.isEmpty()) {
+            getDeepFallbacksForCategory(catalog.name)
+        } else {
+            mergedList
+        }
+        
         SyncResult(
-            items = mergedList.take(maxOf(catalog.numItems, 500)),
+            items = finalItems.take(maxOf(catalog.numItems, 500)),
             status = status,
             lastUpdated = lastUpdated
         )
@@ -916,6 +922,62 @@ data class SyncResult(
     private fun getDeepFallbacksForCategory(categoryName: String): List<CatalogItem> {
         val nameL = categoryName.lowercase()
         return when {
+            nameL.contains("marvel") -> {
+                listOf(
+                    CatalogItem(
+                        id = "m_avengers_endgame", title = "Avengers: Endgame",
+                        posterUrl = "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=600",
+                        year = "2019", rating = "8.4", genre = "Acción / Sci-Fi / Aventura",
+                        description = "Tras los eventos devastadores de Avengers: Infinity War, el universo está en ruinas. Con la ayuda de los aliados restantes, los Avengers se reúnen una vez más para deshacer las acciones de Thanos y restaurar el orden en el universo."
+                    ),
+                    CatalogItem(
+                        id = "m_spiderman_nwh", title = "Spider-Man: No Way Home",
+                        posterUrl = "https://images.unsplash.com/photo-1608889175123-8ec330b86f84?q=80&w=600",
+                        year = "2021", rating = "8.2", genre = "Acción / Aventura / Fantasía",
+                        description = "Por primera vez en la historia cinematográfica de Spider-Man, nuestro amigable héroe vecino es desenmascarado y ya no puede separar su vida normal de los altos riesgos de ser un superhéroe. Cuando pide ayuda al Doctor Strange, los riesgos se vuelven aún más peligrosos."
+                    ),
+                    CatalogItem(
+                        id = "m_guardians_3", title = "Guardianes de la Galaxia Vol. 3",
+                        posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+                        year = "2023", rating = "8.0", genre = "Acción / Sci-Fi / Comedia",
+                        description = "Nuestro querido grupo de inadaptados se está instalando en Knowhere. Pero no pasa mucho tiempo antes de que sus vidas se vean alteradas por los ecos del turbulento pasado de Rocket."
+                    ),
+                    CatalogItem(
+                        id = "m_ironman", title = "Iron Man",
+                        posterUrl = "https://images.unsplash.com/photo-1569003339405-ea396a5a8a90?q=80&w=600",
+                        year = "2008", rating = "7.9", genre = "Acción / Sci-Fi / Aventura",
+                        description = "Un empresario multimillonario y genio inventor, Tony Stark, es secuestrado en el extranjero. Usando su ingenio, construye una armadura de alta tecnología y escapa, decidiendo usar su poder para proteger al mundo."
+                    )
+                )
+            }
+            nameL.contains("anime") -> {
+                listOf(
+                    CatalogItem(
+                        id = "a_demonslayer_mugen", title = "Demon Slayer: Mugen Train",
+                        posterUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
+                        year = "2020", rating = "8.3", genre = "Animación / Fantasía / Acción",
+                        description = "Tanjiro Kamado y sus amigos de la Compañía de Cazadores de Demonios acompañan a Kyojuro Rengoku, el Pilar de la Llama, para investigar una misteriosa serie de desapariciones a bordo del Tren Mugen."
+                    ),
+                    CatalogItem(
+                        id = "a_your_name", title = "Your Name (Kimi no Na wa)",
+                        posterUrl = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600",
+                        year = "2016", rating = "8.4", genre = "Animación / Romance / Drama",
+                        description = "Dos desconocidos, una chica de campo y un chico de Tokio, descubren de repente que intercambian cuerpos periódicamente al dormir, creando un vínculo mágico e inolvidable antes de un evento cósmico."
+                    ),
+                    CatalogItem(
+                        id = "a_spirited_away", title = "El Viaje de Chihiro",
+                        posterUrl = "https://images.unsplash.com/photo-1528360983277-13d401ccd795?q=80&w=600",
+                        year = "2001", rating = "8.6", genre = "Animación / Fantasía / Aventura",
+                        description = "Durante el traslado de su familia a los suburbios, una niña de 10 años de edad deambula por un mundo gobernado por dioses, brujas y espíritus, donde los humanos se transforman en bestias."
+                    ),
+                    CatalogItem(
+                        id = "a_jujutsu_kaisen_0", title = "Jujutsu Kaisen 0",
+                        posterUrl = "https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600",
+                        year = "2021", rating = "7.9", genre = "Animación / Acción / Fantasía",
+                        description = "Yuta Okkotsu es un estudiante de secundaria que gana el control de una maldición extremadamente poderosa y se inscribe en la Escuela Secundaria de Jujutsu de la Prefectura de Tokio bajo la tutela de Satoru Gojo."
+                    )
+                )
+            }
             nameL.contains("trending movies") -> {
                 listOf(
                     CatalogItem(
