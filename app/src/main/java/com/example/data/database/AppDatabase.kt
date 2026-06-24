@@ -6,12 +6,13 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [ProfileEntity::class, FavoriteEntity::class, RecentEntity::class, PlaylistEntity::class, EpgSourceEntity::class, ChannelEntity::class, RadioStationEntity::class, EpgProgramEntity::class],
-    version = 8,
+    entities = [ProfileEntity::class, FavoriteEntity::class, RecentEntity::class, PlaylistEntity::class, EpgSourceEntity::class, ChannelEntity::class, RadioStationEntity::class, EpgProgramEntity::class, CatalogEntity::class, CatalogItemEntity::class],
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun mediaDao(): MediaDao
+    abstract fun catalogDao(): CatalogDao
 
     companion object {
         @Volatile

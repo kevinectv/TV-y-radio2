@@ -1,0 +1,86 @@
+package com.example.data.database
+
+import androidx.room.Entity
+import com.example.data.model.CatalogItem
+
+@Entity(
+    tableName = "catalog_items",
+    primaryKeys = ["catalogId", "id"]
+)
+data class CatalogItemEntity(
+    val catalogId: String,
+    val id: String,
+    val title: String,
+    val posterUrl: String,
+    val year: String,
+    val rating: String,
+    val genre: String,
+    val description: String,
+    val streamUrl: String?,
+    val tmdbId: String?,
+    val isTvShow: Boolean,
+    val logoUrl: String?,
+    val backdropUrl: String?,
+    val trailerUrl: String?,
+    val director: String?,
+    val producer: String?,
+    val duration: String?,
+    val castJson: String?,
+    val imdbRating: String?,
+    val languages: String?,
+    val subtitles: String?,
+    val extraImagesJson: String?
+)
+
+fun CatalogItemEntity.toDomain(): CatalogItem {
+    return CatalogItem(
+        id = id,
+        title = title,
+        posterUrl = posterUrl,
+        year = year,
+        rating = rating,
+        genre = genre,
+        description = description,
+        streamUrl = streamUrl,
+        tmdbId = tmdbId,
+        isTvShow = isTvShow,
+        logoUrl = logoUrl,
+        backdropUrl = backdropUrl,
+        trailerUrl = trailerUrl,
+        director = director,
+        producer = producer,
+        duration = duration,
+        castJson = castJson,
+        imdbRating = imdbRating,
+        languages = languages,
+        subtitles = subtitles,
+        extraImagesJson = extraImagesJson
+    )
+}
+
+fun CatalogItem.toEntity(catalogId: String): CatalogItemEntity {
+    return CatalogItemEntity(
+        catalogId = catalogId,
+        id = id,
+        title = title,
+        posterUrl = posterUrl,
+        year = year,
+        rating = rating,
+        genre = genre,
+        description = description,
+        streamUrl = streamUrl,
+        tmdbId = tmdbId,
+        isTvShow = isTvShow,
+        logoUrl = logoUrl,
+        backdropUrl = backdropUrl,
+        trailerUrl = trailerUrl,
+        director = director,
+        producer = producer,
+        duration = duration,
+        castJson = castJson,
+        imdbRating = imdbRating,
+        languages = languages,
+        subtitles = subtitles,
+        extraImagesJson = extraImagesJson
+    )
+}

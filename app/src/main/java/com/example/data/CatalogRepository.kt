@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
+import com.example.data.database.toDomain
+import com.example.data.database.toEntity
 
 class CatalogRepository(private val context: Context) {
 
@@ -22,9 +24,22 @@ class CatalogRepository(private val context: Context) {
     private val jsonAdapter = moshi.adapter<List<Catalog>>(catalogListType)
     private val catalogsFile = File(context.filesDir, "installed_catalogs.json")
 
+    private val database = com.example.data.database.AppDatabase.getDatabase(context)
+    private val catalogDao = database.catalogDao()
+
     private val _catalogs = MutableStateFlow<List<Catalog>>(emptyList())
     val catalogs: StateFlow<List<Catalog>> = _catalogs
     val engine by lazy { LuminaCatalogEngine(context, this) }
+
+    // Expose stats states
+    private val _lastSyncTime = MutableStateFlow<String>("Nunca")
+    val lastSyncTime: StateFlow<String> = _lastSyncTime
+
+    private val _storedItemsCount = MutableStateFlow<Int>(0)
+    val storedItemsCount: StateFlow<Int> = _storedItemsCount
+
+    private val _cacheSize = MutableStateFlow<String>("0.00 B")
+    val cacheSize: StateFlow<String> = _cacheSize
 
     init {
         // Run any disk operations (loadCatalogs) and sync asynchronously so we don't block the main thread on startup
@@ -46,40 +61,40 @@ class CatalogRepository(private val context: Context) {
                 } else cat
             }
             if (needsSave) {
-                saveCatalogsList(current)
+                saveCatalogsToDbSync(current)
             }
-            refreshLocalCatalogs()
+            
+            val totalItems = catalogDao.getStoredItemsCount()
+            if (totalItems <= 140) {
+                refreshLocalCatalogs()
+            }
+            
             try {
                 engine.autoSyncAndEnrichAll()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            updateStats()
         }
     }
 
-    private fun loadCatalogs() {
+    private suspend fun loadCatalogs() {
         try {
-            if (catalogsFile.exists()) {
-                val json = catalogsFile.readText()
-                val list = jsonAdapter.fromJson(json)
-                if (list != null && list.isNotEmpty()) {
-                    val healed = list.map { cat ->
-                        val currentLayout = try { cat.layoutType } catch (e: Exception) { "Horizontal Poster Row" } ?: "Horizontal Poster Row"
-                        val correctedLayout = when (currentLayout) {
-                            "Horizontal" -> "Horizontal Poster Row"
-                            "Vertical" -> "Vertical Poster Row"
-                            else -> currentLayout
-                        }
-                        cat.copy(layoutType = correctedLayout)
-                    }
-                    _catalogs.value = healed.sortedBy { it.orderIndex }
-                    saveCatalogsList(healed)
-                    return
+            val dbCatalogs = catalogDao.getAllCatalogsList()
+            if (dbCatalogs.isNotEmpty()) {
+                val domainList = dbCatalogs.map { entity ->
+                    val itemEntities = catalogDao.getItemsForCatalog(entity.id)
+                    val domainItems = itemEntities.map { it.toDomain() }
+                    entity.toDomain(domainItems)
                 }
+                _catalogs.value = domainList.sortedBy { it.orderIndex }
+                updateStats()
+                return
             }
-            // If file does not exist or empty list, populate the 17 default premium catalogs
+            
+            // If DB is empty, populate default catalogs
             val defaults = createDefaultCatalogs()
-            saveCatalogsList(defaults)
+            saveCatalogsToDbSync(defaults)
         } catch (e: Exception) {
             e.printStackTrace()
             val defaults = createDefaultCatalogs()
@@ -87,15 +102,67 @@ class CatalogRepository(private val context: Context) {
         }
     }
 
-    fun saveCatalogsList(list: List<Catalog>) {
-        try {
-            val sortedList = list.mapIndexed { idx, catalog -> catalog.copy(orderIndex = idx) }
-            val json = jsonAdapter.toJson(sortedList)
-            catalogsFile.writeText(json)
-            _catalogs.value = sortedList
-        } catch (e: Exception) {
-            e.printStackTrace()
+    private suspend fun saveCatalogsToDbSync(list: List<Catalog>) = withContext(Dispatchers.IO) {
+        val sortedList = list.mapIndexed { idx, catalog -> catalog.copy(orderIndex = idx) }
+        val catalogEntities = sortedList.map { it.toEntity() }
+        catalogDao.insertCatalogs(catalogEntities)
+        
+        for (catalog in sortedList) {
+            val itemEntities = catalog.items.map { it.toEntity(catalog.id) }
+            catalogDao.deleteItemsForCatalog(catalog.id)
+            catalogDao.insertCatalogItems(itemEntities)
         }
+        _catalogs.value = sortedList
+        updateStats()
+    }
+
+    fun saveCatalogsList(list: List<Catalog>) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                saveCatalogsToDbSync(list)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun updateStats() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val count = catalogDao.getStoredItemsCount()
+            _storedItemsCount.value = count
+            
+            val prefs = context.getSharedPreferences("lumina_prefs", Context.MODE_PRIVATE)
+            val lastSync = prefs.getString("last_catalog_sync", "Nunca") ?: "Nunca"
+            _lastSyncTime.value = lastSync
+            
+            val totalBytes = getFolderSize(context.cacheDir) + getFolderSize(context.codeCacheDir) + getFolderSize(File(context.filesDir, "../databases"))
+            _cacheSize.value = formatSize(totalBytes)
+        }
+    }
+
+    private fun getFolderSize(file: File): Long {
+        if (!file.exists()) return 0L
+        if (file.isFile) return file.length()
+        var size = 0L
+        file.listFiles()?.forEach {
+            size += getFolderSize(it)
+        }
+        return size
+    }
+
+    private fun formatSize(bytes: Long): String {
+        if (bytes < 1024) return "$bytes B"
+        val exp = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
+        val pre = "KMGTPE"[exp - 1] + "B"
+        return String.format(java.util.Locale.US, "%.2f %s", bytes / Math.pow(1024.0, exp.toDouble()), pre)
+    }
+
+    private fun saveLastSyncTime() {
+        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
+        val nowStr = sdf.format(java.util.Date())
+        val prefs = context.getSharedPreferences("lumina_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("last_catalog_sync", nowStr).apply()
+        updateStats()
     }
 
     fun getAllCatalogs(): List<Catalog> = _catalogs.value
@@ -182,6 +249,7 @@ class CatalogRepository(private val context: Context) {
             } else it
         }
         saveCatalogsList(updated)
+        saveLastSyncTime()
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             try {
                 engine.autoSyncAndEnrichAll()
@@ -203,6 +271,7 @@ class CatalogRepository(private val context: Context) {
             )
         }
         saveCatalogsList(current)
+        saveLastSyncTime()
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             try {
                 engine.autoSyncAndEnrichAll()
@@ -411,7 +480,39 @@ data class SyncResult(
         val dbItems = emptyList<CatalogItem>()
 
         // Merge results: URL results take priority
-        val mergedList = (list + dbItems).distinctBy { it.title.lowercase().trim() }
+        val rawMergedList = (list + dbItems).distinctBy { it.title.lowercase().trim() }
+        
+        // Smart Merge with existing items in DB to avoid losing enriched TMDB metadata
+        val existingItemsMap = try {
+            catalogDao.getItemsForCatalog(catalog.id).associateBy { it.id }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+        val mergedList = rawMergedList.map { fetchedItem ->
+            val existing = existingItemsMap[fetchedItem.id]
+            if (existing != null) {
+                fetchedItem.copy(
+                    tmdbId = fetchedItem.tmdbId ?: existing.tmdbId,
+                    logoUrl = fetchedItem.logoUrl ?: existing.logoUrl,
+                    backdropUrl = fetchedItem.backdropUrl ?: existing.backdropUrl,
+                    trailerUrl = fetchedItem.trailerUrl ?: existing.trailerUrl,
+                    director = fetchedItem.director ?: existing.director,
+                    producer = fetchedItem.producer ?: existing.producer,
+                    duration = fetchedItem.duration ?: existing.duration,
+                    castJson = fetchedItem.castJson ?: existing.castJson,
+                    imdbRating = fetchedItem.imdbRating ?: existing.imdbRating,
+                    languages = fetchedItem.languages ?: existing.languages,
+                    subtitles = fetchedItem.subtitles ?: existing.subtitles,
+                    extraImagesJson = fetchedItem.extraImagesJson ?: existing.extraImagesJson,
+                    description = if (fetchedItem.description.startsWith("Una película espectacular") && existing.description.isNotEmpty()) existing.description else fetchedItem.description,
+                    rating = if (fetchedItem.rating == "8.2" && existing.rating.isNotEmpty()) existing.rating else fetchedItem.rating,
+                    genre = if (fetchedItem.genre == catalog.name && existing.genre.isNotEmpty()) existing.genre else fetchedItem.genre,
+                    year = if (fetchedItem.year == "2024" && existing.year.isNotEmpty()) existing.year else fetchedItem.year
+                )
+            } else {
+                fetchedItem
+            }
+        }
         
         SyncResult(
             items = mergedList.take(maxOf(catalog.numItems, 500)),

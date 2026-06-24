@@ -49,6 +49,19 @@ class MediaViewModel(
     val catalogsStateFlow: kotlinx.coroutines.flow.StateFlow<List<com.example.data.model.Catalog>>
         get() = catalogRepository?.catalogs ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList())
 
+    val lastSyncTime: kotlinx.coroutines.flow.StateFlow<String>
+        get() = catalogRepository?.lastSyncTime ?: kotlinx.coroutines.flow.MutableStateFlow("Nunca")
+
+    val storedItemsCount: kotlinx.coroutines.flow.StateFlow<Int>
+        get() = catalogRepository?.storedItemsCount ?: kotlinx.coroutines.flow.MutableStateFlow(0)
+
+    val cacheSize: kotlinx.coroutines.flow.StateFlow<String>
+        get() = catalogRepository?.cacheSize ?: kotlinx.coroutines.flow.MutableStateFlow("0.00 B")
+
+    fun updateStats() {
+        catalogRepository?.updateStats()
+    }
+
     fun addCatalog(catalog: com.example.data.model.Catalog) {
         viewModelScope.launch {
             catalogRepository?.addCatalog(catalog)
