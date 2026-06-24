@@ -59,6 +59,8 @@ import com.example.data.model.CatalogItem
 import com.example.ui.AppTab
 import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
+import com.example.ui.components.responsive
+import com.example.ui.components.getResponsiveScale
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 
@@ -218,7 +220,7 @@ fun HomeScreen(
     }
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 300.dp else 220.dp
+    val bannerHeight = if (isWideLayout) 300.dp.responsive() else 220.dp.responsive()
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
@@ -974,7 +976,7 @@ fun HomeHeroBanner(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(if (isWideLayout) 120.dp else 80.dp),
+                            .height(if (isWideLayout) 120.dp.responsive() else 80.dp.responsive()),
                         contentAlignment = Alignment.BottomStart
                     ) {
                         if (richMeta.logoUrl != null) {
@@ -982,8 +984,8 @@ fun HomeHeroBanner(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = if (isWideLayout) 120.dp else 80.dp)
-                                    .widthIn(max = if (isWideLayout) 340.dp else 220.dp),
+                                    .heightIn(max = if (isWideLayout) 120.dp.responsive() else 80.dp.responsive())
+                                    .widthIn(max = if (isWideLayout) 340.dp.responsive() else 220.dp.responsive()),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.BottomStart
                             )
@@ -992,7 +994,7 @@ fun HomeHeroBanner(
                                 text = richMeta.title,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 42.sp else 30.sp,
+                                    fontSize = if (isWideLayout) 42.sp.responsive() else 30.sp.responsive(),
                                     color = Color.White,
                                     letterSpacing = (-1).sp,
                                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -1165,16 +1167,16 @@ fun HomeHeroBanner(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(end = 24.dp)
-                            .height(64.dp)
+                            .height(64.dp.responsive())
                     ) {
                         Text(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
-                            fontSize = if (isWideLayout) 13.sp else 11.5.sp,
+                            fontSize = if (isWideLayout) 13.sp.responsive() else 11.5.sp.responsive(),
                             maxLines = 3,
-                            lineHeight = if (isWideLayout) 18.sp else 16.sp,
+                            lineHeight = if (isWideLayout) 18.sp.responsive() else 16.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 640.dp)
+                            modifier = Modifier.widthIn(max = 640.dp.responsive())
                         )
                     }
 
@@ -1350,8 +1352,8 @@ fun ChannelHomeCard(
 
     Card(
         modifier = Modifier
-            .width(180.dp)
-            .height(115.dp)
+            .width(180.dp.responsive())
+            .height(115.dp.responsive())
             .tvFocusEffect(shape = RoundedCornerShape(4.dp))
             .clickable { onPlayClick() },
         shape = RoundedCornerShape(4.dp),
@@ -1399,7 +1401,7 @@ fun ChannelHomeCard(
                     Text(
                         text = "CH ${channel.number}",
                         color = Color.White,
-                        fontSize = 9.sp,
+                        fontSize = 9.sp.responsive(),
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
@@ -1426,7 +1428,7 @@ fun ChannelHomeCard(
                     Text(
                         text = channel.name,
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 12.sp.responsive(),
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -1434,7 +1436,7 @@ fun ChannelHomeCard(
                     Text(
                         text = channel.category,
                         color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 9.sp
+                        fontSize = 9.sp.responsive()
                     )
                 }
             }
@@ -1463,8 +1465,8 @@ fun RadioHomeCard(
 
     Card(
         modifier = Modifier
-            .width(180.dp)
-            .height(115.dp)
+            .width(180.dp.responsive())
+            .height(115.dp.responsive())
             .tvFocusEffect(shape = RoundedCornerShape(4.dp))
             .clickable { onPlayClick() },
         shape = RoundedCornerShape(4.dp),
@@ -1511,7 +1513,7 @@ fun RadioHomeCard(
                     Text(
                         text = station.frequency,
                         color = Color.White,
-                        fontSize = 9.sp,
+                        fontSize = 9.sp.responsive(),
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .background(cardColor.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
@@ -1537,7 +1539,7 @@ fun RadioHomeCard(
                     Text(
                         text = station.name,
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 12.sp.responsive(),
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -1545,7 +1547,7 @@ fun RadioHomeCard(
                     Text(
                         text = station.genre,
                         color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 9.sp
+                        fontSize = 9.sp.responsive()
                     )
                 }
             }
@@ -1578,7 +1580,7 @@ fun CatalogItemHomeCard(
         "Large Featured Row" -> 190.dp
         "Compact Row" -> 100.dp
         else -> 130.dp
-    }
+    }.responsive()
     
     val imageHeight = when (layoutType) {
         "Horizontal Poster Row", "Horizontal" -> 180.dp
@@ -1588,7 +1590,7 @@ fun CatalogItemHomeCard(
         "Large Featured Row" -> 260.dp
         "Compact Row" -> 140.dp
         else -> 180.dp
-    }
+    }.responsive()
 
     Card(
         modifier = modifier
@@ -1888,8 +1890,8 @@ fun CatalogItemFullScreenDetails(
                     // Poster image shadow-framed
                     Card(
                         modifier = Modifier
-                            .width(if (isWide) 200.dp else 120.dp)
-                            .height(if (isWide) 300.dp else 180.dp),
+                            .width(if (isWide) 200.dp.responsive() else 120.dp.responsive())
+                            .height(if (isWide) 300.dp.responsive() else 180.dp.responsive()),
                         shape = RoundedCornerShape(4.dp),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                     ) {

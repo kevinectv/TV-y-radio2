@@ -33,6 +33,8 @@ import com.example.data.database.ProfileEntity
 import com.example.ui.MediaViewModel
 import com.example.ui.components.CharacterAvatar
 import com.example.ui.components.tvFocusEffect
+import com.example.ui.components.responsive
+import com.example.ui.components.getResponsiveScale
 import java.util.Locale
 
 enum class ProfileScreenMode {
@@ -780,21 +782,21 @@ private fun ProfileItemView(
     val isCurrentActive = viewModel.activeProfile?.id == profile.id
     val focusBorderColor = remember(profile.profileColor) {
         try {
-             Color(android.graphics.Color.parseColor(profile.profileColor))
+            Color(android.graphics.Color.parseColor(profile.profileColor))
         } catch (e: Exception) {
-             Color.White
+            Color.White
         }
     }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(128.dp)
+            .width(128.dp.responsive())
             .padding(vertical = 12.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(112.dp)
+                .size(112.dp.responsive())
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
                     focusedBorderColor = Color(0xCCECEFF8),
@@ -911,12 +913,12 @@ private fun AddProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(128.dp)
+            .width(128.dp.responsive())
             .padding(vertical = 12.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(112.dp)
+                .size(112.dp.responsive())
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
                     focusedBorderColor = Color(0xCCECEFF8),

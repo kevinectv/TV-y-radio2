@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.ui.components.ElegantBackground
 import com.example.ui.components.tvFocusEffect
+import com.example.ui.components.responsive
+import com.example.ui.components.getResponsiveScale
 import com.example.ui.components.CharacterAvatar
 import com.example.ui.screens.ProfileSelectionScreen
 import com.example.ui.screens.*
@@ -143,7 +145,7 @@ fun LuminaAppShell(
                         Text(
                             text = "LUMINA",
                             color = Color.White,
-                            fontSize = 14.sp,
+                            fontSize = 14.sp.responsive(),
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.2.sp
                         )
@@ -186,7 +188,7 @@ fun LuminaAppShell(
                                             unfocusedBorderColor = Color.Transparent,
                                             scaleAmount = 1.03f
                                         )
-                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        .padding(horizontal = 14.dp.responsive(), vertical = 8.dp.responsive()),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Row(
@@ -204,13 +206,13 @@ fun LuminaAppShell(
                                             },
                                             contentDescription = tab.label,
                                             tint = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(16.dp.responsive())
                                         )
 
                                         Text(
                                             text = tab.label,
                                             color = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
-                                            fontSize = 11.sp,
+                                            fontSize = 11.sp.responsive(),
                                             fontWeight = if (isSelected || isTabFocused) FontWeight.ExtraBold else FontWeight.Medium,
                                             letterSpacing = 0.5.sp
                                         )
