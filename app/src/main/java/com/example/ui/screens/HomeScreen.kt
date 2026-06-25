@@ -220,7 +220,7 @@ fun HomeScreen(
     }
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 300.dp.responsive() else 220.dp.responsive()
+    val bannerHeight = if (isWideLayout) 270.dp.responsive() else 210.dp.responsive()
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
@@ -858,6 +858,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun HomeHeroBanner(
     currentMovie: CatalogItem,
@@ -912,16 +913,136 @@ fun HomeHeroBanner(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // 1. PREMIUM BADGES ROW
+                    // 1. LOGO OR TITLE
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(20.dp.responsive()),
+                            .wrapContentHeight(),
                         contentAlignment = Alignment.CenterStart
                     ) {
+                        if (richMeta.logoUrl != null) {
+                            AsyncImage(
+                                model = richMeta.logoUrl,
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = if (isWideLayout) 75.dp.responsive() else 54.dp.responsive())
+                                    .widthIn(max = if (isWideLayout) 250.dp.responsive() else 160.dp.responsive()),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = if (isWideLayout) 28.sp.responsive() else 22.sp.responsive(),
+                                    color = Color.White,
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.95f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 12f
+                                    )
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = if (isWideLayout) 30.sp.responsive() else 24.sp.responsive()
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(if (isWideLayout) 4.dp.responsive() else 6.dp.responsive()))
+
+                    // 2. YEAR & RATINGS ROW
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 4.dp.responsive() else 6.dp.responsive()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                    ) {
+                        Text(
+                            text = richMeta.year,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = if (isWideLayout) 7.sp.responsive() else 9.sp.responsive(),
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 6.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                        )
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
+                            modifier = Modifier
+                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "IMDb Rating",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(if (isWideLayout) 6.dp.responsive() else 8.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                            Text(
+                                text = "IMDb ${richMeta.ratingImdb}",
+                                color = Color(0xFFFFD700),
+                                fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive(),
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "TMDB Rating",
+                                tint = Color(0xFF00FF87),
+                                modifier = Modifier.size(if (isWideLayout) 6.dp.responsive() else 8.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                            Text(
+                                text = "TMDB ${richMeta.ratingTmdb}",
+                                color = Color(0xFF00FF87),
+                                fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive(),
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Whatshot,
+                                contentDescription = "Popularity",
+                                tint = Color(0xFFFF2E93),
+                                modifier = Modifier.size(if (isWideLayout) 7.dp.responsive() else 9.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                            Text(
+                                text = richMeta.popularityText,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive(),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()))
+
+                    // 3. TRENDING POSITION & PREMIUM BADGES
+                    if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 4.dp.responsive() else 6.dp.responsive()),
+                            verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
                         ) {
                             if (richMeta.trendPositionText != null) {
                                 Row(
@@ -933,20 +1054,20 @@ fun HomeHeroBanner(
                                             ),
                                             shape = RoundedCornerShape(24.dp)
                                         )
-                                        .padding(horizontal = 8.dp.responsive(), vertical = 2.dp.responsive())
+                                        .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 6.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.TrendingUp,
                                         contentDescription = "Trend Position",
                                         tint = Color.White,
-                                        modifier = Modifier.size(10.dp.responsive())
+                                        modifier = Modifier.size(if (isWideLayout) 7.dp.responsive() else 9.dp.responsive())
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp.responsive()))
+                                    Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
                                     Text(
                                         text = richMeta.trendPositionText.uppercase(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 8.sp.responsive(),
+                                        fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
                                         letterSpacing = 0.5.sp
                                     )
                                 }
@@ -964,228 +1085,87 @@ fun HomeHeroBanner(
                                     text = badge.uppercase(),
                                     color = badgeColor,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 8.sp.responsive(),
+                                    fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
                                     letterSpacing = 0.5.sp,
                                     modifier = Modifier
                                         .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                         .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive())
+                                        .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()))
                     }
 
-                    Spacer(modifier = Modifier.height(3.dp.responsive()))
-
-                    // 2. LOGO OR TITLE
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (isWideLayout) 90.dp.responsive() else 64.dp.responsive()),
-                        contentAlignment = Alignment.BottomStart
+                    // 4. GENRES & DURATION
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 4.dp.responsive() else 5.dp.responsive())
                     ) {
-                        if (richMeta.logoUrl != null) {
-                            AsyncImage(
-                                model = richMeta.logoUrl,
-                                contentDescription = richMeta.title,
-                                modifier = Modifier
-                                    .heightIn(max = if (isWideLayout) 90.dp.responsive() else 64.dp.responsive())
-                                    .widthIn(max = if (isWideLayout) 280.dp.responsive() else 180.dp.responsive()),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart
-                            )
-                        } else {
-                            Text(
-                                text = richMeta.title,
-                                style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 32.sp.responsive() else 24.sp.responsive(),
-                                    color = Color.White,
-                                    letterSpacing = (-1).sp,
-                                    shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.95f),
-                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                        blurRadius = 12f
-                                    )
-                                )
-                            )
-                        }
+                        Text(
+                            text = richMeta.genres,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Text(
+                            text = "•",
+                            color = Color.White.copy(alpha = 0.3f),
+                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive()
+                        )
+
+                        Text(
+                            text = richMeta.duration,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
+                            fontWeight = FontWeight.Medium
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp.responsive()))
-
-                    // 3. RATINGS & PRIMARY METADATA ROW
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(22.dp.responsive()),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
-                        ) {
-                            Text(
-                                text = richMeta.year,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp.responsive(),
-                                modifier = Modifier
-                                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp.responsive(), vertical = 1.5.dp.responsive())
-                            )
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Star,
-                                    contentDescription = "IMDb Rating",
-                                    tint = Color(0xFFFFD700),
-                                    modifier = Modifier.size(9.dp.responsive())
-                                )
-                                Spacer(modifier = Modifier.width(3.dp.responsive()))
-                                Text(
-                                    text = "IMDb ${richMeta.ratingImdb}",
-                                    color = Color(0xFFFFD700),
-                                    fontSize = 9.sp.responsive(),
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Star,
-                                    contentDescription = "TMDB Rating",
-                                    tint = Color(0xFF00FF87),
-                                    modifier = Modifier.size(9.dp.responsive())
-                                )
-                                Spacer(modifier = Modifier.width(3.dp.responsive()))
-                                Text(
-                                    text = "TMDB ${richMeta.ratingTmdb}",
-                                    color = Color(0xFF00FF87),
-                                    fontSize = 9.sp.responsive(),
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Whatshot,
-                                    contentDescription = "Popularity",
-                                    tint = Color(0xFFFF2E93),
-                                    modifier = Modifier.size(10.dp.responsive())
-                                )
-                                Spacer(modifier = Modifier.width(3.dp.responsive()))
-                                Text(
-                                    text = richMeta.popularityText,
-                                    color = Color.White.copy(alpha = 0.85f),
-                                    fontSize = 9.sp.responsive(),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(3.dp.responsive()))
-
-                    // 4. SECONDARY METADATA ROW
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(18.dp.responsive()),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp.responsive())
-                        ) {
-                            Text(
-                                text = richMeta.genres,
-                                color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 10.5.sp.responsive(),
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Text(
-                                text = "•",
-                                color = Color.White.copy(alpha = 0.3f),
-                                fontSize = 10.5.sp.responsive()
-                            )
-
-                            Text(
-                                text = richMeta.duration,
-                                color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 10.5.sp.responsive(),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(3.dp.responsive()))
+                    Spacer(modifier = Modifier.height(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()))
 
                     // 5. TECHNICAL CAPABILITY BADGES
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(18.dp.responsive()),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp.responsive())
+                    if (richMeta.techIndicators.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()),
+                            verticalArrangement = Arrangement.spacedBy(3.dp.responsive())
                         ) {
                             richMeta.techIndicators.forEach { tech ->
                                 Text(
                                     text = tech,
                                     color = Color.White.copy(alpha = 0.65f),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 8.sp.responsive(),
+                                    fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
                                     modifier = Modifier
                                         .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(3.dp))
                                         .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
-                                        .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
+                                        .padding(horizontal = if (isWideLayout) 3.dp.responsive() else 4.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(if (isWideLayout) 4.dp.responsive() else 5.dp.responsive()))
                     }
-
-                    Spacer(modifier = Modifier.height(4.dp.responsive()))
 
                     // 6. SHORT SINOPSIS
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(end = 20.dp.responsive())
-                            .height(36.dp.responsive())
+                            .wrapContentHeight()
                     ) {
                         Text(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
-                            fontSize = if (isWideLayout) 11.5.sp.responsive() else 10.sp.responsive(),
-                            maxLines = 2,
-                            lineHeight = if (isWideLayout) 15.sp.responsive() else 13.sp.responsive(),
+                            fontSize = if (isWideLayout) 9.5.sp.responsive() else 10.5.sp.responsive(),
+                            minLines = 3,
+                            maxLines = 5,
+                            lineHeight = if (isWideLayout) 13.sp.responsive() else 14.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 580.dp.responsive())
+                            modifier = Modifier.widthIn(max = 600.dp.responsive())
                         )
                     }
-
-
                 }
             }
         }
