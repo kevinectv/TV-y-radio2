@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
         val vm = ViewModelProvider(this, factory)[MediaViewModel::class.java]
         vm.updateManager = com.example.data.util.UpdateManager(applicationContext)
         vm.catalogRepository = com.example.data.CatalogRepository(applicationContext)
+        vm.mdbListSearchService = com.example.data.MdbListSearchService(applicationContext)
         vm
     }
 

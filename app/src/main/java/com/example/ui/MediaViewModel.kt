@@ -120,6 +120,34 @@ class MediaViewModel(
     var catalogSearchLogs by mutableStateOf("")
         private set
 
+    // MDBList Search State
+    var mdbListSearchService: com.example.data.MdbListSearchService? = null
+    var mdbListSearchQuery by mutableStateOf("")
+        private set
+    var mdbListSearchResults by mutableStateOf<List<com.example.data.model.MdbListSearchResult>>(emptyList())
+        private set
+    var isMdbListSearching by mutableStateOf(false)
+        private set
+
+    fun updateMdbListSearchQuery(query: String) {
+        mdbListSearchQuery = query
+    }
+
+    fun searchMdbLists(query: String) {
+        mdbListSearchQuery = query
+        val apiKey = sharedPreferences?.getString("mdblist_api_key", "") ?: ""
+        viewModelScope.launch {
+            isMdbListSearching = true
+            try {
+                mdbListSearchResults = mdbListSearchService?.searchCatalogs(query, apiKey) ?: emptyList()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isMdbListSearching = false
+            }
+        }
+    }
+
     fun SearchCatalogs(query: String) {
         catalogSearchQuery = query
         val allStored = catalogsStateFlow.value

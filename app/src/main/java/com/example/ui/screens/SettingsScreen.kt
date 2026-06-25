@@ -2754,6 +2754,13 @@ fun CatalogsPaneContent(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // C) MDBLIST REAL SEARCH ENGINE
+        MdbListSearchSection(viewModel = viewModel)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Secondary manual/API rows
         Row(
             modifier = Modifier.fillMaxWidth(),
