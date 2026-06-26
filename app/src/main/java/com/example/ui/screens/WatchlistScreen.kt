@@ -48,11 +48,12 @@ fun WatchlistScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
-        // HEADER
+        // Main Title Header
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -91,11 +92,13 @@ fun WatchlistScreen(
             }
         }
 
-        // EMPTY STATE
+        // --- EMPTY STATE PROMPT ---
         if (totalFavorites == 0 && totalHistory == 0) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 60.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -104,7 +107,7 @@ fun WatchlistScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.FavoriteBorder,
-                            contentDescription = null,
+                            contentDescription = "Empty Watchlist",
                             tint = Color.White.copy(alpha = 0.25f),
                             modifier = Modifier.size(64.dp)
                         )
@@ -116,25 +119,30 @@ fun WatchlistScreen(
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Navega por la sección Home o los canales de TV y pulsa en el corazón para almacenar tus favoritos aquí al instante.",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
         }
 
-        // FAVORITES CHANNELS
+        // --- FAVORITE FILES ---
         if (favoriteChans.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                HomeSectionRowHeader(
-                    title = "CANALES DE TELEVISIÓN FAVORITOS",
-                    icon = Icons.Default.Favorite,
-                    color = Color.Red
-                )
+                HomeSectionRowHeader(title = "CANALES DE TELEVISIÓN FAVORITOS", icon = Icons.Default.Favorite, color = Color.Red)
             }
 
             items(favoriteChans) { chan ->
                 ChannelHomeCard(
                     channel = chan,
-                    onClick = {
+                    viewModel = viewModel,
+                    onPlayClick = {
                         viewModel.selectChannel(chan)
                         viewModel.selectTab(AppTab.TV)
                     }
@@ -142,20 +150,16 @@ fun WatchlistScreen(
             }
         }
 
-        // FAVORITE RADIOS
         if (favoriteRadios.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                HomeSectionRowHeader(
-                    title = "EMISORAS DE RADIO FAVORITAS",
-                    icon = Icons.Default.Favorite,
-                    color = Color.Red
-                )
+                HomeSectionRowHeader(title = "EMISORAS DE RADIO FAVORITAS", icon = Icons.Default.Favorite, color = Color.Red)
             }
 
             items(favoriteRadios) { rad ->
                 RadioHomeCard(
                     station = rad,
-                    onClick = {
+                    viewModel = viewModel,
+                    onPlayClick = {
                         viewModel.selectRadioStation(rad)
                         viewModel.selectTab(AppTab.RADIO)
                     }
@@ -163,34 +167,36 @@ fun WatchlistScreen(
             }
         }
 
-        // RECENTS
+        // --- RECENT PLAYS ---
         if (recentChans.isNotEmpty() || recentRadios.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                HomeSectionRowHeader(
-                    title = "REPRODUCCIONES RECIENTES",
-                    icon = Icons.Default.FavoriteBorder,
-                    color = Color.Gray
-                )
+                HomeSectionRowHeader(title = "REPRODUCCIONES RECIENTES", icon = Icons.Default.FavoriteBorder, color = Color.Gray)
             }
 
-            items(recentChans) { chan ->
-                ChannelHomeCard(
-                    channel = chan,
-                    onClick = {
-                        viewModel.selectChannel(chan)
-                        viewModel.selectTab(AppTab.TV)
-                    }
-                )
+            if (recentChans.isNotEmpty()) {
+                items(recentChans) { chan ->
+                    ChannelHomeCard(
+                        channel = chan,
+                        viewModel = viewModel,
+                        onPlayClick = {
+                            viewModel.selectChannel(chan)
+                            viewModel.selectTab(AppTab.TV)
+                        }
+                    )
+                }
             }
 
-            items(recentRadios) { rad ->
-                RadioHomeCard(
-                    station = rad,
-                    onClick = {
-                        viewModel.selectRadioStation(rad)
-                        viewModel.selectTab(AppTab.RADIO)
-                    }
-                )
+            if (recentRadios.isNotEmpty()) {
+                items(recentRadios) { rad ->
+                    RadioHomeCard(
+                        station = rad,
+                        viewModel = viewModel,
+                        onPlayClick = {
+                            viewModel.selectRadioStation(rad)
+                            viewModel.selectTab(AppTab.RADIO)
+                        }
+                    )
+                }
             }
         }
     }
