@@ -77,7 +77,6 @@ fun HomeScreen(
         viewModel.refreshCatalogs()
     }
 
-    // Base flows
     val favoriteChans by viewModel.favoriteChannels.collectAsState()
     val favoriteRadios by viewModel.favoriteRadioStations.collectAsState()
     val recentChans by viewModel.recentChannels.collectAsState()
@@ -88,7 +87,6 @@ fun HomeScreen(
     var activeTrailerItem by remember { mutableStateOf<CatalogItem?>(null) }
 
     val allChannels by viewModel.allChannels.collectAsState()
-    // Showcase/Banner movies (Curated highlights)
     val featuredMovies = remember(catalogs) {
         catalogs.filter { it.isVisible && it.showInHome }.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() && !it.posterUrl.contains("unsplash.com") && !it.posterUrl.contains("images.unsplash") }.distinctBy { it.id }.shuffled().take(12)
     }
@@ -116,10 +114,7 @@ fun HomeScreen(
         description = "El viaje de Michael Jackson más allá de la música, desde el descubrimiento de su extraordinario talento como líder de los Jackson Five..."
     )
 
-    // Logo state
     var activeHeroLogoUrl by remember { mutableStateOf<String?>(null) }
-
-    // Loaded dynamic properties (from TMDB real-time query) for the current movie
     var activeHeroLoadedDetails by remember(currentMovie) { mutableStateOf<LoadedTmdbDetails?>(null) }
     
     LaunchedEffect(currentMovie) {
@@ -130,7 +125,6 @@ fun HomeScreen(
         val rawApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
         val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
         
-        // 1. Try reading straight from Lumina Catalog Engine cache fields
         if (!currentMovie.logoUrl.isNullOrEmpty() && !currentMovie.castJson.isNullOrEmpty()) {
             activeHeroLogoUrl = currentMovie.logoUrl
             activeHeroLoadedDetails = LoadedTmdbDetails(
@@ -145,13 +139,11 @@ fun HomeScreen(
             return@LaunchedEffect
         }
 
-        // 2. Fallback to Catalog Engine lookup
         val engine = viewModel.catalogRepository?.engine
         if (engine != null && apiKey.isNotEmpty()) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     val enriched = engine.enrichCatalogItem(currentMovie, apiKey)
-                    
                     activeHeroLogoUrl = enriched.logoUrl
                     activeHeroLoadedDetails = LoadedTmdbDetails(
                         description = enriched.description,
@@ -163,7 +155,6 @@ fun HomeScreen(
                         genre = enriched.genre
                     )
 
-                    // Persist enriched hero item back to catalogs list asynchronously
                     viewModel.catalogRepository?.let { repo ->
                         val currentList = repo.catalogs.value.map { cat ->
                             val hasItem = cat.items.any { it.id == currentMovie.id }
@@ -181,48 +172,49 @@ fun HomeScreen(
         }
     }
 
-    // Trailer Simulation States
+    // --- Trailer Loop Engine & Simulated Subtitles ---
     var isTrailerLive by remember { mutableStateOf(false) }
     var currentSubIndex by remember { mutableStateOf(0) }
     var trailerProgress by remember { mutableStateOf(0f) }
+
+    // Líneas de diálogo de prueba integradas dinámicamente si no existen
+    val sampleSubtitleLines = remember {
+        listOf(
+            "They are going to leave us...",
+            "They're going to go again!",
+            "But this time, we will fight together."
+        )
+    }
 
     LaunchedEffect(currentMovie) {
         isTrailerLive = false
         currentSubIndex = 0
         trailerProgress = 0f
         
-        // Wait 1.8 seconds of initial poster preview before triggering simulated trailer session
         kotlinx.coroutines.delay(1800L)
         isTrailerLive = true
         
-        val details = getCinematicDetails(currentMovie)
-        val lineCount = details.subtitleLines.size
+        val lineCount = sampleSubtitleLines.size
+        val totalDuration = 13500L // 13.5 segundos de bucle
+        val startTime = System.currentTimeMillis()
         
-        if (lineCount > 0) {
-            val totalDuration = 13500L // 13.5 seconds trailer loop
-            val startTime = System.currentTimeMillis()
-            while (System.currentTimeMillis() - startTime < totalDuration) {
-                val elapsed = System.currentTimeMillis() - startTime
-                if (currentMovie != (activeHeroMovie ?: featuredMovies.firstOrNull())) {
-                    break
-                }
-                trailerProgress = (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
-                
-                // Change subtitles dynamically based on elapsed fraction
-                val segment = totalDuration / lineCount
-                currentSubIndex = (elapsed / segment).toInt().coerceIn(0, lineCount - 1)
-                
-                kotlinx.coroutines.delay(100L)
+        while (System.currentTimeMillis() - startTime < totalDuration) {
+            val elapsed = System.currentTimeMillis() - startTime
+            if (currentMovie != (activeHeroMovie ?: featuredMovies.firstOrNull())) {
+                break
             }
+            trailerProgress = (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
+            val segment = totalDuration / lineCount
+            currentSubIndex = (elapsed / segment).toInt().coerceIn(0, lineCount - 1)
+            
+            kotlinx.coroutines.delay(100L)
         }
     }
     
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    // Adaptación sutil de la altura del banner según dispositivo sin romper proporciones en TV
-    val bannerHeight = if (isWideLayout) 310.dp else 220.dp
+    val bannerHeight = if (isWideLayout) 340.dp else 240.dp // Aumentado ligeramente para dar espacio estable a subtítulos
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
-        // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
         Crossfade(
             targetState = currentMovie,
             animationSpec = tween(750),
@@ -240,7 +232,6 @@ fun HomeScreen(
                     contentScale = ContentScale.Crop
                 )
 
-                // Cinematic horizontal dark gradient
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -257,7 +248,6 @@ fun HomeScreen(
                         )
                 )
 
-                // Cinematic vertical dark gradient
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -274,9 +264,7 @@ fun HomeScreen(
             }
         }
 
-        // --- 2. MAIN STRUCTURAL LAYOUT WITH FIXED HERO BANNER AND SCROLLING ROWS ---
         Column(modifier = Modifier.fillMaxSize()) {
-            // A) Fixed Hero Banner
             HomeHeroBanner(
                 currentMovie = currentMovie,
                 activeHeroLoadedDetails = activeHeroLoadedDetails,
@@ -284,22 +272,18 @@ fun HomeScreen(
                 favoriteCatalogItems = favoriteCatalogItems,
                 bannerHeight = bannerHeight,
                 isWideLayout = isWideLayout,
+                isTrailerLive = isTrailerLive,
+                currentSubtitle = sampleSubtitleLines.getOrNull(currentSubIndex) ?: "",
+                trailerProgress = trailerProgress,
                 viewModel = viewModel,
                 scrollState = listState,
-                onTrailerClick = { movie ->
-                    activeTrailerItem = movie
-                },
-                onDetailsClick = { movie ->
-                    viewModel.selectedDetailsItem.value = movie
-                }
+                onTrailerClick = { movie -> activeTrailerItem = movie },
+                onDetailsClick = { movie -> viewModel.selectedDetailsItem.value = movie }
             )
 
-            // B) Scrollable Content Rows
             LazyColumn(
                 state = listState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 contentPadding = PaddingValues(bottom = 90.dp)
             ) {
                 val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
@@ -307,11 +291,7 @@ fun HomeScreen(
                 if (homeCatalogs.isEmpty()) {
                     if (progressItems.isNotEmpty()) {
                         item {
-                            HomeSectionRowHeader(
-                                title = "⏱️ CONTINUAR VIENDO",
-                                icon = Icons.Filled.PlayCircle,
-                                color = Color(0xFF00FF87)
-                            )
+                            HomeSectionRowHeader(title = "⏱️ CONTINUAR VIENDO", icon = Icons.Filled.PlayCircle, color = Color(0xFF00FF87))
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
                                 contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
@@ -354,11 +334,7 @@ fun HomeScreen(
 
                         if (index == 0 && progressItems.isNotEmpty()) {
                             item {
-                                HomeSectionRowHeader(
-                                    title = "⏱️ CONTINUAR VIENDO",
-                                    icon = Icons.Filled.PlayCircle,
-                                    color = Color(0xFF00FF87)
-                                )
+                                HomeSectionRowHeader(title = "⏱️ CONTINUAR VIENDO", icon = Icons.Filled.PlayCircle, color = Color(0xFF00FF87))
                                 LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
                                     contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
@@ -406,6 +382,9 @@ fun HomeHeroBanner(
     favoriteCatalogItems: Set<String>,
     bannerHeight: androidx.compose.ui.unit.Dp,
     isWideLayout: Boolean,
+    isTrailerLive: Boolean,
+    currentSubtitle: String,
+    trailerProgress: Float,
     viewModel: MediaViewModel,
     scrollState: LazyListState,
     onTrailerClick: (CatalogItem) -> Unit,
@@ -435,8 +414,8 @@ fun HomeHeroBanner(
                     .padding(
                         start = if (isWideLayout) 32.dp else 16.dp,
                         end = if (isWideLayout) 32.dp else 16.dp,
-                        bottom = if (isWideLayout) 16.dp else 8.dp,
-                        top = if (isWideLayout) 24.dp else 12.dp
+                        bottom = if (isWideLayout) 12.dp else 6.dp,
+                        top = if (isWideLayout) 20.dp else 10.dp
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -444,15 +423,12 @@ fun HomeHeroBanner(
                     modifier = Modifier
                         .widthIn(max = if (isWideLayout) 650.dp else 340.dp)
                         .wrapContentHeight(),
-                    // Distribuimos el flujo de manera limpia e idéntica sin importar el cambio de tarjeta
                     verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 8.dp else 5.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // 1. LOGO OR TITLE (Controlamos su tamaño base para TV para que no colapse)
+                    // 1. LOGO OR TITLE
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight(),
+                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (richMeta.logoUrl != null) {
@@ -486,7 +462,7 @@ fun HomeHeroBanner(
                         }
                     }
 
-                    // 2. YEAR & RATINGS ROW (Aumento de tamaño de badges y fuentes en Android TV)
+                    // 2. YEAR & RATINGS ROW
                     androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 8.dp else 6.dp),
@@ -545,85 +521,9 @@ fun HomeHeroBanner(
                                 fontWeight = FontWeight.Black
                             )
                         }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 8.dp else 5.dp, vertical = if (isWideLayout) 3.dp else 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Whatshot,
-                                contentDescription = "Popularity",
-                                tint = Color(0xFFFF2E93),
-                                modifier = Modifier.size(if (isWideLayout) 14.dp else 10.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = richMeta.popularityText,
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = if (isWideLayout) 13.sp else 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
                     }
 
-                    // 3. TRENDING POSITION & PREMIUM BADGES (Ajuste de rejilla auto-envolvente)
-                    if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
-                        androidx.compose.foundation.layout.FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 8.dp else 6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            if (richMeta.trendPositionText != null) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .background(
-                                            brush = Brush.horizontalGradient(
-                                                colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
-                                            ),
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(horizontal = if (isWideLayout) 8.dp else 5.dp, vertical = if (isWideLayout) 3.dp else 2.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.TrendingUp,
-                                        contentDescription = "Trend Position",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(if (isWideLayout) 14.dp else 10.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = richMeta.trendPositionText.uppercase(),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = if (isWideLayout) 11.sp else 9.sp,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                }
-                            }
-
-                            richMeta.premiumBadges.forEach { badge ->
-                                val badgeColor = when (badge) {
-                                    "Top 10" -> Color(0xFFFFD700)
-                                    "Tendencia Global" -> Color(0xFF00FF87)
-                                    else -> Color(0xFF00E5FF)
-                                }
-                                Text(
-                                    text = badge.uppercase(),
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 11.sp else 9.sp,
-                                    modifier = Modifier
-                                        .background(badgeColor, RoundedCornerShape(4.dp))
-                                        .padding(horizontal = if (isWideLayout) 8.dp else 5.dp, vertical = if (isWideLayout) 3.dp else 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // 4. GENRES & DURATION (Texto secundario legible)
+                    // 3. GENRES & DURATION
                     val genreText = richMeta.genre.ifEmpty { "Multimedia / Catálogo" }
                     val durationText = if (!richMeta.duration.isNullOrEmpty()) "  •  ${richMeta.duration}" else ""
                     Text(
@@ -635,47 +535,46 @@ fun HomeHeroBanner(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // 5. TECHNICAL BADGES FORMAT ROW (Dolby Vision, HD, 5.1... sin amontonarse)
-                    // Eliminamos el padding innecesario y usamos espaciado vertical estricto de 4.dp de seguridad
-                    androidx.compose.foundation.layout.FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 6.dp else 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        val techTags = listOf("HD", "HDR10", "Dolby Vision", "5.1 Audio", "Español (LAT)", "Subtítulos")
-                        techTags.forEach { tag ->
-                            Text(
-                                text = tag,
-                                color = Color(0xFFB0BEC5),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = if (isWideLayout) 11.sp else 8.sp,
-                                modifier = Modifier
-                                    .border(1.dp, Color(0xFFB0BEC5).copy(alpha = 0.4f), RoundedCornerShape(3.dp))
-                                    .background(Color.Black.copy(alpha = 0.3f))
-                                    .padding(horizontal = if (isWideLayout) 6.dp else 4.dp, vertical = if (isWideLayout) 2.dp else 1.5.dp)
-                            )
-                        }
-                    }
-
-                    // 6. SYNOPSIS DESCRIPTION (MaxLines expandido y tamaño adaptado para TV de forma clara)
+                    // 4. SYNOPSIS DESCRIPTION
                     Text(
                         text = richMeta.description,
                         color = Color.White.copy(alpha = 0.85f),
                         style = TextStyle(
                             fontSize = if (isWideLayout) 14.5.sp else 11.sp,
-                            lineHeight = if (isWideLayout) 20.sp else 15.sp,
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black,
-                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                blurRadius = 4f
-                            )
+                            lineHeight = if (isWideLayout) 20.sp else 15.sp
                         ),
-                        maxLines = if (isWideLayout) 3 else 2,
+                        maxLines = if (isWideLayout) 2 else 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    // 5. LIVE SIMULATED TRAILER SUBTITLES CONTAINER (Se pintan si el tráiler está activo)
+                    if (isTrailerLive && currentSubtitle.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp)
+                                .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "🔊 TRAILER SUB: \"$currentSubtitle\"",
+                                color = Color(0xFF00E5FF),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (isWideLayout) 13.sp else 10.sp,
+                                fontStyle = FontStyle.Italic
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            // Barra de progreso lineal sutil para la simulación del clip
+                            LinearProgressIndicator(
+                                progress = { trailerProgress },
+                                modifier = Modifier.fillMaxWidth().height(2.dp),
+                                color = Color(0xFF00E5FF),
+                                trackColor = Color.White.copy(alpha = 0.2f),
+                            )
+                        }
+                    }
                 }
             }
         }
     }
-}
