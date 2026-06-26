@@ -457,6 +457,7 @@ fun HomeHeroBanner(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .widthIn(max = if (isWideLayout) 600.dp.responsive() else 400.dp.responsive())
                         .wrapContentHeight(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start
@@ -499,7 +500,7 @@ fun HomeHeroBanner(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(if (isWideLayout) 4.dp.responsive() else 6.dp.responsive()))
+                    Spacer(modifier = Modifier.height(14.dp.responsive()))
 
                     // 2. YEAR & RATINGS ROW
                     androidx.compose.foundation.layout.FlowRow(
@@ -513,6 +514,7 @@ fun HomeHeroBanner(
                             fontWeight = FontWeight.Bold,
                             fontSize = if (isWideLayout) 7.sp.responsive() else 9.sp.responsive(),
                             modifier = Modifier
+                                .wrapContentWidth()
                                 .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 6.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
                         )
@@ -520,6 +522,7 @@ fun HomeHeroBanner(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
+                                .wrapContentWidth()
                                 .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                 .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
@@ -542,6 +545,7 @@ fun HomeHeroBanner(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
+                                .wrapContentWidth()
                                 .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                 .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
@@ -564,6 +568,7 @@ fun HomeHeroBanner(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
+                                .wrapContentWidth()
                                 .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
                         ) {
@@ -583,7 +588,7 @@ fun HomeHeroBanner(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()))
+                    Spacer(modifier = Modifier.height(14.dp.responsive()))
 
                     // 3. TRENDING POSITION & PREMIUM BADGES
                     if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
@@ -596,6 +601,7 @@ fun HomeHeroBanner(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
+                                        .wrapContentWidth()
                                         .background(
                                             brush = Brush.horizontalGradient(
                                                 colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
@@ -636,13 +642,14 @@ fun HomeHeroBanner(
                                     fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
                                     letterSpacing = 0.5.sp,
                                     modifier = Modifier
+                                        .wrapContentWidth()
                                         .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                         .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
                                         .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()))
+                        Spacer(modifier = Modifier.height(14.dp.responsive()))
                     }
 
                     // 4. GENRES & DURATION
@@ -655,46 +662,54 @@ fun HomeHeroBanner(
                             text = richMeta.genres,
                             color = Color.White.copy(alpha = 0.75f),
                             fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.wrapContentWidth()
                         )
 
                         Text(
                             text = "•",
                             color = Color.White.copy(alpha = 0.3f),
-                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive()
+                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
+                            modifier = Modifier.wrapContentWidth()
                         )
 
                         Text(
                             text = richMeta.duration,
                             color = Color.White.copy(alpha = 0.75f),
                             fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.wrapContentWidth()
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()))
+                    Spacer(modifier = Modifier.height(14.dp.responsive()))
 
                     // 5. TECHNICAL CAPABILITY BADGES
                     if (richMeta.techIndicators.isNotEmpty()) {
                         androidx.compose.foundation.layout.FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 3.dp.responsive() else 4.dp.responsive()),
-                            verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp.responsive())
                         ) {
                             richMeta.techIndicators.forEach { tech ->
-                                Text(
-                                    text = tech,
-                                    color = Color.White.copy(alpha = 0.65f),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
+                                Box(
                                     modifier = Modifier
-                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(3.dp))
-                                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
-                                        .padding(horizontal = if (isWideLayout) 3.dp.responsive() else 4.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
-                                )
+                                        .wrapContentWidth()
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp.responsive(), vertical = 4.dp.responsive()),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = tech,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive()
+                                    )
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.height(if (isWideLayout) 4.dp.responsive() else 5.dp.responsive()))
+                        Spacer(modifier = Modifier.height(14.dp.responsive()))
                     }
 
                     // 6. SHORT SINOPSIS
@@ -708,8 +723,7 @@ fun HomeHeroBanner(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = if (isWideLayout) 9.5.sp.responsive() else 10.5.sp.responsive(),
-                            minLines = 3,
-                            maxLines = 5,
+                            maxLines = 3,
                             lineHeight = if (isWideLayout) 13.sp.responsive() else 14.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.widthIn(max = 600.dp.responsive())
