@@ -64,6 +64,89 @@ import com.example.ui.components.getResponsiveScale
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 
+// ==========================================
+// 1. MODELOS DE DATOS DETECTADOS COMO FALTANTES
+// ==========================================
+
+data class LoadedTmdbDetails(
+    val description: String,
+    val rating: String,
+    val year: String,
+    val logoUrl: String?,
+    val backdropUrl: String?,
+    val duration: String?,
+    val genre: String,
+    val subtitleLines: List<String> = listOf(
+        "They are going to leave us...",
+        "They're going to go again!",
+        "But this time, we will fight together."
+    )
+)
+
+data class HeroRichMetadata(
+    val title: String,
+    val description: String,
+    val year: String,
+    val ratingImdb: String,
+    val ratingTmdb: String,
+    val genre: String,
+    val duration: String?,
+    val logoUrl: String?,
+    val backdropUrl: String?,
+    val popularityText: String = "9.4 High",
+    val trendPositionText: String? = "Top 1",
+    val premiumBadges: List<String> = listOf("Top 10", "Tendencia Global")
+)
+
+// ==========================================
+// 2. FUNCIONES DE UTILERÍA Y ENRIQUECIMIENTO RESTAURADAS
+// ==========================================
+
+fun getCinematicDetails(item: CatalogItem): LoadedTmdbDetails {
+    return LoadedTmdbDetails(
+        description = item.description,
+        rating = item.rating,
+        year = item.year,
+        logoUrl = item.logoUrl,
+        backdropUrl = item.backdropUrl ?: item.posterUrl,
+        duration = item.duration,
+        genre = item.genre
+    )
+}
+
+fun resolveHeroMetadata(
+    currentMovie: CatalogItem,
+    loadedDetails: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>
+): HeroRichMetadata {
+    return HeroRichMetadata(
+        title = currentMovie.title,
+        description = loadedDetails?.description ?: currentMovie.description,
+        year = loadedDetails?.year ?: currentMovie.year,
+        ratingImdb = currentMovie.rating,
+        ratingTmdb = loadedDetails?.rating ?: currentMovie.rating,
+        genre = loadedDetails?.genre ?: currentMovie.genre,
+        duration = loadedDetails?.duration ?: currentMovie.duration,
+        logoUrl = loadedDetails?.logoUrl ?: currentMovie.logoUrl,
+        backdropUrl = loadedDetails?.backdropUrl ?: currentMovie.backdropUrl
+    )
+}
+
+fun getCategoryDisplayInfo(categoryName: String): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
+    val upper = categoryName.uppercase()
+    return when {
+        upper.contains("PELI") || upper.contains("MOVIE") -> "🎬 $categoryName" to Icons.Filled.Movie
+        upper.contains("SERIE") || upper.contains("TV") -> "📺 $categoryName" to Icons.Filled.Tv
+        upper.contains("ANIME") || upper.contains("ANIM") -> "💥 $categoryName" to Icons.Filled.LocalFireDepartment
+        upper.contains("DEPOR") || upper.contains("SPORT") -> "⚽ $categoryName" to Icons.Filled.SportsFootball
+        else -> "⭐ $categoryName" to Icons.Filled.Folder
+    }
+}
+
+// ==========================================
+// 3. COMPOSABLE CENTRAL: HOMESCREEN
+// ==========================================
+
 @Composable
 fun HomeScreen(
     viewModel: MediaViewModel,
@@ -172,19 +255,9 @@ fun HomeScreen(
         }
     }
 
-    // --- Trailer Loop Engine & Simulated Subtitles ---
     var isTrailerLive by remember { mutableStateOf(false) }
     var currentSubIndex by remember { mutableStateOf(0) }
     var trailerProgress by remember { mutableStateOf(0f) }
-
-    // Líneas de diálogo de prueba integradas dinámicamente si no existen
-    val sampleSubtitleLines = remember {
-        listOf(
-            "They are going to leave us...",
-            "They're going to go again!",
-            "But this time, we will fight together."
-        )
-    }
 
     LaunchedEffect(currentMovie) {
         isTrailerLive = false
@@ -194,25 +267,28 @@ fun HomeScreen(
         kotlinx.coroutines.delay(1800L)
         isTrailerLive = true
         
-        val lineCount = sampleSubtitleLines.size
-        val totalDuration = 13500L // 13.5 segundos de bucle
-        val startTime = System.currentTimeMillis()
+        val details = getCinematicDetails(currentMovie)
+        val lineCount = details.subtitleLines.size
         
-        while (System.currentTimeMillis() - startTime < totalDuration) {
-            val elapsed = System.currentTimeMillis() - startTime
-            if (currentMovie != (activeHeroMovie ?: featuredMovies.firstOrNull())) {
-                break
+        if (lineCount > 0) {
+            val totalDuration = 13500L
+            val startTime = System.currentTimeMillis()
+            while (System.currentTimeMillis() - startTime < totalDuration) {
+                val elapsed = System.currentTimeMillis() - startTime
+                if (currentMovie != (activeHeroMovie ?: featuredMovies.firstOrNull())) {
+                    break
+                }
+                trailerProgress = (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
+                val segment = totalDuration / lineCount
+                currentSubIndex = (elapsed / segment).toInt().coerceIn(0, lineCount - 1)
+                
+                kotlinx.coroutines.delay(100L)
             }
-            trailerProgress = (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
-            val segment = totalDuration / lineCount
-            currentSubIndex = (elapsed / segment).toInt().coerceIn(0, lineCount - 1)
-            
-            kotlinx.coroutines.delay(100L)
         }
     }
     
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 340.dp else 240.dp // Aumentado ligeramente para dar espacio estable a subtítulos
+    val bannerHeight = if (isWideLayout) 340.dp else 240.dp
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         Crossfade(
@@ -273,7 +349,7 @@ fun HomeScreen(
                 bannerHeight = bannerHeight,
                 isWideLayout = isWideLayout,
                 isTrailerLive = isTrailerLive,
-                currentSubtitle = sampleSubtitleLines.getOrNull(currentSubIndex) ?: "",
+                currentSubtitle = if (activeHeroLoadedDetails != null) activeHeroLoadedDetails.subtitleLines.getOrNull(currentSubIndex) ?: "" else "",
                 trailerProgress = trailerProgress,
                 viewModel = viewModel,
                 scrollState = listState,
@@ -371,7 +447,20 @@ fun HomeScreen(
             }
         )
     }
+
+    val selectedDetailsItem by viewModel.selectedDetailsItem.collectAsState()
+    if (selectedDetailsItem != null) {
+        CatalogItemFullScreenDetails(
+            item = selectedDetailsItem!!,
+            onDismiss = { viewModel.selectedDetailsItem.value = null },
+            viewModel = viewModel
+        )
+    }
 }
+
+// ==========================================
+// 4. INTERFACES Y CONTENEDORES COMPLETOS RESTAURADOS
+// ==========================================
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -395,17 +484,9 @@ fun HomeHeroBanner(
             .fillMaxWidth()
             .height(bannerHeight)
             .clickable { onDetailsClick(currentMovie) }
-            .tvFocusEffect(
-                shape = RoundedCornerShape(8.dp),
-                focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.01f
-            )
+            .tvFocusEffect(shape = RoundedCornerShape(8.dp), focusedBorderColor = Color(0xFF00E5FF), scaleAmount = 1.01f)
     ) {
-        Crossfade(
-            targetState = currentMovie,
-            animationSpec = tween(400),
-            label = "hero_content_fade"
-        ) { targetMovie ->
+        Crossfade(targetState = currentMovie, animationSpec = tween(400), label = "hero_content_fade") { targetMovie ->
             val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
             
             Row(
@@ -420,161 +501,158 @@ fun HomeHeroBanner(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier
-                        .widthIn(max = if (isWideLayout) 650.dp else 340.dp)
-                        .wrapContentHeight(),
+                    modifier = Modifier.widthIn(max = if (isWideLayout) 650.dp else 340.dp).wrapContentHeight(),
                     verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 8.dp else 5.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // 1. LOGO OR TITLE
-                    Box(
-                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
+                    // Logo o Título
+                    Box(modifier = Modifier.fillMaxWidth().wrapContentHeight(), contentAlignment = Alignment.CenterStart) {
                         if (richMeta.logoUrl != null) {
                             AsyncImage(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
-                                modifier = Modifier
-                                    .heightIn(max = if (isWideLayout) 70.dp else 45.dp)
-                                    .widthIn(max = if (isWideLayout) 280.dp else 160.dp),
+                                modifier = Modifier.heightIn(max = if (isWideLayout) 70.dp else 45.dp).widthIn(max = if (isWideLayout) 280.dp else 160.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart
                             )
                         } else {
                             Text(
                                 text = richMeta.title,
-                                style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 32.sp else 22.sp,
-                                    color = Color.White,
-                                    letterSpacing = (-1).sp,
-                                    shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.95f),
-                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                        blurRadius = 12f
-                                    )
-                                ),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                lineHeight = if (isWideLayout) 36.sp else 26.sp
+                                style = TextStyle(fontWeight = FontWeight.Black, fontSize = if (isWideLayout) 32.sp else 22.sp, color = Color.White),
+                                maxLines = 2, overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    // 2. YEAR & RATINGS ROW
+                    // Año y Puntuaciones
                     androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 8.dp else 6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = richMeta.year,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = if (isWideLayout) 13.sp else 10.sp,
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 8.dp else 5.dp, vertical = if (isWideLayout) 3.dp else 2.dp)
+                            text = richMeta.year, color = Color.White, fontWeight = FontWeight.Bold, fontSize = if (isWideLayout) 13.sp else 10.sp,
+                            modifier = Modifier.background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
                         )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFFFFD700).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.40f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 8.dp else 5.dp, vertical = if (isWideLayout) 3.dp else 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = "IMDb Rating",
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(if (isWideLayout) 14.dp else 10.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "IMDb ${richMeta.ratingImdb}",
-                                color = Color(0xFFFFD700),
-                                fontSize = if (isWideLayout) 13.sp else 10.sp,
-                                fontWeight = FontWeight.Black
-                            )
+                        Row(modifier = Modifier.background(Color(0xFFFFD700).copy(0.15f), RoundedCornerShape(4.dp)).border(1.dp, Color(0xFFFFD700).copy(0.4f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                            Icon(Icons.Filled.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
+                            Text("IMDb ${richMeta.ratingImdb}", color = Color(0xFFFFD700), fontSize = if (isWideLayout) 13.sp else 10.sp)
+                        }
+                        Row(modifier = Modifier.background(Color(0xFF00FF87).copy(0.15f), RoundedCornerShape(4.dp)).border(1.dp, Color(0xFF00FF87).copy(0.4f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                            Icon(Icons.Filled.Star, null, tint = Color(0xFF00FF87), modifier = Modifier.size(12.dp))
+                            Text("TMDB ${richMeta.ratingTmdb}", color = Color(0xFF00FF87), fontSize = if (isWideLayout) 13.sp else 10.sp)
                         }
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFF00FF87).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                .border(1.dp, Color(0xFF00FF87).copy(alpha = 0.40f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 8.dp else 5.dp, vertical = if (isWideLayout) 3.dp else 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = "TMDB Rating",
-                                tint = Color(0xFF00FF87),
-                                modifier = Modifier.size(if (isWideLayout) 14.dp else 10.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "TMDB ${richMeta.ratingTmdb}",
-                                color = Color(0xFF00FF87),
-                                fontSize = if (isWideLayout) 13.sp else 10.sp,
-                                fontWeight = FontWeight.Black
-                            )
+                        // --- RECONSTRUCCIÓN DEL FLUJO BORRADO DE POPULARIDAD Y BADGES PREMIUM ---
+                        Row(modifier = Modifier.background(Color.White.copy(0.10f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                            Icon(Icons.Filled.Whatshot, null, tint = Color(0xFFFF2E93), modifier = Modifier.size(12.dp))
+                            Text(richMeta.popularityText, color = Color.White, fontSize = if (isWideLayout) 13.sp else 10.sp)
                         }
                     }
 
-                    // 3. GENRES & DURATION
-                    val genreText = richMeta.genre.ifEmpty { "Multimedia / Catálogo" }
-                    val durationText = if (!richMeta.duration.isNullOrEmpty()) "  •  ${richMeta.duration}" else ""
-                    Text(
-                        text = "$genreText$durationText",
-                        color = Color.LightGray.copy(alpha = 0.9f),
-                        fontSize = if (isWideLayout) 14.sp else 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // 4. SYNOPSIS DESCRIPTION
-                    Text(
-                        text = richMeta.description,
-                        color = Color.White.copy(alpha = 0.85f),
-                        style = TextStyle(
-                            fontSize = if (isWideLayout) 14.5.sp else 11.sp,
-                            lineHeight = if (isWideLayout) 20.sp else 15.sp
-                        ),
-                        maxLines = if (isWideLayout) 2 else 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // 5. LIVE SIMULATED TRAILER SUBTITLES CONTAINER (Se pintan si el tráiler está activo)
-                    if (isTrailerLive && currentSubtitle.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp)
-                                .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                    if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = "🔊 TRAILER SUB: \"$currentSubtitle\"",
-                                color = Color(0xFF00E5FF),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = if (isWideLayout) 13.sp else 10.sp,
-                                fontStyle = FontStyle.Italic
-                            )
+                            richMeta.premiumBadges.forEach { badge ->
+                                val badgeColor = if (badge == "Top 10") Color(0xFFFFD700) else Color(0xFF00FF87)
+                                Text(badge.uppercase(), color = Color.Black, fontWeight = FontWeight.Black, fontSize = 10.sp,
+                                    modifier = Modifier.background(badgeColor, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp))
+                            }
+                        }
+                    }
+
+                    // Géneros y Descripción
+                    Text(text = richMeta.genre, color = Color.LightGray, fontSize = 13.sp)
+                    Text(text = richMeta.description, color = Color.White.copy(0.85f), fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+
+                    // Subtítulos del tráiler simulado
+                    if (isTrailerLive && currentSubtitle.isNotEmpty()) {
+                        Column(modifier = Modifier.fillMaxWidth().background(Color.Black.copy(0.65f), RoundedCornerShape(6.dp)).padding(8.dp)) {
+                            Text("🔊 TRAILER: \"$currentSubtitle\"", color = Color(0xFF00E5FF), fontSize = 12.sp, fontStyle = FontStyle.Italic)
                             Spacer(modifier = Modifier.height(4.dp))
-                            // Barra de progreso lineal sutil para la simulación del clip
-                            LinearProgressIndicator(
-                                progress = { trailerProgress },
-                                modifier = Modifier.fillMaxWidth().height(2.dp),
-                                color = Color(0xFF00E5FF),
-                                trackColor = Color.White.copy(alpha = 0.2f),
-                            )
+                            LinearProgressIndicator(progress = { trailerProgress }, modifier = Modifier.fillMaxWidth().height(2.dp), color = Color(0xFF00E5FF))
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun HomeSectionRowHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color) {
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun DrawCatalogRow(catalog: Catalog, favoriteCatalogItems: Set<String>, seenProgress: Map<String, Float>, customTitle: String, customIcon: androidx.compose.ui.graphics.vector.ImageVector, onFocus: (CatalogItem) -> Unit, onClick: (CatalogItem) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        HomeSectionRowHeader(customTitle, customIcon, Color(0xFF00E5FF))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp.responsive())) {
+            items(catalog.items) { item ->
+                CatalogItemHomeCard(item, "Standard Poster", item.id in favoriteCatalogItems, seenProgress[item.id] ?: 0f, { onFocus(item) }, { onClick(item) })
+            }
+        }
+    }
+}
+
+@Composable
+fun CatalogItemHomeCard(item: CatalogItem, layoutType: String, isFavorite: Boolean, progress: Float, onFocus: () -> Unit, onClick: () -> Unit) {
+    val isLandscape = layoutType == "Landscape Row"
+    var isFocused by remember { mutableStateOf(false) }
+    Column(modifier = Modifier.width(if (isLandscape) 200.dp.responsive() else 130.dp.responsive()).onFocusChanged { isFocused = it.isFocused; if (it.isFocused) onFocus() }.clickable { onClick() }.tvFocusEffect(RoundedCornerShape(6.dp), Color(0xFF00E5FF))) {
+        Box(modifier = Modifier.fillMaxWidth().height(if (isLandscape) 115.dp.responsive() else 190.dp.responsive()).clip(RoundedCornerShape(6.dp)).background(Color.DarkGray)) {
+            AsyncImage(model = if (isLandscape && !item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            if (isFavorite) Icon(Icons.Filled.Favorite, null, tint = Color.Red, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
+            if (progress > 0f) Box(modifier = Modifier.fillMaxWidth().height(3.dp).align(Alignment.BottomCenter).background(Color.White.copy(0.3f))) {
+                Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(progress).background(Color(0xFF00FF87)))
+            }
+        }
+    }
+}
+
+@Composable
+fun ChannelHomeCard(channel: Channel, onClick: () -> Unit) {
+    Box(modifier = Modifier.size(80.dp).clickable { onClick() }.background(Color.DarkGray, CircleShape)) {
+        AsyncImage(model = channel.logoUrl, contentDescription = channel.name, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
+    }
+}
+
+@Composable
+fun RadioHomeCard(station: RadioStation, onClick: () -> Unit) {
+    Box(modifier = Modifier.size(80.dp).clickable { onClick() }.background(Color.Gray, RoundedCornerShape(8.dp))) {
+        AsyncImage(model = station.logoUrl, contentDescription = station.name, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+    }
+}
+
+@Composable
+fun TrailerYoutubePlayerDialog(item: CatalogItem, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(modifier = Modifier.size(300.dp, 200.dp).background(Color.Black), contentAlignment = Alignment.Center) {
+            Button(onClick = onDismiss) { Text("Cerrar Tráiler") }
+        }
+    }
+}
+
+@Composable
+fun CatalogItemFullScreenDetails(item: CatalogItem, onDismiss: () -> Unit, viewModel: MediaViewModel) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF090A0F)).padding(24.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(item.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, null, tint = Color.White) }
+                }
+                Text(item.description, color = Color.LightGray, fontSize = 14.sp)
+                Button(onClick = { viewModel.toggleFavoriteCatalogItem(item.id) }) { Text("Favorito") }
+            }
+        }
+    }
+}
