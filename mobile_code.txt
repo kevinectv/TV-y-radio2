@@ -1,0 +1,318 @@
+@Composable
+fun HomeHeroBannerMobile(
+    currentMovie: CatalogItem,
+    activeHeroLoadedDetails: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>,
+    favoriteCatalogItems: Set<String>,
+    bannerHeight: androidx.compose.ui.unit.Dp,
+    viewModel: MediaViewModel,
+    scrollState: LazyListState,
+    onTrailerClick: (CatalogItem) -> Unit,
+    onDetailsClick: (CatalogItem) -> Unit
+) {
+    val context = LocalContext.current
+    val parallaxOffset = 0f
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(bannerHeight)
+            .clickable { onDetailsClick(currentMovie) }
+            .tvFocusEffect(
+                shape = RoundedCornerShape(8.dp),
+                focusedBorderColor = Color(0xFF00E5FF),
+                scaleAmount = 1.02f
+            )
+    ) {
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(500),
+            label = "hero_content_fade"
+        ) { targetMovie ->
+            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = 20.dp.responsive(),
+                        end = 20.dp.responsive(),
+                        bottom = 12.dp.responsive(),
+                        top = 12.dp.responsive()
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 400.dp.responsive())
+                        .wrapContentHeight(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (richMeta.logoUrl != null) {
+                            AsyncImage(
+                                model = richMeta.logoUrl,
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = 54.dp.responsive())
+                                    .widthIn(max = 160.dp.responsive()),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 22.sp.responsive(),
+                                    color = Color.White,
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.95f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 12f
+                                    )
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 24.sp.responsive()
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp.responsive()))
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                    ) {
+                        Text(
+                            text = richMeta.year,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp.responsive(),
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp.responsive(), vertical = 1.5.dp.responsive())
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "IMDb Rating",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(8.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(3.dp.responsive()))
+                            Text(
+                                text = "IMDb ${richMeta.ratingImdb}",
+                                color = Color(0xFFFFD700),
+                                fontSize = 8.sp.responsive(),
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "TMDB Rating",
+                                tint = Color(0xFF00FF87),
+                                modifier = Modifier.size(8.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(3.dp.responsive()))
+                            Text(
+                                text = "TMDB ${richMeta.ratingTmdb}",
+                                color = Color(0xFF00FF87),
+                                fontSize = 8.sp.responsive(),
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Whatshot,
+                                contentDescription = "Popularity",
+                                tint = Color(0xFFFF2E93),
+                                modifier = Modifier.size(9.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(3.dp.responsive()))
+                            Text(
+                                text = richMeta.popularityText,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 8.sp.responsive(),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp.responsive()))
+
+                    if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
+                            verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                        ) {
+                            if (richMeta.trendPositionText != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .wrapContentWidth()
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
+                                            ),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                        .padding(horizontal = 6.dp.responsive(), vertical = 1.5.dp.responsive())
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.TrendingUp,
+                                        contentDescription = "Trend Position",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(9.dp.responsive())
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp.responsive()))
+                                    Text(
+                                        text = richMeta.trendPositionText.uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 7.sp.responsive(),
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            richMeta.premiumBadges.forEach { badge ->
+                                val badgeColor = when (badge) {
+                                    "Top 10" -> Color(0xFFFFD700)
+                                    "Tendencia Global" -> Color(0xFF00FF87)
+                                    "Estreno" -> Color(0xFF00E5FF)
+                                    "Nuevo" -> Color(0xFF9D4EDD)
+                                    else -> Color(0xFFFF2E93)
+                                }
+                                Text(
+                                    text = badge.uppercase(),
+                                    color = badgeColor,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 7.sp.responsive(),
+                                    letterSpacing = 0.5.sp,
+                                    modifier = Modifier
+                                        .wrapContentWidth()
+                                        .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp.responsive()))
+                    }
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp.responsive()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                    ) {
+                        Text(
+                            text = richMeta.genres,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 9.sp.responsive(),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.wrapContentWidth()
+                        )
+
+                        Text(
+                            text = "•",
+                            color = Color.White.copy(alpha = 0.3f),
+                            fontSize = 9.sp.responsive(),
+                            modifier = Modifier.wrapContentWidth()
+                        )
+
+                        Text(
+                            text = richMeta.duration,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 9.sp.responsive(),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.wrapContentWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp.responsive()))
+
+                    if (richMeta.techIndicators.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            richMeta.techIndicators.forEach { tech ->
+                                Box(
+                                    modifier = Modifier
+                                        .wrapContentWidth()
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp.responsive(), vertical = 4.dp.responsive()),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = tech,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 8.sp.responsive()
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp.responsive()))
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 20.dp.responsive())
+                            .wrapContentHeight()
+                    ) {
+                        Text(
+                            text = richMeta.description,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 10.5.sp.responsive(),
+                            maxLines = 3,
+                            lineHeight = 14.sp.responsive(),
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 600.dp.responsive())
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

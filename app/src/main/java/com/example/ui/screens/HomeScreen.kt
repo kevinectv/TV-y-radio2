@@ -220,7 +220,7 @@ fun HomeScreen(
     }
     val scale = 1.0f
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val bannerHeight = if (isWideLayout) 270.dp.responsive() else 210.dp.responsive()
+    val bannerHeight = if (isWideLayout) 420.dp else 260.dp.responsive()
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
@@ -420,6 +420,26 @@ fun HomeHeroBanner(
     onTrailerClick: (CatalogItem) -> Unit,
     onDetailsClick: (CatalogItem) -> Unit
 ) {
+    if (isWideLayout) {
+        HomeHeroBannerTv(currentMovie, activeHeroLoadedDetails, featuredMovies, favoriteCatalogItems, bannerHeight, viewModel, scrollState, onTrailerClick, onDetailsClick)
+    } else {
+        HomeHeroBannerMobile(currentMovie, activeHeroLoadedDetails, featuredMovies, favoriteCatalogItems, bannerHeight, viewModel, scrollState, onTrailerClick, onDetailsClick)
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun HomeHeroBannerTv(
+    currentMovie: CatalogItem,
+    activeHeroLoadedDetails: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>,
+    favoriteCatalogItems: Set<String>,
+    bannerHeight: androidx.compose.ui.unit.Dp,
+    viewModel: MediaViewModel,
+    scrollState: LazyListState,
+    onTrailerClick: (CatalogItem) -> Unit,
+    onDetailsClick: (CatalogItem) -> Unit
+) {
     val context = LocalContext.current
     val parallaxOffset = 0f
 
@@ -435,7 +455,327 @@ fun HomeHeroBanner(
             )
     ) {
 
-        // B) Hero Content Panel with Crossfade (title, ratings, buttons)
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(500),
+            label = "hero_content_fade"
+        ) { targetMovie ->
+            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = 48.dp,
+                        end = 48.dp,
+                        bottom = 24.dp,
+                        top = 24.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 600.dp)
+                        .wrapContentHeight(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (richMeta.logoUrl != null) {
+                            AsyncImage(
+                                model = richMeta.logoUrl,
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = 110.dp)
+                                    .widthIn(max = 350.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 36.sp,
+                                    color = Color.White,
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.95f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 12f
+                                    )
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 40.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = richMeta.year,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "IMDb Rating",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "IMDb ${richMeta.ratingImdb}",
+                                color = Color(0xFFFFD700),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "TMDB Rating",
+                                tint = Color(0xFF00FF87),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "TMDB ${richMeta.ratingTmdb}",
+                                color = Color(0xFF00FF87),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Whatshot,
+                                contentDescription = "Popularity",
+                                tint = Color(0xFFFF2E93),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = richMeta.popularityText,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            if (richMeta.trendPositionText != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .wrapContentWidth()
+                                        .background(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))
+                                            ),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.TrendingUp,
+                                        contentDescription = "Trend Position",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = richMeta.trendPositionText.uppercase(),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 10.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+
+                            richMeta.premiumBadges.forEach { badge ->
+                                val badgeColor = when (badge) {
+                                    "Top 10" -> Color(0xFFFFD700)
+                                    "Tendencia Global" -> Color(0xFF00FF87)
+                                    "Estreno" -> Color(0xFF00E5FF)
+                                    "Nuevo" -> Color(0xFF9D4EDD)
+                                    else -> Color(0xFFFF2E93)
+                                }
+                                Text(
+                                    text = badge.uppercase(),
+                                    color = badgeColor,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp,
+                                    modifier = Modifier
+                                        .wrapContentWidth()
+                                        .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = richMeta.genres,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.wrapContentWidth()
+                        )
+
+                        Text(
+                            text = "•",
+                            color = Color.White.copy(alpha = 0.3f),
+                            fontSize = 13.sp,
+                            modifier = Modifier.wrapContentWidth()
+                        )
+
+                        Text(
+                            text = richMeta.duration,
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.wrapContentWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (richMeta.techIndicators.isNotEmpty()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            richMeta.techIndicators.forEach { tech ->
+                                Box(
+                                    modifier = Modifier
+                                        .wrapContentWidth()
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
+                                        .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = tech,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 20.dp)
+                            .wrapContentHeight()
+                    ) {
+                        Text(
+                            text = richMeta.description,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 15.sp,
+                            maxLines = 3,
+                            lineHeight = 22.sp,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 640.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun HomeHeroBannerMobile(
+    currentMovie: CatalogItem,
+    activeHeroLoadedDetails: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>,
+    favoriteCatalogItems: Set<String>,
+    bannerHeight: androidx.compose.ui.unit.Dp,
+    viewModel: MediaViewModel,
+    scrollState: LazyListState,
+    onTrailerClick: (CatalogItem) -> Unit,
+    onDetailsClick: (CatalogItem) -> Unit
+) {
+    val context = LocalContext.current
+    val parallaxOffset = 0f
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(bannerHeight)
+            .clickable { onDetailsClick(currentMovie) }
+            .tvFocusEffect(
+                shape = RoundedCornerShape(8.dp),
+                focusedBorderColor = Color(0xFF00E5FF),
+                scaleAmount = 1.02f
+            )
+    ) {
         Crossfade(
             targetState = currentMovie,
             animationSpec = tween(500),
@@ -457,12 +797,11 @@ fun HomeHeroBanner(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .widthIn(max = if (isWideLayout) 600.dp.responsive() else 400.dp.responsive())
+                        .widthIn(max = 400.dp.responsive())
                         .wrapContentHeight(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // 1. LOGO OR TITLE
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -474,8 +813,8 @@ fun HomeHeroBanner(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = if (isWideLayout) 75.dp.responsive() else 54.dp.responsive())
-                                    .widthIn(max = if (isWideLayout) 250.dp.responsive() else 160.dp.responsive()),
+                                    .heightIn(max = 54.dp.responsive())
+                                    .widthIn(max = 160.dp.responsive()),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart
                             )
@@ -484,7 +823,7 @@ fun HomeHeroBanner(
                                 text = richMeta.title,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 28.sp.responsive() else 22.sp.responsive(),
+                                    fontSize = 22.sp.responsive(),
                                     color = Color.White,
                                     letterSpacing = (-1).sp,
                                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -495,28 +834,27 @@ fun HomeHeroBanner(
                                 ),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                lineHeight = if (isWideLayout) 30.sp.responsive() else 24.sp.responsive()
+                                lineHeight = 24.sp.responsive()
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp.responsive()))
 
-                    // 2. YEAR & RATINGS ROW
                     androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 4.dp.responsive() else 6.dp.responsive()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
                         verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
                     ) {
                         Text(
                             text = richMeta.year,
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
-                            fontSize = if (isWideLayout) 7.sp.responsive() else 9.sp.responsive(),
+                            fontSize = 9.sp.responsive(),
                             modifier = Modifier
                                 .wrapContentWidth()
                                 .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 6.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                                .padding(horizontal = 6.dp.responsive(), vertical = 1.5.dp.responsive())
                         )
 
                         Row(
@@ -525,19 +863,19 @@ fun HomeHeroBanner(
                                 .wrapContentWidth()
                                 .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                 .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = "IMDb Rating",
                                 tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(if (isWideLayout) 6.dp.responsive() else 8.dp.responsive())
+                                modifier = Modifier.size(8.dp.responsive())
                             )
-                            Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                            Spacer(modifier = Modifier.width(3.dp.responsive()))
                             Text(
                                 text = "IMDb ${richMeta.ratingImdb}",
                                 color = Color(0xFFFFD700),
-                                fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive(),
+                                fontSize = 8.sp.responsive(),
                                 fontWeight = FontWeight.Black
                             )
                         }
@@ -548,19 +886,19 @@ fun HomeHeroBanner(
                                 .wrapContentWidth()
                                 .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                 .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = "TMDB Rating",
                                 tint = Color(0xFF00FF87),
-                                modifier = Modifier.size(if (isWideLayout) 6.dp.responsive() else 8.dp.responsive())
+                                modifier = Modifier.size(8.dp.responsive())
                             )
-                            Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                            Spacer(modifier = Modifier.width(3.dp.responsive()))
                             Text(
                                 text = "TMDB ${richMeta.ratingTmdb}",
                                 color = Color(0xFF00FF87),
-                                fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive(),
+                                fontSize = 8.sp.responsive(),
                                 fontWeight = FontWeight.Black
                             )
                         }
@@ -570,19 +908,19 @@ fun HomeHeroBanner(
                             modifier = Modifier
                                 .wrapContentWidth()
                                 .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Whatshot,
                                 contentDescription = "Popularity",
                                 tint = Color(0xFFFF2E93),
-                                modifier = Modifier.size(if (isWideLayout) 7.dp.responsive() else 9.dp.responsive())
+                                modifier = Modifier.size(9.dp.responsive())
                             )
-                            Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                            Spacer(modifier = Modifier.width(3.dp.responsive()))
                             Text(
                                 text = richMeta.popularityText,
                                 color = Color.White.copy(alpha = 0.85f),
-                                fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive(),
+                                fontSize = 8.sp.responsive(),
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -590,11 +928,10 @@ fun HomeHeroBanner(
 
                     Spacer(modifier = Modifier.height(14.dp.responsive()))
 
-                    // 3. TRENDING POSITION & PREMIUM BADGES
                     if (richMeta.trendPositionText != null || richMeta.premiumBadges.isNotEmpty()) {
                         androidx.compose.foundation.layout.FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 4.dp.responsive() else 6.dp.responsive()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
                             verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
                         ) {
                             if (richMeta.trendPositionText != null) {
@@ -608,20 +945,20 @@ fun HomeHeroBanner(
                                             ),
                                             shape = RoundedCornerShape(24.dp)
                                         )
-                                        .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 6.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                                        .padding(horizontal = 6.dp.responsive(), vertical = 1.5.dp.responsive())
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.TrendingUp,
                                         contentDescription = "Trend Position",
                                         tint = Color.White,
-                                        modifier = Modifier.size(if (isWideLayout) 7.dp.responsive() else 9.dp.responsive())
+                                        modifier = Modifier.size(9.dp.responsive())
                                     )
-                                    Spacer(modifier = Modifier.width(if (isWideLayout) 2.dp.responsive() else 3.dp.responsive()))
+                                    Spacer(modifier = Modifier.width(3.dp.responsive()))
                                     Text(
                                         text = richMeta.trendPositionText.uppercase(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Black,
-                                        fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
+                                        fontSize = 7.sp.responsive(),
                                         letterSpacing = 0.5.sp
                                     )
                                 }
@@ -639,29 +976,28 @@ fun HomeHeroBanner(
                                     text = badge.uppercase(),
                                     color = badgeColor,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = if (isWideLayout) 5.sp.responsive() else 7.sp.responsive(),
+                                    fontSize = 7.sp.responsive(),
                                     letterSpacing = 0.5.sp,
                                     modifier = Modifier
                                         .wrapContentWidth()
                                         .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                         .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = if (isWideLayout) 4.dp.responsive() else 5.dp.responsive(), vertical = if (isWideLayout) 1.dp.responsive() else 1.5.dp.responsive())
+                                        .padding(horizontal = 5.dp.responsive(), vertical = 1.5.dp.responsive())
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.height(14.dp.responsive()))
                     }
 
-                    // 4. GENRES & DURATION
                     androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 4.dp.responsive() else 5.dp.responsive()),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp.responsive()),
                         verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
                     ) {
                         Text(
                             text = richMeta.genres,
                             color = Color.White.copy(alpha = 0.75f),
-                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
+                            fontSize = 9.sp.responsive(),
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.wrapContentWidth()
                         )
@@ -669,14 +1005,14 @@ fun HomeHeroBanner(
                         Text(
                             text = "•",
                             color = Color.White.copy(alpha = 0.3f),
-                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
+                            fontSize = 9.sp.responsive(),
                             modifier = Modifier.wrapContentWidth()
                         )
 
                         Text(
                             text = richMeta.duration,
                             color = Color.White.copy(alpha = 0.75f),
-                            fontSize = if (isWideLayout) 7.5.sp.responsive() else 9.sp.responsive(),
+                            fontSize = 9.sp.responsive(),
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.wrapContentWidth()
                         )
@@ -684,12 +1020,11 @@ fun HomeHeroBanner(
 
                     Spacer(modifier = Modifier.height(14.dp.responsive()))
 
-                    // 5. TECHNICAL CAPABILITY BADGES
                     if (richMeta.techIndicators.isNotEmpty()) {
                         androidx.compose.foundation.layout.FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive()),
-                            verticalArrangement = Arrangement.spacedBy(8.dp.responsive())
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             richMeta.techIndicators.forEach { tech ->
                                 Box(
@@ -704,7 +1039,7 @@ fun HomeHeroBanner(
                                         text = tech,
                                         color = Color.White.copy(alpha = 0.85f),
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = if (isWideLayout) 6.sp.responsive() else 8.sp.responsive()
+                                        fontSize = 8.sp.responsive()
                                     )
                                 }
                             }
@@ -712,7 +1047,6 @@ fun HomeHeroBanner(
                         Spacer(modifier = Modifier.height(14.dp.responsive()))
                     }
 
-                    // 6. SHORT SINOPSIS
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -722,9 +1056,9 @@ fun HomeHeroBanner(
                         Text(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
-                            fontSize = if (isWideLayout) 9.5.sp.responsive() else 10.5.sp.responsive(),
+                            fontSize = 10.5.sp.responsive(),
                             maxLines = 3,
-                            lineHeight = if (isWideLayout) 13.sp.responsive() else 14.sp.responsive(),
+                            lineHeight = 14.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.widthIn(max = 600.dp.responsive())
                         )
@@ -734,6 +1068,7 @@ fun HomeHeroBanner(
         }
     }
 }
+
 
 @Composable
 fun DrawCatalogRow(

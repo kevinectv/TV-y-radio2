@@ -49,7 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 /**
  * All configurable categories in settings.
  */
-enum class SettingCategory(val label: String, val icon: ImageVector, val description: String) {
+private enum class SettingCategory(val label: String, val icon: ImageVector, val description: String) {
     PROFILE("Perfil", Icons.Default.AccountCircle, "Configuración del perfil activo y de los avatares integrados"),
     IPTV_SOURCES("Fuentes IPTV", Icons.Default.Dns, "Gestión integral de playlists M3U, M3U8, Xtream Codes y XMLTV"),
     EPG("Guía EPG", Icons.Default.Dataset, "Ajustes de escala, sincronización automática e intervalos"),
@@ -66,54 +66,81 @@ enum class SettingCategory(val label: String, val icon: ImageVector, val descrip
 }
 
 @Composable
-fun SettingsScreen(
-    viewModel: MediaViewModel,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    if (isWideLayout) {
-        SettingsScreenTv(viewModel, modifier)
-    } else {
-        SettingsScreenMobile(viewModel, modifier)
-    }
-}
-
-@OptIn(androidx.compose.animation.ExperimentalAnimationApi::class)
-@Composable
 fun SettingsScreenTv(
     viewModel: MediaViewModel,
     modifier: Modifier = Modifier
 ) {
+    var activeSubScreen by remember { mutableStateOf("main") }
+
+    when (activeSubScreen) {
+        "iptv" -> {
+            IptvSourcesScreen(
+                viewModel = viewModel,
+                onBack = { activeSubScreen = "main" },
+                modifier = modifier
+            )
+        }
+        "api_settings" -> {
+            ApiSettingsScreen(
+                onBack = { activeSubScreen = "main" }
+            )
+        }
+        "diagnostics" -> {
+            CatalogDiagnosticsScreen(
+                viewModel = viewModel,
+                onBack = { activeSubScreen = "main" }
+            )
+        }
+        else -> {
+            SettingsWorkspace(
+                viewModel = viewModel,
+                onOpenSources = { activeSubScreen = "iptv" },
+                onOpenApiSettings = { activeSubScreen = "api_settings" },
+                onOpenDiagnostics = { activeSubScreen = "diagnostics" },
+                modifier = modifier
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun SettingsWorkspace(
+    viewModel: MediaViewModel,
+    onOpenSources: () -> Unit,
+    onOpenApiSettings: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var selectedCategory by remember { mutableStateOf(SettingCategory.PROFILE) }
+    
+    // Persistent-like local states for custom presentation details
+    var autoEpgSync by remember { mutableStateOf(true) }
+    var downloadLogos by remember { mutableStateOf(true) }
+    var bufferLatency by remember { mutableStateOf(false) }
+    var hwAudioSync by remember { mutableStateOf(true) }
+    var eac3Audio by remember { mutableStateOf(false) }
+    var realtimeShadows by remember { mutableStateOf(true) }
+    var fluidAnimations by remember { mutableStateOf(true) }
+    var ramOptimization by remember { mutableStateOf(false) }
+    var forced60fps by remember { mutableStateOf(true) }
+    var sendErrorStats by remember { mutableStateOf(true) }
+    var keepLocalHistory by remember { mutableStateOf(true) }
     var pushAlerts by remember { mutableStateOf(true) }
     var updateAlerts by remember { mutableStateOf(true) }
 
     val profilesList by viewModel.profiles.collectAsState(initial = emptyList())
     val activeProfile = viewModel.activeProfile
-    val context = LocalContext.current
-    var selectedCategory by remember { mutableStateOf(SettingCategory.PROFILE) }
-    var autoEpgSync by remember { mutableStateOf(true) }
-    var downloadLogos by remember { mutableStateOf(true) }
-    var bufferLatency by remember { mutableStateOf(true) }
-    var hwAudioSync by remember { mutableStateOf(true) }
-    var eac3Audio by remember { mutableStateOf(true) }
-    var realtimeShadows by remember { mutableStateOf(true) }
-    var fluidAnimations by remember { mutableStateOf(true) }
-    var ramOptimization by remember { mutableStateOf(true) }
-    var forced60fps by remember { mutableStateOf(false) }
-    var sendErrorStats by remember { mutableStateOf(false) }
-    var keepLocalHistory by remember { mutableStateOf(true) }
-    val onOpenSources = { android.widget.Toast.makeText(context, "Abrir fuentes", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenApiSettings = { android.widget.Toast.makeText(context, "API Settings", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenDiagnostics = { android.widget.Toast.makeText(context, "Diagnostics", android.widget.Toast.LENGTH_SHORT).show() }
-
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
+        val isWideLayout = true
 
+        if (isWideLayout) {
             // DUAL-PANEL LAYOUT (Android TV & Tablets/Laptops)
             Row(
                 modifier = Modifier
@@ -304,45 +331,7 @@ fun SettingsScreenTv(
                     }
                 }
             }
-        
-    }
-}
-
-@OptIn(androidx.compose.animation.ExperimentalAnimationApi::class)
-@Composable
-fun SettingsScreenMobile(
-    viewModel: MediaViewModel,
-    modifier: Modifier = Modifier
-) {
-    var pushAlerts by remember { mutableStateOf(true) }
-    var updateAlerts by remember { mutableStateOf(true) }
-
-    val profilesList by viewModel.profiles.collectAsState(initial = emptyList())
-    val activeProfile = viewModel.activeProfile
-    val context = LocalContext.current
-    var selectedCategory by remember { mutableStateOf(SettingCategory.PROFILE) }
-    var autoEpgSync by remember { mutableStateOf(true) }
-    var downloadLogos by remember { mutableStateOf(true) }
-    var bufferLatency by remember { mutableStateOf(true) }
-    var hwAudioSync by remember { mutableStateOf(true) }
-    var eac3Audio by remember { mutableStateOf(true) }
-    var realtimeShadows by remember { mutableStateOf(true) }
-    var fluidAnimations by remember { mutableStateOf(true) }
-    var ramOptimization by remember { mutableStateOf(true) }
-    var forced60fps by remember { mutableStateOf(false) }
-    var sendErrorStats by remember { mutableStateOf(false) }
-    var keepLocalHistory by remember { mutableStateOf(true) }
-    val onOpenSources = { android.widget.Toast.makeText(context, "Abrir fuentes", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenApiSettings = { android.widget.Toast.makeText(context, "API Settings", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenDiagnostics = { android.widget.Toast.makeText(context, "Diagnostics", android.widget.Toast.LENGTH_SHORT).show() }
-
-
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-
+        } else {
             // NEW MOBILE SPECIFIC LAYOUT: Center detail view + horizontal bottom menu!
             Column(
                 modifier = Modifier
@@ -584,7 +573,7 @@ fun SettingsScreenMobile(
                     }
                 }
             }
-        
+        }
     }
 }
 
@@ -593,7 +582,7 @@ fun SettingsScreenMobile(
  * Uses smooth states to prevent any shifting, keeping layout stable.
  */
 @Composable
-fun SidebarCategoryItem(
+private fun SidebarCategoryItem(
     category: SettingCategory,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -656,7 +645,7 @@ fun SidebarCategoryItem(
  * Mobile-optimal Category list row item.
  */
 @Composable
-fun MobileMasterItem(
+private fun MobileMasterItem(
     category: SettingCategory,
     onClick: () -> Unit
 ) {
@@ -720,7 +709,7 @@ fun MobileMasterItem(
 // ==========================================
 
 @Composable
-fun ProfilePaneContent(
+private fun ProfilePaneContent(
     activeProfile: ProfileEntity?,
     profilesList: List<ProfileEntity>,
     viewModel: MediaViewModel
@@ -889,7 +878,7 @@ fun ProfilePaneContent(
 }
 
 @Composable
-fun IptvSourcesPaneContent(onOpenSources: () -> Unit) {
+private fun IptvSourcesPaneContent(onOpenSources: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -955,7 +944,7 @@ fun IptvSourcesPaneContent(onOpenSources: () -> Unit) {
 }
 
 @Composable
-fun EpgPaneContent(
+private fun EpgPaneContent(
     viewModel: MediaViewModel,
     autoEpgSync: Boolean,
     onAutoEpgSyncChange: (Boolean) -> Unit,
@@ -1076,7 +1065,7 @@ fun EpgPaneContent(
 }
 
 @Composable
-fun RadioPaneContent(
+private fun RadioPaneContent(
     viewModel: MediaViewModel,
     bufferLatency: Boolean,
     onBufferLatencyChange: (Boolean) -> Unit
@@ -1519,7 +1508,7 @@ fun RadioPaneContent(
 }
 
 @Composable
-fun ReproductorPaneContent(
+private fun ReproductorPaneContent(
     viewModel: MediaViewModel,
     hwAudioSync: Boolean,
     onHwAudioSyncChange: (Boolean) -> Unit,
@@ -1623,7 +1612,7 @@ fun ReproductorPaneContent(
 }
 
 @Composable
-fun AparienciaPaneContent(
+private fun AparienciaPaneContent(
     viewModel: MediaViewModel,
     realtimeShadows: Boolean,
     onRealtimeShadowsChange: (Boolean) -> Unit,
@@ -1704,7 +1693,7 @@ fun AparienciaPaneContent(
 }
 
 @Composable
-fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
+private fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1787,7 +1776,7 @@ fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
 }
 
 @Composable
-fun NotificationsPaneContent(
+private fun NotificationsPaneContent(
     pushAlerts: Boolean,
     onPushAlertsChange: (Boolean) -> Unit,
     updateAlerts: Boolean,
@@ -1844,7 +1833,7 @@ fun NotificationsPaneContent(
 }
 
 @Composable
-fun RendimientoPaneContent(
+private fun RendimientoPaneContent(
     ramOptimization: Boolean,
     onRamOptimizationChange: (Boolean) -> Unit,
     forced60fps: Boolean,
@@ -1920,7 +1909,7 @@ fun RendimientoPaneContent(
 }
 
 @Composable
-fun PrivacidadPaneContent(
+private fun PrivacidadPaneContent(
     sendErrorStats: Boolean,
     onSendErrorStatsChange: (Boolean) -> Unit,
     keepLocalHistory: Boolean,
@@ -1977,7 +1966,7 @@ fun PrivacidadPaneContent(
 }
 
 @Composable
-fun BackupPaneContent(
+private fun BackupPaneContent(
     onBackup: () -> Unit,
     onRestore: () -> Unit
 ) {
@@ -2031,7 +2020,7 @@ fun BackupPaneContent(
 }
 
 @Composable
-fun AboutPaneContent(viewModel: MediaViewModel) {
+private fun AboutPaneContent(viewModel: MediaViewModel) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val updateState = viewModel.updateManager?.updateState?.collectAsState(initial = com.example.data.util.UpdateState.Idle)?.value ?: com.example.data.util.UpdateState.Idle
@@ -2518,7 +2507,7 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CatalogsPaneContent(
+private fun CatalogsPaneContent(
     viewModel: MediaViewModel,
     onOpenApiSettings: () -> Unit,
     onOpenDiagnostics: () -> Unit
@@ -3096,7 +3085,7 @@ fun CatalogsPaneContent(
 }
 
 @Composable
-fun CompactActionButton(
+private fun CompactActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     onClick: () -> Unit,
@@ -3135,7 +3124,7 @@ fun CompactActionButton(
 }
 
 @Composable
-fun CatalogItemCard(
+private fun CatalogItemCard(
     catalog: Catalog,
     onEdit: () -> Unit,
     onMoveUp: () -> Unit,
@@ -3407,7 +3396,7 @@ fun CatalogItemCard(
 }
 
 @Composable
-fun AddCatalogDialog(
+private fun AddCatalogDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, source: String, url: String, layoutType: String) -> Unit
 ) {
@@ -3591,7 +3580,7 @@ fun AddCatalogDialog(
 }
 
 @Composable
-fun EditCatalogDialog(
+private fun EditCatalogDialog(
     catalog: Catalog,
     onDismiss: () -> Unit,
     onConfirm: (Catalog) -> Unit
@@ -3819,7 +3808,7 @@ fun EditCatalogDialog(
 }
 
 @Composable
-fun VisualLayoutDialog(
+private fun VisualLayoutDialog(
     catalog: Catalog,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
@@ -4044,7 +4033,7 @@ fun VisualLayoutDialog(
 }
 
 @Composable
-fun ApiKeysDialog(
+private fun ApiKeysDialog(
     onDismiss: () -> Unit,
     onSave: (tmdb: String, trakt: String, mdblist: String) -> Unit
 ) {
