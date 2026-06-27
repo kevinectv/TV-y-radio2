@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,18 +69,107 @@ import kotlinx.coroutines.launch
 
 // --- Skeleton Loading Effect Extension ---
 @Composable
-fun Modifier.skeletonEffect(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by transition.animateFloat(
-        initialValue = 0.08f,
-        targetValue = 0.22f,
+fun Modifier.shimmerEffect(): Modifier = composed {
+    var size by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val startOffsetX by transition.animateFloat(
+        initialValue = -2 * size.width.toFloat(),
+        targetValue = 2 * size.width.toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutLinearInEasing),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(1500, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "alpha"
+        label = "shimmer_offset"
     )
-    this.background(Color.White.copy(alpha = alpha), RoundedCornerShape(4.dp))
+
+    this
+        .onGloballyPositioned { size = it.size }
+        .background(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF1E1E1E),
+                    Color(0xFF333333),
+                    Color(0xFF1E1E1E)
+                ),
+                start = androidx.compose.ui.geometry.Offset(startOffsetX, 0f),
+                end = androidx.compose.ui.geometry.Offset(startOffsetX + size.width.toFloat(), size.height.toFloat())
+            ),
+            shape = RoundedCornerShape(4.dp)
+        )
+}
+
+@Composable
+fun HomeSkeleton(isWideLayout: Boolean, bannerHeight: androidx.compose.ui.unit.Dp) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        HeroSkeleton(isWideLayout, bannerHeight)
+        Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            repeat(3) {
+                CatalogRowSkeleton(isWideLayout)
+            }
+        }
+    }
+}
+
+@Composable
+fun HeroSkeleton(isWideLayout: Boolean, bannerHeight: androidx.compose.ui.unit.Dp) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(bannerHeight)
+            .padding(
+                start = if (isWideLayout) 48.dp else 20.dp.responsive(),
+                end = if (isWideLayout) 48.dp else 20.dp.responsive(),
+                top = if (isWideLayout) 24.dp else 12.dp.responsive(),
+                bottom = if (isWideLayout) 24.dp else 12.dp.responsive()
+            ),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp.responsive())) {
+            Box(modifier = Modifier.width(if (isWideLayout) 240.dp else 140.dp.responsive()).height(if (isWideLayout) 60.dp else 40.dp.responsive()).shimmerEffect())
+            Box(modifier = Modifier.width(if (isWideLayout) 300.dp else 200.dp.responsive()).height(14.dp.responsive()).shimmerEffect())
+            Box(modifier = Modifier.fillMaxWidth(if (isWideLayout) 0.5f else 0.8f).height(14.dp.responsive()).shimmerEffect())
+            Box(modifier = Modifier.fillMaxWidth(if (isWideLayout) 0.4f else 0.6f).height(14.dp.responsive()).shimmerEffect())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())) {
+                Box(modifier = Modifier.width(60.dp.responsive()).height(22.dp.responsive()).shimmerEffect())
+                Box(modifier = Modifier.width(60.dp.responsive()).height(22.dp.responsive()).shimmerEffect())
+                Box(modifier = Modifier.width(60.dp.responsive()).height(22.dp.responsive()).shimmerEffect())
+            }
+        }
+    }
+}
+
+@Composable
+fun CatalogRowSkeleton(isWideLayout: Boolean) {
+    Column {
+        Box(
+            modifier = Modifier
+                .padding(start = 16.dp.responsive(), top = 22.dp.responsive(), bottom = 6.dp.responsive())
+                .width(150.dp.responsive())
+                .height(16.dp.responsive())
+                .shimmerEffect()
+        )
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp.responsive()),
+            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+            userScrollEnabled = false
+        ) {
+            items(6) {
+                PosterSkeleton()
+            }
+        }
+    }
+}
+
+@Composable
+fun PosterSkeleton() {
+    Box(
+        modifier = Modifier
+            .width(130.dp.responsive())
+            .height(180.dp.responsive())
+            .shimmerEffect()
+    )
 }
 
 @Composable
@@ -127,12 +217,7 @@ fun HomeScreen(
 
     var activeHeroMovie by remember { mutableStateOf<CatalogItem?>(null) }
 
-    val currentMovie = activeHeroMovie ?: featuredMovies.firstOrNull() ?: CatalogItem(
-        id = "f1", title = "Michael",
-        posterUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200",
-        year = "2026", rating = "7.7", genre = "Música / Drama",
-        description = "El viaje de Michael Jackson más allá de la música, desde el descubrimiento de su extraordinario talento como líder de los Jackson Five..."
-    )
+    val currentMovie = activeHeroMovie ?: featuredMovies.firstOrNull()
 
     // Logo state
     var activeHeroLogoUrl by remember { mutableStateOf<String?>(null) }
@@ -143,6 +228,8 @@ fun HomeScreen(
     LaunchedEffect(currentMovie) {
         activeHeroLogoUrl = null
         activeHeroLoadedDetails = null
+
+        if (currentMovie == null) return@LaunchedEffect
         
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
         val rawApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
@@ -204,203 +291,106 @@ fun HomeScreen(
     val bannerHeight = if (isWideLayout) 315.dp else 195.dp.responsive()
 
     // Control de carga (Skeleton)
-    val isLoadingData = catalogs.isEmpty()
+    val isLoadingData = catalogs.isEmpty() || currentMovie == null
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
-        // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
-        Crossfade(
-            targetState = currentMovie,
-            animationSpec = tween(750),
-            label = "home_full_backdrop",
-            modifier = Modifier.fillMaxSize()
-        ) { movie ->
-            val movieDetails = getCinematicDetails(movie)
-            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: movieDetails.backdropUrl
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                AsyncImage(
-                    model = backdropUrlToUse,
-                    contentDescription = movie.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                // Cinematic horizontal dark gradient to protect left-aligned text of Hero Banner
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.95f),
-                                    Color.Black.copy(alpha = 0.82f),
-                                    Color.Black.copy(alpha = 0.35f),
-                                    Color.Transparent
-                                ),
-                                endX = 1200f
-                            )
-                        )
-                )
-
-                // Cinematic vertical dark gradient to smoothly fade to pure black at bottom
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.30f),
-                                    Color.Black.copy(alpha = 0.55f),
-                                    Color(0xFF030406)
-                                )
-                            )
-                        )
-                )
-            }
-        }
-
-        // --- 2. MAIN STRUCTURAL LAYOUT WITH TRANSITION (SKELETON TO CONTENT) ---
         Crossfade(
             targetState = isLoadingData,
             animationSpec = tween(700),
             label = "home_skeleton_fade",
             modifier = Modifier.fillMaxSize()
         ) { isLoading ->
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (isLoading) {
-                    // SKELETON HERO BANNER
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(bannerHeight)
-                            .padding(
-                                start = if (isWideLayout) 48.dp else 20.dp.responsive(),
-                                end = if (isWideLayout) 48.dp else 20.dp.responsive(),
-                                top = if (isWideLayout) 24.dp else 12.dp.responsive(),
-                                bottom = if (isWideLayout) 24.dp else 12.dp.responsive()
-                            ),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp.responsive())) {
-                            Box(modifier = Modifier.width(if (isWideLayout) 240.dp else 140.dp.responsive()).height(if (isWideLayout) 60.dp else 40.dp.responsive()).skeletonEffect())
-                            Box(modifier = Modifier.width(if (isWideLayout) 300.dp else 200.dp.responsive()).height(14.dp.responsive()).skeletonEffect())
-                            Box(modifier = Modifier.fillMaxWidth(if (isWideLayout) 0.5f else 0.8f).height(14.dp.responsive()).skeletonEffect())
-                            Box(modifier = Modifier.fillMaxWidth(if (isWideLayout) 0.4f else 0.6f).height(14.dp.responsive()).skeletonEffect())
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())) {
-                                Box(modifier = Modifier.width(60.dp.responsive()).height(22.dp.responsive()).skeletonEffect())
-                                Box(modifier = Modifier.width(60.dp.responsive()).height(22.dp.responsive()).skeletonEffect())
-                                Box(modifier = Modifier.width(60.dp.responsive()).height(22.dp.responsive()).skeletonEffect())
-                            }
-                        }
-                    }
+            if (isLoading) {
+                HomeSkeleton(isWideLayout, bannerHeight)
+            } else {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
+                    Crossfade(
+                        targetState = currentMovie,
+                        animationSpec = tween(750),
+                        label = "home_full_backdrop",
+                        modifier = Modifier.fillMaxSize()
+                    ) { movie ->
+                        movie?.let { currentSafeMovie ->
+                            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: currentSafeMovie.posterUrl
 
-                    // SKELETON ROWS
-                    Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        repeat(3) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(start = 16.dp.responsive(), top = 22.dp.responsive(), bottom = 6.dp.responsive())
-                                    .width(150.dp.responsive())
-                                    .height(16.dp.responsive())
-                                    .skeletonEffect()
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp.responsive()),
-                                horizontalArrangement = Arrangement.spacedBy(14.dp.responsive())
-                            ) {
-                                repeat(5) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(130.dp.responsive())
-                                            .height(180.dp.responsive())
-                                            .skeletonEffect()
-                                    )
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // REAL CONTENT
-                    // A) Fixed Hero Banner
-                    HomeHeroBanner(
-                        currentMovie = currentMovie,
-                        activeHeroLoadedDetails = activeHeroLoadedDetails,
-                        featuredMovies = featuredMovies,
-                        favoriteCatalogItems = favoriteCatalogItems,
-                        bannerHeight = bannerHeight,
-                        isWideLayout = isWideLayout,
-                        viewModel = viewModel,
-                        scrollState = listState,
-                        onTrailerClick = { movie ->
-                            activeTrailerItem = movie
-                        },
-                        onDetailsClick = { movie ->
-                            viewModel.selectedDetailsItem.value = movie
-                        }
-                    )
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                AsyncImage(
+                                    model = backdropUrlToUse,
+                                    contentDescription = currentSafeMovie.title,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
 
-                    // B) Scrollable Content Rows (Sourced purely from Catalog Engine)
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f), // Protege su propio scroll
-                        contentPadding = PaddingValues(bottom = 90.dp)
-                    ) {
-                        val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
-
-                        if (homeCatalogs.isEmpty()) {
-                            if (progressItems.isNotEmpty()) {
-                                item {
-                                    HomeSectionRowHeader(
-                                        title = "⏱️ CONTINUAR VIENDO",
-                                        icon = Icons.Filled.PlayCircle,
-                                        color = Color(0xFF00FF87)
-                                    )
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
-                                        contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
-                                    ) {
-                                        items(progressItems) { (item, progressVal) ->
-                                            CatalogItemHomeCard(
-                                                item = item,
-                                                layoutType = "Landscape Row",
-                                                isFavorite = item.id in favoriteCatalogItems,
-                                                progress = progressVal,
-                                                onFocus = { activeHeroMovie = item },
-                                                onClick = {
-                                                    activeHeroMovie = item
-                                                    viewModel.selectedDetailsItem.value = item
-                                                }
+                                // Cinematic horizontal dark gradient to protect left-aligned text of Hero Banner
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(
+                                                    Color.Black.copy(alpha = 0.95f),
+                                                    Color.Black.copy(alpha = 0.82f),
+                                                    Color.Black.copy(alpha = 0.35f),
+                                                    Color.Transparent
+                                                ),
+                                                endX = 1200f
                                             )
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            homeCatalogs.forEachIndexed { index, catalog ->
-                                if (catalog.items.isNotEmpty()) {
-                                    item {
-                                        val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
-                                        DrawCatalogRow(
-                                            catalog = catalog,
-                                            favoriteCatalogItems = favoriteCatalogItems,
-                                            seenProgress = seenProgress,
-                                            customTitle = displayName,
-                                            customIcon = displayIcon,
-                                            onFocus = { activeHeroMovie = it },
-                                            onClick = { clickedItem ->
-                                                activeHeroMovie = clickedItem
-                                                viewModel.selectedDetailsItem.value = clickedItem
-                                            }
                                         )
-                                    }
-                                }
+                                )
 
-                                // Inject Continue Watching under the first dynamic row
-                                if (index == 0 && progressItems.isNotEmpty()) {
+                                // Cinematic vertical dark gradient to smoothly fade to pure black at bottom
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Black.copy(alpha = 0.30f),
+                                                    Color.Black.copy(alpha = 0.55f),
+                                                    Color(0xFF030406)
+                                                )
+                                            )
+                                        )
+                                )
+                            }
+                        }
+                    }
+
+                    // --- 2. MAIN STRUCTURAL LAYOUT ---
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // A) Fixed Hero Banner
+                        currentMovie?.let { currentSafeMovie ->
+                            HomeHeroBanner(
+                                currentMovie = currentSafeMovie,
+                                activeHeroLoadedDetails = activeHeroLoadedDetails,
+                                featuredMovies = featuredMovies,
+                                favoriteCatalogItems = favoriteCatalogItems,
+                                bannerHeight = bannerHeight,
+                                isWideLayout = isWideLayout,
+                                viewModel = viewModel,
+                                scrollState = listState,
+                                onTrailerClick = { movie ->
+                                    activeTrailerItem = movie
+                                },
+                                onDetailsClick = { movie ->
+                                    viewModel.selectedDetailsItem.value = movie
+                                }
+                            )
+                        }
+
+                        // B) Scrollable Content Rows
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentPadding = PaddingValues(bottom = 90.dp)
+                        ) {
+                            val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
+
+                            if (homeCatalogs.isEmpty()) {
+                                if (progressItems.isNotEmpty()) {
                                     item {
                                         HomeSectionRowHeader(
                                             title = "⏱️ CONTINUAR VIENDO",
@@ -423,6 +413,55 @@ fun HomeScreen(
                                                         viewModel.selectedDetailsItem.value = item
                                                     }
                                                 )
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                homeCatalogs.forEachIndexed { index, catalog ->
+                                    if (catalog.items.isNotEmpty()) {
+                                        item {
+                                            val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
+                                            DrawCatalogRow(
+                                                catalog = catalog,
+                                                favoriteCatalogItems = favoriteCatalogItems,
+                                                seenProgress = seenProgress,
+                                                customTitle = displayName,
+                                                customIcon = displayIcon,
+                                                onFocus = { activeHeroMovie = it },
+                                                onClick = { clickedItem ->
+                                                    activeHeroMovie = clickedItem
+                                                    viewModel.selectedDetailsItem.value = clickedItem
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                    // Inject Continue Watching under the first dynamic row
+                                    if (index == 0 && progressItems.isNotEmpty()) {
+                                        item {
+                                            HomeSectionRowHeader(
+                                                title = "⏱️ CONTINUAR VIENDO",
+                                                icon = Icons.Filled.PlayCircle,
+                                                color = Color(0xFF00FF87)
+                                            )
+                                            LazyRow(
+                                                horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                                                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
+                                            ) {
+                                                items(progressItems) { (item, progressVal) ->
+                                                    CatalogItemHomeCard(
+                                                        item = item,
+                                                        layoutType = "Landscape Row",
+                                                        isFavorite = item.id in favoriteCatalogItems,
+                                                        progress = progressVal,
+                                                        onFocus = { activeHeroMovie = item },
+                                                        onClick = {
+                                                            activeHeroMovie = item
+                                                            viewModel.selectedDetailsItem.value = item
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -1435,56 +1474,6 @@ fun CatalogItemHomeCard(
 
 data class ActorInfo(val name: String, val role: String, val photoUrl: String)
 
-fun getMockCast(itemTitle: String, genre: String): List<ActorInfo> {
-    val cleanTitle = itemTitle.lowercase()
-    return when {
-        cleanTitle.contains("dune") -> listOf(
-            ActorInfo("T. Chalamet", "Paul Atreides", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200"),
-            ActorInfo("Zendaya", "Chani", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200"),
-            ActorInfo("Austin Butler", "Feyd-Rautha", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200"),
-            ActorInfo("Florence Pugh", "Irulan", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200"),
-            ActorInfo("R. Ferguson", "Lady Jessica", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200")
-        )
-        cleanTitle.contains("oppenheimer") -> listOf(
-            ActorInfo("Cillian Murphy", "Oppenheimer", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200"),
-            ActorInfo("Emily Blunt", "Kitty Opp.", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"),
-            ActorInfo("R. Downey Jr.", "Lewis Strauss", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=200"),
-            ActorInfo("Matt Damon", "Leslie Groves", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200")
-        )
-        cleanTitle.contains("spider") -> listOf(
-            ActorInfo("S. Moore", "Miles Morales", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200"),
-            ActorInfo("H. Steinfeld", "Gwen Stacy", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200"),
-            ActorInfo("Oscar Isaac", "Miguel O'Hara", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200")
-        )
-        cleanTitle.contains("interstellar") || cleanTitle.contains("interestelar") -> listOf(
-            ActorInfo("M. McConaughey", "Cooper", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200"),
-            ActorInfo("Anne Hathaway", "Brand", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200"),
-            ActorInfo("J. Chastain", "Murph", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200")
-        )
-        else -> {
-            if (genre.contains("Terror", true) || genre.contains("Suspenso", true)) {
-                listOf(
-                    ActorInfo("Jenna Ortega", "Tara", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"),
-                    ActorInfo("B. Skarsgård", "Pennywise", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200"),
-                    ActorInfo("Anya Taylor-Joy", "Thomasin", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200")
-                )
-            } else if (genre.contains("Acción", true) || genre.contains("Ficción", true) || genre.contains("Sci-Fi", true)) {
-                listOf(
-                    ActorInfo("Pedro Pascal", "Mandalorian", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200"),
-                    ActorInfo("Ana de Armas", "Paloma", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200"),
-                    ActorInfo("Ryan Gosling", "K", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200")
-                )
-            } else {
-                listOf(
-                    ActorInfo("Margot Robbie", "Barbie", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"),
-                    ActorInfo("Glen Powell", "Hangman", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200"),
-                    ActorInfo("S. Sweeney", "Bea", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200")
-                )
-            }
-        }
-    }
-}
-
 @Composable
 fun CatalogItemFullScreenDetails(
     item: CatalogItem,
@@ -1494,17 +1483,14 @@ fun CatalogItemFullScreenDetails(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val localDetails = remember(item) { getCinematicDetails(item) }
-    val offlineDescription = remember(item) {
-        val joins = localDetails.subtitleLines.joinToString("\n")
-        if (joins.replace("\\[.*?\\]".toRegex(), "").trim().isNotEmpty()) joins else item.description
-    }
+    
+    val offlineDescription = item.description
 
     var dynamicDescription by remember(item) { mutableStateOf(offlineDescription.ifEmpty { item.description }) }
     var dynamicRating by remember(item) { mutableStateOf(item.rating) }
     var dynamicYear by remember(item) { mutableStateOf(item.year) }
     var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(item.logoUrl) }
-    var dynamicBackdrop by remember(item) { mutableStateOf(item.backdropUrl ?: localDetails.backdropUrl) }
+    var dynamicBackdrop by remember(item) { mutableStateOf(item.backdropUrl ?: item.backdropUrl ?: item.posterUrl) }
     var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
 
     val catalogsState = viewModel.catalogsStateFlow.collectAsState()
@@ -1522,7 +1508,7 @@ fun CatalogItemFullScreenDetails(
         if (cachedCast.isNotEmpty()) {
             dynamicCast = cachedCast
         } else {
-            dynamicCast = getMockCast(item.title, item.genre)
+            dynamicCast = emptyList()
         }
     }
 
@@ -1538,7 +1524,7 @@ fun CatalogItemFullScreenDetails(
         // Full screen blurred backdrop
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = dynamicBackdrop.ifEmpty { localDetails.backdropUrl },
+                model = dynamicBackdrop.ifEmpty { item.backdropUrl ?: item.posterUrl },
                 contentDescription = item.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -1738,7 +1724,7 @@ fun CatalogItemFullScreenDetails(
                                     val movieChannel = Channel(
                                         id = "catalog_${item.id}",
                                         name = item.title,
-                                        streamUrl = item.streamUrl ?: localDetails.trailerUrl,
+                                        streamUrl = item.streamUrl ?: "",
                                         logoUrl = item.posterUrl,
                                         category = "Cine Premium",
                                         description = item.description,
@@ -1937,7 +1923,7 @@ fun CatalogItemFullScreenDetails(
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             AsyncImage(
-                                model = dynamicBackdrop.ifEmpty { localDetails.backdropUrl },
+                                model = dynamicBackdrop.ifEmpty { item.backdropUrl ?: item.posterUrl },
                                 contentDescription = "Trailer Backdrop",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
@@ -2037,17 +2023,14 @@ fun CatalogItemDetailsDialog_Original(
     onTrailerClick: (CatalogItem) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val localDetails = remember(item) { getCinematicDetails(item) }
-    val offlineDescription = remember(item) {
-        val joins = localDetails.subtitleLines.joinToString("\n")
-        if (joins.replace("\\[.*?\\]".toRegex(), "").trim().isNotEmpty()) joins else item.description
-    }
+    
+    val offlineDescription = item.description
     var dynamicDescription by remember(item) { mutableStateOf(offlineDescription.ifEmpty { item.description }) }
     var dynamicRating by remember(item) { mutableStateOf(item.rating) }
     var dynamicYear by remember(item) { mutableStateOf(item.year) }
     var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(null) }
     var dynamicBackdrop by remember(item) { mutableStateOf("") }
-    var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(getMockCast(item.title, item.genre)) }
+    var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
 
     LaunchedEffect(item) {
         val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
@@ -2129,7 +2112,7 @@ fun CatalogItemDetailsDialog_Original(
         }
     }
 
-    val details = remember(item) { getCinematicDetails(item) }
+    
 
     // Dynamic and high-fidelity generation of cinematic data specs
     val isSeriesOrAnime = remember(item) {
@@ -2223,7 +2206,7 @@ fun CatalogItemDetailsDialog_Original(
                                 .height(220.dp)
                         ) {
                             AsyncImage(
-                                model = dynamicBackdrop.ifEmpty { details.backdropUrl },
+                                model = dynamicBackdrop.ifEmpty { item.backdropUrl ?: item.posterUrl },
                                 contentDescription = item.title,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
@@ -2619,7 +2602,7 @@ fun DetailsActionsGrid(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val details = remember(item) { getCinematicDetails(item) }
+    
 
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
@@ -2649,7 +2632,7 @@ fun DetailsActionsGrid(
                 val movieChannel = Channel(
                     id = "trailer_${item.id}",
                     name = item.title,
-                    streamUrl = item.streamUrl ?: details.trailerUrl,
+                    streamUrl = item.streamUrl ?: "",
                     logoUrl = item.posterUrl,
                     category = "Cine Premium",
                     description = item.description,
@@ -2676,7 +2659,7 @@ fun DetailsActionsGrid(
                 val movieChannel = Channel(
                     id = "trailer_${item.id}",
                     name = item.title,
-                    streamUrl = item.streamUrl ?: details.trailerUrl,
+                    streamUrl = item.streamUrl ?: "",
                     logoUrl = item.posterUrl,
                     category = "Cine Premium",
                     description = item.description,
@@ -3048,244 +3031,14 @@ fun CatalogItemNumberedCard(
 }
 
 // Cinematic Details helper structures for rich immersive home page banners matching user screenshot
-data class CinematicInfo(
-    val logoText: String,
-    val dateAndMetadata: String,
-    val providerBadge: String,
-    val budget: String,
-    val subtitleLines: List<String>,
-    val trailerUrl: String,
-    val backdropUrl: String
-)
-
-data class LoadedTmdbDetails(
-    val description: String,
-    val rating: String,
-    val year: String,
-    val logoUrl: String?,
-    val backdropUrl: String?,
-    val duration: String? = null,
-    val genre: String? = null
-)
-
-data class RichHeroMetadata(
-    val title: String,
-    val description: String,
-    val year: String,
-    val genres: String,
-    val duration: String,
-    val ratingImdb: String,
-    val ratingTmdb: String,
-    val popularityText: String,
-    val trendPositionText: String?,
-    val premiumBadges: List<String>,
-    val techIndicators: List<String>,
-    val logoUrl: String?,
-    val backdropUrl: String
-)
-
-fun resolveHeroMetadata(
-    item: CatalogItem,
-    loaded: LoadedTmdbDetails?,
-    featuredMovies: List<CatalogItem>
-): RichHeroMetadata {
-    val title = item.title
-
-    // Resolve description - remove placeholders!
-    val rawDesc = loaded?.description ?: item.description
-    val filteredDesc = if (rawDesc.contains("Contenido sintonizado") || rawDesc.contains("sintonizado en Lumina") || rawDesc.trim().isEmpty() || rawDesc.contains("película espectacular llena de misterios")) {
-        "Disfruta de ${item.title}, una sensacional producción de ${loaded?.genre ?: item.genre} con una cautivadora historia, actuaciones memorables y un asombroso despliegue visual en alta definición."
-    } else {
-        rawDesc
-    }
-
-    val year = loaded?.year?.ifEmpty { null } ?: item.year.ifEmpty { "2024" }
-    
-    val rawGenres = loaded?.genre ?: item.genre
-    val genres = if (rawGenres.isEmpty()) "Acción / Drama" else rawGenres
-
-    val duration = loaded?.duration ?: item.duration ?: run {
-        if (item.isTvShow) "4 Temporadas" else "2h 15m"
-    }
-
-    val ratingFloat = (loaded?.rating ?: item.rating).toFloatOrNull() ?: 7.8f
-    val tRating = String.format(java.util.Locale.US, "%.1f", ratingFloat)
-    val imdbCalculated = (ratingFloat - 0.2f).coerceIn(1.0f, 10.0f)
-    val iRating = String.format(java.util.Locale.US, "%.1f", imdbCalculated)
-
-    // Deteministic popularity
-    val hash = item.title.hashCode()
-    val absHash = if (hash < 0) -hash else hash
-    val popScore = 150.0 + (absHash % 750) + (ratingFloat * 12)
-    val popularityText = String.format(java.util.Locale.US, "%.1f", popScore)
-
-    // Position trend
-    val idx = featuredMovies.indexOfFirst { it.id == item.id }
-    val trendPosition = if (idx >= 0) idx + 1 else (absHash % 10) + 1
-    val trendPositionText = "N.º $trendPosition en tendencias hoy"
-
-    // Premium Badges
-    val premiumBadges = mutableListOf<String>()
-    if (ratingFloat >= 8.2f) {
-        premiumBadges.add("Tendencia Global")
-        premiumBadges.add("Top 10")
-    } else if (ratingFloat >= 7.6f) {
-        premiumBadges.add("Popular esta semana")
-        premiumBadges.add("Recomendado de Lumina")
-    } else {
-        premiumBadges.add("Recomendado para ti")
-    }
-
-    val yearVal = year.toIntOrNull() ?: 2024
-    if (yearVal >= 2025) {
-        premiumBadges.add("Estreno")
-    } else if (yearVal >= 2024) {
-        premiumBadges.add("Nuevo")
-    }
-
-    // Technology capabilities
-    val techIndicators = mutableListOf<String>()
-    if (absHash % 2 == 0) {
-        techIndicators.add("4K")
-        techIndicators.add("HDR")
-    } else {
-        techIndicators.add("HD")
-        techIndicators.add("HDR10")
-    }
-    if (absHash % 3 == 0) {
-        techIndicators.add("Dolby Vision")
-    }
-    if (absHash % 4 == 0) {
-        techIndicators.add("Dolby Atmos")
-    } else {
-        techIndicators.add("5.1 Audio")
-    }
-    techIndicators.add("Español (ES)")
-    if (absHash % 2 == 0) {
-        techIndicators.add("Subtítulos (CC)")
-    } else {
-        techIndicators.add("Subtítulos")
-    }
-
-    val logoUrl = loaded?.logoUrl ?: item.logoUrl
-    val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: item.posterUrl
-
-    return RichHeroMetadata(
-        title = title,
-        description = filteredDesc,
-        year = year,
-        genres = genres,
-        duration = duration,
-        ratingImdb = iRating,
-        ratingTmdb = tRating,
-        popularityText = popularityText,
-        trendPositionText = trendPositionText,
-        premiumBadges = premiumBadges,
-        techIndicators = techIndicators,
-        logoUrl = logoUrl,
-        backdropUrl = backdropUrl
-    )
-}
-
-fun getCinematicDetails(movie: CatalogItem): CinematicInfo {
-    return when (movie.id) {
-        "m_michael" -> CinematicInfo(
-            logoText = "Michael",
-            dateAndMetadata = "22 Apr 2026 • Music / Drama • 2h 6m",
-            providerBadge = "tv+",
-            budget = "Presupuesto: $250M",
-            subtitleLines = listOf(
-                "Michael: No le temas a la oscuridad...",
-                "Su voz sacudió al mundo, su corazón rompió moldes.",
-                "Desde el descubrimiento de su extraordinario talento temprano...",
-                "[Suena Billie Jean en versión sinfónica de fondo]",
-                "Hasta convertirse en una visionaria estrella del pop global.",
-                "Michael: El viaje definitivo del Rey del Pop de regreso."
-            ),
-            trailerUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-            backdropUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1200"
-        )
-        "m_theboys" -> CinematicInfo(
-            logoText = "THE BOYS",
-            dateAndMetadata = "13 Jun 2024 • Acción / Ciencia Ficción • 4 Temp",
-            providerBadge = "prime video",
-            budget = "Presupuesto: $180M",
-            subtitleLines = listOf(
-                "Homelander: ¡Mírenme! ¡Yo soy vuestro único salvador!",
-                "Un grupo fuera de la ley dispuesto a desenmascarar el corporativismo.",
-                "Butcher: Es hora de nivelar esta balanza ruidosa...",
-                "[Efecto de rayos oculares destrozando un hangar de caza]",
-                "The Boys: La última y más explosiva temporada de todas."
-            ),
-            trailerUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-            backdropUrl = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200"
-        )
-        "m1" -> CinematicInfo(
-            logoText = "DUNE II",
-            dateAndMetadata = "29 Feb 2024 • Ciencia Ficción / Aventura • 2h 46m",
-            providerBadge = "MAX",
-            budget = "Presupuesto: $190M",
-            subtitleLines = listOf(
-                "Paul Atreides: Seguiré el camino que conduce a mi pueblo.",
-                "Chani: Aquel que controla la especia gobierna el espacio.",
-                "[Gemidos de gigantescos gusanos de arena de Arrakis]",
-                "Únete a los Fremen en la última cruzada santa por Arrakis."
-            ),
-            trailerUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-            backdropUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200"
-        )
-        "m2" -> CinematicInfo(
-            logoText = "Oppenheimer",
-            dateAndMetadata = "20 Jul 2023 • Historia / Drama • 3h 0m",
-            providerBadge = "UNIVERSAL",
-            budget = "Presupuesto: $100M",
-            subtitleLines = listOf(
-                "Oppenheimer: No sabemos si causaremos la ignición atmosférica.",
-                "Un invento secreto que cambiará irrevocablemente la historia del hombre.",
-                "[Tictac acelerado de reloj despertador con suspenso bélico]",
-                "Oppenheimer: Ahora me he convertido en la muerte, destructora de mundos."
-            ),
-            trailerUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-            backdropUrl = "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?q=80&w=1200"
-        )
-        "m3" -> CinematicInfo(
-            logoText = "SPIDER-MAN",
-            dateAndMetadata = "02 Jun 2023 • Animación / Acción • 2h 20m",
-            providerBadge = "CINE PREMIUM",
-            budget = "Presupuesto: $150M",
-            subtitleLines = listOf(
-                "Miles Morales: Todos me dicen cómo debe ser mi historia.",
-                "Un viaje a través del indómito Multiverso arácnido.",
-                "Gwen Stacy: ¿Quieres salir de aquí?",
-                "Spider-Man: Across the Spider-Verse ya disponible."
-            ),
-            trailerUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            backdropUrl = "https://images.unsplash.com/photo-1618005198143-e52834644026?q=80&w=1200"
-        )
-        else -> CinematicInfo(
-            logoText = movie.title,
-            dateAndMetadata = "${movie.year} • ${movie.genre} • 2h 15m",
-            providerBadge = "CINE PREMIUM",
-            budget = "Presupuesto: $120M",
-            subtitleLines = listOf(
-                "Entra en un festín cinematográfico inolvidable en Lumina...",
-                "Ya disponible con soporte multi-idioma oficial en HD.",
-                "Presiona reproducir para iniciar la inmersión completa."
-            ),
-            trailerUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            backdropUrl = movie.posterUrl
-        )
-    }
-}
-
 @Composable
 fun TrailerYoutubePlayerDialog(
     item: CatalogItem,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val details = remember(item) { getCinematicDetails(item) }
-    val videoUrl = remember(item) { item.trailerUrl ?: item.streamUrl ?: details.trailerUrl }
+    
+    val videoUrl = remember(item) { item.trailerUrl ?: item.streamUrl ?: "" }
     
     var isPlaying by remember { mutableStateOf(true) }
     var currentPosition by remember { mutableStateOf(0) }
@@ -3671,4 +3424,132 @@ private fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.
             Pair("🍿 $capitalized", Icons.Filled.VideoLibrary)
         }
     }
+}
+data class LoadedTmdbDetails(
+    val description: String,
+    val rating: String,
+    val year: String,
+    val logoUrl: String?,
+    val backdropUrl: String?,
+    val duration: String? = null,
+    val genre: String? = null
+)
+
+data class RichHeroMetadata(
+    val title: String,
+    val description: String,
+    val year: String,
+    val genres: String,
+    val duration: String,
+    val ratingImdb: String,
+    val ratingTmdb: String,
+    val popularityText: String,
+    val trendPositionText: String?,
+    val premiumBadges: List<String>,
+    val techIndicators: List<String>,
+    val logoUrl: String?,
+    val backdropUrl: String
+)
+
+fun resolveHeroMetadata(
+    item: CatalogItem,
+    loaded: LoadedTmdbDetails?,
+    featuredMovies: List<CatalogItem>
+): RichHeroMetadata {
+    val title = item.title
+
+    // Resolve description - remove placeholders!
+    val rawDesc = loaded?.description ?: item.description
+    val filteredDesc = if (rawDesc.contains("Contenido sintonizado") || rawDesc.contains("sintonizado en Lumina") || rawDesc.trim().isEmpty() || rawDesc.contains("película espectacular llena de misterios")) {
+        "Disfruta de ${item.title}, una sensacional producción de ${loaded?.genre ?: item.genre} con una cautivadora historia, actuaciones memorables y un asombroso despliegue visual en alta definición."
+    } else {
+        rawDesc
+    }
+
+    val year = loaded?.year?.ifEmpty { null } ?: item.year.ifEmpty { "2024" }
+    
+    val rawGenres = loaded?.genre ?: item.genre
+    val genres = if (rawGenres.isEmpty()) "Acción / Drama" else rawGenres
+
+    val duration = loaded?.duration ?: item.duration ?: run {
+        if (item.isTvShow) "4 Temporadas" else "2h 15m"
+    }
+
+    val ratingFloat = (loaded?.rating ?: item.rating).toFloatOrNull() ?: 7.8f
+    val tRating = String.format(java.util.Locale.US, "%.1f", ratingFloat)
+    val imdbCalculated = (ratingFloat - 0.2f).coerceIn(1.0f, 10.0f)
+    val iRating = String.format(java.util.Locale.US, "%.1f", imdbCalculated)
+
+    // Deteministic popularity
+    val hash = item.title.hashCode()
+    val absHash = if (hash < 0) -hash else hash
+    val popScore = 150.0 + (absHash % 750) + (ratingFloat * 12)
+    val popularityText = String.format(java.util.Locale.US, "%.1f", popScore)
+
+    // Position trend
+    val idx = featuredMovies.indexOfFirst { it.id == item.id }
+    val trendPosition = if (idx >= 0) idx + 1 else (absHash % 10) + 1
+    val trendPositionText = "N.º $trendPosition en tendencias hoy"
+
+    // Premium Badges
+    val premiumBadges = mutableListOf<String>()
+    if (ratingFloat >= 8.2f) {
+        premiumBadges.add("Tendencia Global")
+        premiumBadges.add("Top 10")
+    } else if (ratingFloat >= 7.6f) {
+        premiumBadges.add("Popular esta semana")
+        premiumBadges.add("Recomendado de Lumina")
+    } else {
+        premiumBadges.add("Recomendado para ti")
+    }
+
+    val yearVal = year.toIntOrNull() ?: 2024
+    if (yearVal >= 2025) {
+        premiumBadges.add("Estreno")
+    } else if (yearVal >= 2024) {
+        premiumBadges.add("Nuevo")
+    }
+
+    // Technology capabilities
+    val techIndicators = mutableListOf<String>()
+    if (absHash % 2 == 0) {
+        techIndicators.add("4K")
+        techIndicators.add("HDR")
+    } else {
+        techIndicators.add("HD")
+        techIndicators.add("HDR10")
+    }
+    if (absHash % 3 == 0) {
+        techIndicators.add("Dolby Vision")
+    }
+    if (absHash % 4 == 0) {
+        techIndicators.add("Dolby Atmos")
+    } else {
+        techIndicators.add("5.1 Audio")
+    }
+    techIndicators.add("Español (ES)")
+    if (absHash % 2 == 0) {
+        techIndicators.add("Subtítulos (CC)")
+    } else {
+        techIndicators.add("Subtítulos")
+    }
+
+    val logoUrl = loaded?.logoUrl ?: item.logoUrl
+    val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: item.posterUrl
+
+    return RichHeroMetadata(
+        title = title,
+        description = filteredDesc,
+        year = year,
+        genres = genres,
+        duration = duration,
+        ratingImdb = iRating,
+        ratingTmdb = tRating,
+        popularityText = popularityText,
+        trendPositionText = trendPositionText,
+        premiumBadges = premiumBadges,
+        techIndicators = techIndicators,
+        logoUrl = logoUrl,
+        backdropUrl = backdropUrl
+    )
 }
