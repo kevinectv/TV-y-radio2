@@ -443,7 +443,7 @@ fun FullscreenPlayerScreen(
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.Tv,
+                            imageVector = Icons.Default.LiveTv,
                             contentDescription = "Suspended",
                             tint = Color.White.copy(alpha = 0.4f),
                             modifier = Modifier.size(64.dp)
@@ -534,7 +534,7 @@ fun FullscreenPlayerScreen(
                         onClick = { pinInteraction(); showQuickChannelGrid = true; showTouchHUD = false },
                         modifier = Modifier.size(50.dp).background(Color.Black.copy(alpha = 0.75f), CircleShape).border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                     ) {
-                        Icon(Icons.Default.Tv, "Canales", tint = Color.White)
+                        Icon(Icons.Default.LiveTv, "Canales", tint = Color.White)
                     }
                     Text("Canales", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
                 }

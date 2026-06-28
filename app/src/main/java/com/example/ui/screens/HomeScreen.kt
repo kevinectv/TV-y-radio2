@@ -288,7 +288,7 @@ fun HomeScreen(
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
     // Height optimizado: -25% aprox para dejar más espacio al catálogo.
-    val bannerHeight = if (isWideLayout) 315.dp else 195.dp.responsive()
+    val bannerHeight = if (isWideLayout) 215.dp else 195.dp.responsive()
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -541,18 +541,13 @@ fun HomeHeroBannerTv(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(
-                        start = 48.dp,
-                        end = 48.dp,
-                        bottom = 20.dp,
-                        top = 20.dp
-                    ),
+                    .padding(start = 48.dp, end = 48.dp, bottom = 8.dp, top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .widthIn(max = 660.dp) // Ancho extendido para evitar saltos prematuros
+                        .widthIn(max = 520.dp) // Reducido para modo TV
                         .wrapContentHeight(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.Start
@@ -569,8 +564,8 @@ fun HomeHeroBannerTv(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 95.dp) // Ligeramente reducido
-                                    .widthIn(max = 300.dp),
+                                    .heightIn(max = 55.dp)
+                                    .widthIn(max = 240.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart
                             )
@@ -579,7 +574,7 @@ fun HomeHeroBannerTv(
                                 text = richMeta.title,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 32.sp,
+                                    fontSize = 22.sp,
                                     color = Color.White,
                                     letterSpacing = (-1).sp,
                                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -590,12 +585,12 @@ fun HomeHeroBannerTv(
                                 ),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                lineHeight = 36.sp
+                                lineHeight = 26.sp
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // 2. Información base agrupada (Año, Género, Duración)
                     Row(
@@ -617,20 +612,20 @@ fun HomeHeroBannerTv(
                         Text(text = richMeta.duration, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // 3. Sinopsis asegurada
                     Text(
                         text = richMeta.description,
                         color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 15.sp,
-                        maxLines = 3,
-                        lineHeight = 22.sp,
+                        fontSize = 13.sp,
+                        maxLines = 2,
+                        lineHeight = 18.sp,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // 4. Todas las insignias y tags agrupadas en un FlowRow unificado (No más cortes)
                     androidx.compose.foundation.layout.FlowRow(

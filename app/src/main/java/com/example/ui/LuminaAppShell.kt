@@ -199,7 +199,7 @@ fun LuminaAppShell(
                                             imageVector = when (tab) {
                                                 AppTab.HOME -> Icons.Filled.Home
                                                 AppTab.WATCHLIST -> Icons.Filled.Favorite
-                                                AppTab.TV -> Icons.Filled.Tv
+                                                AppTab.TV -> Icons.Filled.LiveTv
                                                 AppTab.RADIO -> Icons.Filled.Radio
                                                 AppTab.SEARCH -> Icons.Filled.Search
                                                 AppTab.SETTINGS -> Icons.Filled.Settings
@@ -308,7 +308,7 @@ fun LuminaAppShell(
                                         imageVector = when (tab) {
                                             AppTab.HOME -> Icons.Filled.Home
                                             AppTab.WATCHLIST -> Icons.Filled.Favorite
-                                            AppTab.TV -> Icons.Filled.Tv
+                                            AppTab.TV -> Icons.Filled.LiveTv
                                             AppTab.RADIO -> Icons.Filled.Radio
                                             AppTab.SEARCH -> Icons.Filled.Search
                                             AppTab.SETTINGS -> Icons.Filled.Settings

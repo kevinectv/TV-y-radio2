@@ -2054,7 +2054,7 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
                     .background(Color.White.copy(alpha = 0.06f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Tv, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.LiveTv, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
             }
 
             Spacer(modifier = Modifier.height(14.dp))

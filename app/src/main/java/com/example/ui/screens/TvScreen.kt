@@ -314,7 +314,7 @@ fun TvScreenTv(
                                                 modifier = Modifier.padding(12.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Tv,
+                                                    imageVector = Icons.Default.LiveTv,
                                                     contentDescription = "Sin lista cargada",
                                                     tint = Color.White.copy(alpha = 0.35f),
                                                     modifier = Modifier.size(40.dp)
@@ -564,7 +564,7 @@ fun TvScreenTv(
                                                     modifier = Modifier.padding(16.dp)
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Default.Tv,
+                                                        imageVector = Icons.Default.LiveTv,
                                                         contentDescription = "Sin lista cargada",
                                                         tint = Color.White.copy(alpha = 0.35f),
                                                         modifier = Modifier.size(52.dp)
@@ -1472,7 +1472,7 @@ fun TvScreenMobile(
                                                 modifier = Modifier.padding(12.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Tv,
+                                                    imageVector = Icons.Default.LiveTv,
                                                     contentDescription = "Sin lista cargada",
                                                     tint = Color.White.copy(alpha = 0.35f),
                                                     modifier = Modifier.size(40.dp)
@@ -1722,7 +1722,7 @@ fun TvScreenMobile(
                                                     modifier = Modifier.padding(16.dp)
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Default.Tv,
+                                                        imageVector = Icons.Default.LiveTv,
                                                         contentDescription = "Sin lista cargada",
                                                         tint = Color.White.copy(alpha = 0.35f),
                                                         modifier = Modifier.size(52.dp)
