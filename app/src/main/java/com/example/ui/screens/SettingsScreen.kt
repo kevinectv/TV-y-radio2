@@ -72,10 +72,40 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    if (isWideLayout) {
-        SettingsScreenTv(viewModel, modifier)
-    } else {
-        SettingsScreenMobile(viewModel, modifier)
+    
+    var showIptvSources by remember { mutableStateOf(false) }
+    var showApiSettings by remember { mutableStateOf(false) }
+    var showDiagnostics by remember { mutableStateOf(false) }
+
+    when {
+        showIptvSources -> {
+            IptvSourcesScreen(viewModel = viewModel, onBack = { showIptvSources = false })
+        }
+        showApiSettings -> {
+            ApiSettingsScreen(onBack = { showApiSettings = false })
+        }
+        showDiagnostics -> {
+            CatalogDiagnosticsScreen(viewModel = viewModel, onBack = { showDiagnostics = false })
+        }
+        else -> {
+            if (isWideLayout) {
+                SettingsScreenTv(
+                    viewModel = viewModel,
+                    modifier = modifier,
+                    onOpenSources = { showIptvSources = true },
+                    onOpenApiSettings = { showApiSettings = true },
+                    onOpenDiagnostics = { showDiagnostics = true }
+                )
+            } else {
+                SettingsScreenMobile(
+                    viewModel = viewModel,
+                    modifier = modifier,
+                    onOpenSources = { showIptvSources = true },
+                    onOpenApiSettings = { showApiSettings = true },
+                    onOpenDiagnostics = { showDiagnostics = true }
+                )
+            }
+        }
     }
 }
 
@@ -83,7 +113,10 @@ fun SettingsScreen(
 @Composable
 fun SettingsScreenTv(
     viewModel: MediaViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenSources: () -> Unit,
+    onOpenApiSettings: () -> Unit,
+    onOpenDiagnostics: () -> Unit
 ) {
     var pushAlerts by remember { mutableStateOf(true) }
     var updateAlerts by remember { mutableStateOf(true) }
@@ -103,9 +136,6 @@ fun SettingsScreenTv(
     var forced60fps by remember { mutableStateOf(false) }
     var sendErrorStats by remember { mutableStateOf(false) }
     var keepLocalHistory by remember { mutableStateOf(true) }
-    val onOpenSources = { android.widget.Toast.makeText(context, "Abrir fuentes", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenApiSettings = { android.widget.Toast.makeText(context, "API Settings", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenDiagnostics = { android.widget.Toast.makeText(context, "Diagnostics", android.widget.Toast.LENGTH_SHORT).show() }
 
 
     BoxWithConstraints(
@@ -312,7 +342,10 @@ fun SettingsScreenTv(
 @Composable
 fun SettingsScreenMobile(
     viewModel: MediaViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenSources: () -> Unit,
+    onOpenApiSettings: () -> Unit,
+    onOpenDiagnostics: () -> Unit
 ) {
     var pushAlerts by remember { mutableStateOf(true) }
     var updateAlerts by remember { mutableStateOf(true) }
@@ -332,9 +365,6 @@ fun SettingsScreenMobile(
     var forced60fps by remember { mutableStateOf(false) }
     var sendErrorStats by remember { mutableStateOf(false) }
     var keepLocalHistory by remember { mutableStateOf(true) }
-    val onOpenSources = { android.widget.Toast.makeText(context, "Abrir fuentes", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenApiSettings = { android.widget.Toast.makeText(context, "API Settings", android.widget.Toast.LENGTH_SHORT).show() }
-    val onOpenDiagnostics = { android.widget.Toast.makeText(context, "Diagnostics", android.widget.Toast.LENGTH_SHORT).show() }
 
 
     BoxWithConstraints(
