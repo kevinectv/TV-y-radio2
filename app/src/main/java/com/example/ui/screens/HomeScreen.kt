@@ -1544,7 +1544,7 @@ fun CatalogItemFullScreenDetails(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 16.dp)
+                .padding(top = 8.dp)
         ) {
             // Header Top Bar
             Row(
@@ -1583,8 +1583,8 @@ fun CatalogItemFullScreenDetails(
                     .fillMaxSize()
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 24.dp, end = 24.dp, bottom = 48.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Main Content section: Poster & Core Info
                 val contentHeight = if (isWide) 280.dp else 180.dp
@@ -1597,8 +1597,8 @@ fun CatalogItemFullScreenDetails(
                     // Poster image shadow-framed
                     Card(
                         modifier = Modifier
-                            .width(if (isWide) 200.dp.responsive() else 120.dp.responsive())
-                            .height(if (isWide) 300.dp.responsive() else 180.dp.responsive()),
+                            .width(if (isWide) 140.dp.responsive() else 100.dp.responsive())
+                            .height(if (isWide) 210.dp.responsive() else 150.dp.responsive()),
                         shape = RoundedCornerShape(4.dp),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                     ) {
@@ -1620,8 +1620,8 @@ fun CatalogItemFullScreenDetails(
                                 model = dynamicLogoUrl,
                                 contentDescription = item.title,
                                 modifier = Modifier
-                                    .heightIn(max = 70.dp)
-                                    .widthIn(max = 240.dp),
+                                    .heightIn(max = 60.dp)
+                                    .widthIn(max = 200.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.BottomStart
                             )
@@ -1631,7 +1631,7 @@ fun CatalogItemFullScreenDetails(
                                 color = Color.White,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = if (isWide) 28.sp else 20.sp,
+                                    fontSize = if (isWide) 24.sp else 18.sp,
                                     letterSpacing = (-0.5).sp
                                 )
                             )
@@ -1709,11 +1709,13 @@ fun CatalogItemFullScreenDetails(
                         }
 
                         // Essential actions
-                        Row(
-                            modifier = Modifier.padding(top = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            // Reproducir
                             Button(
                                 onClick = {
                                     val movieChannel = Channel(
@@ -1729,15 +1731,34 @@ fun CatalogItemFullScreenDetails(
                                     viewModel.isFullscreenPlayerActive = true
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
-                                shape = RoundedCornerShape(4.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                modifier = Modifier.height(34.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(8.dp))
                             ) {
-                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 10.sp)
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 11.sp)
                             }
 
+                            // Trailer
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.activeTrailerItem = item
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color.White
+                                ),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                            ) {
+                                Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("TRÁILER", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            }
+
+                            // Guardar / Mi Lista
                             val isInMyList = item.id in viewModel.favoriteCatalogItems.collectAsState().value
                             OutlinedButton(
                                 onClick = {
@@ -1750,17 +1771,40 @@ fun CatalogItemFullScreenDetails(
                                     1.dp,
                                     if (isInMyList) Color(0xFF00FF87).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.2f)
                                 ),
-                                shape = RoundedCornerShape(4.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(34.dp).tvFocusEffect(shape = RoundedCornerShape(4.dp))
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(8.dp))
                             ) {
-                                Icon(if (isInMyList) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(12.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("MI LISTA", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Icon(if (isInMyList) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(if (isInMyList) "GUARDADO" else "GUARDAR", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            }
+                            
+                            // Compartir
+                            OutlinedButton(
+                                onClick = {
+                                    try {
+                                        val shareStr = "¡Mira ${item.title} (${item.year}) en Lumina! Calificación: ${item.rating} estrella."
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_TEXT, shareStr)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(intent, "Compartir con"))
+                                    } catch (e: Exception) {}
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(38.dp).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                            ) {
+                                Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("COMPARTIR", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                         }
-                    }
                 }
+                    }
 
                 // Synopsis Section
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1774,8 +1818,9 @@ fun CatalogItemFullScreenDetails(
                         Text(
                             text = dynamicDescription,
                             color = Color.White.copy(alpha = 0.88f),
-                            fontSize = if (isWide) 14.sp else 12.5.sp,
-                            lineHeight = if (isWide) 20.sp else 18.sp
+                            fontSize = if (isWide) 13.sp else 12.sp,
+                            lineHeight = if (isWide) 18.sp else 16.sp,
+                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(4.dp)).padding(4.dp)
                         )
                 }
 
