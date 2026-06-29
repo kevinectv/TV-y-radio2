@@ -3079,6 +3079,25 @@ fun TrailerYoutubePlayerDialog(
     val context = LocalContext.current
     
     val videoUrl = remember(item) { item.trailerUrl ?: item.streamUrl ?: "" }
+
+    LaunchedEffect(videoUrl) {
+        if (videoUrl.contains("youtube.com") || videoUrl.contains("youtu.be")) {
+            try {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(videoUrl))
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "No se pudo abrir YouTube", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            onDismiss()
+        } else if (videoUrl.isEmpty()) {
+            android.widget.Toast.makeText(context, "Tráiler no disponible", android.widget.Toast.LENGTH_SHORT).show()
+            onDismiss()
+        }
+    }
+
+    if (videoUrl.contains("youtube.com") || videoUrl.contains("youtu.be") || videoUrl.isEmpty()) {
+        return
+    }
     
     var isPlaying by remember { mutableStateOf(true) }
     var currentPosition by remember { mutableStateOf(0) }
