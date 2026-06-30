@@ -287,8 +287,8 @@ fun HomeScreen(
     }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    // Height optimizado: -25% aprox para dejar más espacio al catálogo.
-    val bannerHeight = if (isWideLayout) 215.dp else 195.dp.responsive()
+    // Height ajustado para mostrar la sinopsis y las etiquetas correctamente
+    val bannerHeight = if (isWideLayout) 360.dp else 420.dp.responsive()
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -604,22 +604,24 @@ fun HomeHeroBannerTv(
                     // 3. Platform & Rating
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Platform Logo
                         val platformLogoUrl = when(richMeta.platform) {
-                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
-                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Amazon_Prime_Video_logo.svg/512px-Amazon_Prime_Video_logo.svg.png"
-                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/512px-Disney%2B_logo.svg.png"
-                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Max_logo.svg/512px-Max_logo.svg.png"
-                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/512px-Apple_TV_Plus_Logo.svg.png"
-                            else -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
+                            "Netflix" -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
+                            "Prime Video" -> "https://image.tmdb.org/t/p/w154/5NyLm42TmCqCMOZFvH4fcoSNKEW.jpg"
+                            "Disney+" -> "https://image.tmdb.org/t/p/w154/7rwgEs15tFwyR9NPQ5vlURnb3x1.jpg"
+                            "Max" -> "https://image.tmdb.org/t/p/w154/c2uuPbxqFJoGtwAunvGqHk98jC8.jpg"
+                            "Apple TV+" -> "https://image.tmdb.org/t/p/w154/q6tl6Ib6X5FT80RMlcDbexIo4St.jpg"
+                            else -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
                         }
-                        
+
                         coil.compose.AsyncImage(
                             model = platformLogoUrl,
                             contentDescription = richMeta.platform,
-                            modifier = Modifier.height(16.dp),
+                            modifier = Modifier
+                                .height(22.dp)
+                                .clip(RoundedCornerShape(4.dp)),
                             contentScale = androidx.compose.ui.layout.ContentScale.Fit
                         )
 
@@ -628,14 +630,17 @@ fun HomeHeroBannerTv(
                         // IMDb Logo + Rating
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(text = "IMDb", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Black)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = richMeta.ratingImdb, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            coil.compose.AsyncImage(
+                                model = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/IMDB_Logo_2016.svg/512px-IMDB_Logo_2016.svg.png",
+                                contentDescription = "IMDb",
+                                modifier = Modifier
+                                    .height(18.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                            )
+                            Text(text = richMeta.ratingImdb, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -765,22 +770,24 @@ fun HomeHeroBannerMobile(
                     // 3. Platform & Rating
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp.responsive())
+                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
                     ) {
                         // Platform Logo
                         val platformLogoUrl = when(richMeta.platform) {
-                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
-                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Amazon_Prime_Video_logo.svg/512px-Amazon_Prime_Video_logo.svg.png"
-                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/512px-Disney%2B_logo.svg.png"
-                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Max_logo.svg/512px-Max_logo.svg.png"
-                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/512px-Apple_TV_Plus_Logo.svg.png"
-                            else -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
+                            "Netflix" -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
+                            "Prime Video" -> "https://image.tmdb.org/t/p/w154/5NyLm42TmCqCMOZFvH4fcoSNKEW.jpg"
+                            "Disney+" -> "https://image.tmdb.org/t/p/w154/7rwgEs15tFwyR9NPQ5vlURnb3x1.jpg"
+                            "Max" -> "https://image.tmdb.org/t/p/w154/c2uuPbxqFJoGtwAunvGqHk98jC8.jpg"
+                            "Apple TV+" -> "https://image.tmdb.org/t/p/w154/q6tl6Ib6X5FT80RMlcDbexIo4St.jpg"
+                            else -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
                         }
 
                         coil.compose.AsyncImage(
                             model = platformLogoUrl,
                             contentDescription = richMeta.platform,
-                            modifier = Modifier.height(13.dp.responsive()),
+                            modifier = Modifier
+                                .height(16.dp.responsive())
+                                .clip(RoundedCornerShape(4.dp)),
                             contentScale = androidx.compose.ui.layout.ContentScale.Fit
                         )
 
@@ -789,14 +796,17 @@ fun HomeHeroBannerMobile(
                         // IMDb Logo + Rating
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp.responsive(), vertical = 2.dp.responsive())
+                            horizontalArrangement = Arrangement.spacedBy(4.dp.responsive())
                         ) {
-                            Text(text = "IMDb", color = Color(0xFFFFD700), fontSize = 9.sp.responsive(), fontWeight = FontWeight.Black)
-                            Spacer(modifier = Modifier.width(3.dp.responsive()))
-                            Text(text = richMeta.ratingImdb, color = Color.White, fontSize = 9.sp.responsive(), fontWeight = FontWeight.Bold)
+                            coil.compose.AsyncImage(
+                                model = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/IMDB_Logo_2016.svg/512px-IMDB_Logo_2016.svg.png",
+                                contentDescription = "IMDb",
+                                modifier = Modifier
+                                    .height(13.dp.responsive())
+                                    .clip(RoundedCornerShape(4.dp)),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                            )
+                            Text(text = richMeta.ratingImdb, color = Color.White, fontSize = 12.sp.responsive(), fontWeight = FontWeight.Bold)
                         }
                     }
 
