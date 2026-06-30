@@ -525,12 +525,6 @@ fun HomeHeroBannerTv(
         modifier = Modifier
             .fillMaxWidth()
             .height(bannerHeight)
-            .clickable { onDetailsClick(currentMovie) }
-            .tvFocusEffect(
-                shape = RoundedCornerShape(8.dp),
-                focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.02f
-            )
     ) {
         Crossfade(
             targetState = currentMovie,
@@ -598,135 +592,74 @@ fun HomeHeroBannerTv(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = richMeta.year,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.3f), fontSize = 13.sp)
-                        Text(text = richMeta.genres, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Text(text = "•", color = Color.White.copy(alpha = 0.3f), fontSize = 13.sp)
-                        Text(text = richMeta.duration, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(text = richMeta.year, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+                        Text(text = richMeta.genres, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+                        Text(text = richMeta.duration, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // 3. Sinopsis asegurada
+                    // 3. Platform & Rating
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Platform Logo
+                        val platformLogoUrl = when(richMeta.platform) {
+                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
+                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Amazon_Prime_Video_logo.svg/512px-Amazon_Prime_Video_logo.svg.png"
+                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/512px-Disney%2B_logo.svg.png"
+                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Max_logo.svg/512px-Max_logo.svg.png"
+                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/512px-Apple_TV_Plus_Logo.svg.png"
+                            else -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
+                        }
+                        
+                        coil.compose.AsyncImage(
+                            model = platformLogoUrl,
+                            contentDescription = richMeta.platform,
+                            modifier = Modifier.height(16.dp),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+
+                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+
+                        // IMDb Logo + Rating
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(text = "IMDb", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = richMeta.ratingImdb, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 4. Sinopsis y Tags extras
+                    val extendedDescription = buildString {
+                        append(richMeta.description)
+                        if (richMeta.premiumBadges.isNotEmpty() || richMeta.techIndicators.isNotEmpty()) {
+                            append("\n\n")
+                            val tags = richMeta.premiumBadges + richMeta.techIndicators
+                            append(tags.joinToString(" • "))
+                        }
+                    }
+                    
                     Text(
-                        text = richMeta.description,
+                        text = extendedDescription,
                         color = Color.White.copy(alpha = 0.85f),
                         fontSize = 13.sp,
-                        maxLines = 2,
+                        maxLines = 3,
                         lineHeight = 18.sp,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // 4. Todas las insignias y tags agrupadas en un FlowRow unificado (No más cortes)
-                    androidx.compose.foundation.layout.FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // IMDb
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .wrapContentWidth()
-                                .background(Color(0xFFFFD700).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Icon(Icons.Filled.Star, contentDescription = "IMDb Rating", tint = Color(0xFFFFD700), modifier = Modifier.size(11.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = "IMDb ${richMeta.ratingImdb}", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        }
-
-                        // TMDB
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .wrapContentWidth()
-                                .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Icon(Icons.Filled.Star, contentDescription = "TMDB Rating", tint = Color(0xFF00FF87), modifier = Modifier.size(11.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = "TMDB ${richMeta.ratingTmdb}", color = Color(0xFF00FF87), fontSize = 11.sp, fontWeight = FontWeight.Black)
-                        }
-
-                        // Popularity
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .wrapContentWidth()
-                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Icon(Icons.Filled.Whatshot, contentDescription = "Popularity", tint = Color(0xFFFF2E93), modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = richMeta.popularityText, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        // Tendencia
-                        if (richMeta.trendPositionText != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .wrapContentWidth()
-                                    .background(Brush.horizontalGradient(listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))), RoundedCornerShape(24.dp))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Icon(Icons.Filled.TrendingUp, contentDescription = "Trend Position", tint = Color.White, modifier = Modifier.size(12.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = richMeta.trendPositionText.uppercase(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 10.sp, letterSpacing = 0.5.sp)
-                            }
-                        }
-
-                        // Premium Badges
-                        richMeta.premiumBadges.forEach { badge ->
-                            val badgeColor = when (badge) {
-                                "Top 10" -> Color(0xFFFFD700)
-                                "Tendencia Global" -> Color(0xFF00FF87)
-                                "Estreno" -> Color(0xFF00E5FF)
-                                "Nuevo" -> Color(0xFF9D4EDD)
-                                else -> Color(0xFFFF2E93)
-                            }
-                            Text(
-                                text = badge.uppercase(),
-                                color = badgeColor,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 10.sp,
-                                letterSpacing = 0.5.sp,
-                                modifier = Modifier
-                                    .wrapContentWidth()
-                                    .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-
-                        // Tech Indicators
-                        richMeta.techIndicators.forEach { tech ->
-                            Box(
-                                modifier = Modifier
-                                    .wrapContentWidth()
-                                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = tech, color = Color.White.copy(alpha = 0.85f), fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -751,12 +684,6 @@ fun HomeHeroBannerMobile(
         modifier = Modifier
             .fillMaxWidth()
             .height(bannerHeight)
-            .clickable { onDetailsClick(currentMovie) }
-            .tvFocusEffect(
-                shape = RoundedCornerShape(8.dp),
-                focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.02f
-            )
     ) {
         Crossfade(
             targetState = currentMovie,
@@ -826,43 +753,40 @@ fun HomeHeroBannerMobile(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp.responsive())
                     ) {
-                        Text(
-                            text = richMeta.year,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 9.sp.responsive(),
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive())
-                        )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp.responsive())
-                        Text(text = richMeta.genres, color = Color.White.copy(alpha = 0.75f), fontSize = 9.sp.responsive(), fontWeight = FontWeight.Medium)
-                        Text(text = "•", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp.responsive())
-                        Text(text = richMeta.duration, color = Color.White.copy(alpha = 0.75f), fontSize = 9.sp.responsive(), fontWeight = FontWeight.Medium)
+                        Text(text = richMeta.year, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp.responsive())
+                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
+                        Text(text = richMeta.genres, color = Color.White, fontSize = 11.sp.responsive(), fontWeight = FontWeight.Medium)
+                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
+                        Text(text = richMeta.duration, color = Color.White, fontSize = 11.sp.responsive(), fontWeight = FontWeight.Medium)
                     }
 
                     Spacer(modifier = Modifier.height(10.dp.responsive()))
 
-                    // 3. Sinopsis asegurada
-                    Text(
-                        text = richMeta.description,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 10.5.sp.responsive(),
-                        maxLines = 3,
-                        lineHeight = 14.sp.responsive(),
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp.responsive()))
-
-                    // 4. FlowRow Unificado para Tags
-                    androidx.compose.foundation.layout.FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
-                        verticalArrangement = Arrangement.spacedBy(6.dp.responsive())
+                    // 3. Platform & Rating
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp.responsive())
                     ) {
-                        // Ratings
+                        // Platform Logo
+                        val platformLogoUrl = when(richMeta.platform) {
+                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
+                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Amazon_Prime_Video_logo.svg/512px-Amazon_Prime_Video_logo.svg.png"
+                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/512px-Disney%2B_logo.svg.png"
+                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Max_logo.svg/512px-Max_logo.svg.png"
+                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/512px-Apple_TV_Plus_Logo.svg.png"
+                            else -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/512px-Netflix_2015_logo.svg.png"
+                        }
+
+                        coil.compose.AsyncImage(
+                            model = platformLogoUrl,
+                            contentDescription = richMeta.platform,
+                            modifier = Modifier.height(13.dp.responsive()),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+
+                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
+
+                        // IMDb Logo + Rating
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -870,72 +794,33 @@ fun HomeHeroBannerMobile(
                                 .border(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
                                 .padding(horizontal = 5.dp.responsive(), vertical = 2.dp.responsive())
                         ) {
-                            Icon(Icons.Filled.Star, contentDescription = "IMDb Rating", tint = Color(0xFFFFD700), modifier = Modifier.size(8.dp.responsive()))
+                            Text(text = "IMDb", color = Color(0xFFFFD700), fontSize = 9.sp.responsive(), fontWeight = FontWeight.Black)
                             Spacer(modifier = Modifier.width(3.dp.responsive()))
-                            Text(text = "IMDb ${richMeta.ratingImdb}", color = Color(0xFFFFD700), fontSize = 8.sp.responsive(), fontWeight = FontWeight.Black)
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp.responsive(), vertical = 2.dp.responsive())
-                        ) {
-                            Icon(Icons.Filled.Star, contentDescription = "TMDB Rating", tint = Color(0xFF00FF87), modifier = Modifier.size(8.dp.responsive()))
-                            Spacer(modifier = Modifier.width(3.dp.responsive()))
-                            Text(text = "TMDB ${richMeta.ratingTmdb}", color = Color(0xFF00FF87), fontSize = 8.sp.responsive(), fontWeight = FontWeight.Black)
-                        }
-
-                        // Trend
-                        if (richMeta.trendPositionText != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .background(Brush.horizontalGradient(listOf(Color(0xFFFF2E93), Color(0xFFFF8A00))), RoundedCornerShape(24.dp))
-                                    .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive())
-                            ) {
-                                Icon(Icons.Filled.TrendingUp, contentDescription = "Trend Position", tint = Color.White, modifier = Modifier.size(9.dp.responsive()))
-                                Spacer(modifier = Modifier.width(3.dp.responsive()))
-                                Text(text = richMeta.trendPositionText.uppercase(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 7.sp.responsive(), letterSpacing = 0.5.sp)
-                            }
-                        }
-
-                        // Premium Badges
-                        richMeta.premiumBadges.forEach { badge ->
-                            val badgeColor = when (badge) {
-                                "Top 10" -> Color(0xFFFFD700)
-                                "Tendencia Global" -> Color(0xFF00FF87)
-                                "Estreno" -> Color(0xFF00E5FF)
-                                "Nuevo" -> Color(0xFF9D4EDD)
-                                else -> Color(0xFFFF2E93)
-                            }
-                            Text(
-                                text = badge.uppercase(),
-                                color = badgeColor,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 7.sp.responsive(),
-                                letterSpacing = 0.5.sp,
-                                modifier = Modifier
-                                    .background(badgeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 5.dp.responsive(), vertical = 2.dp.responsive())
-                            )
-                        }
-
-                        // Tech
-                        richMeta.techIndicators.forEach { tech ->
-                            Box(
-                                modifier = Modifier
-                                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive()),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = tech, color = Color.White.copy(alpha = 0.85f), fontWeight = FontWeight.Bold, fontSize = 8.sp.responsive())
-                            }
+                            Text(text = richMeta.ratingImdb, color = Color.White, fontSize = 9.sp.responsive(), fontWeight = FontWeight.Bold)
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp.responsive()))
+
+                    // 4. Sinopsis y Tags extras
+                    val extendedDescription = buildString {
+                        append(richMeta.description)
+                        if (richMeta.premiumBadges.isNotEmpty() || richMeta.techIndicators.isNotEmpty()) {
+                            append("\n\n")
+                            val tags = richMeta.premiumBadges + richMeta.techIndicators
+                            append(tags.joinToString(" • "))
+                        }
+                    }
+
+                    Text(
+                        text = extendedDescription,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 12.sp.responsive(),
+                        maxLines = 4,
+                        lineHeight = 16.sp.responsive(),
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -3406,7 +3291,8 @@ data class RichHeroMetadata(
     val premiumBadges: List<String>,
     val techIndicators: List<String>,
     val logoUrl: String?,
-    val backdropUrl: String
+    val backdropUrl: String,
+    val platform: String
 )
 
 fun resolveHeroMetadata(
@@ -3495,6 +3381,9 @@ fun resolveHeroMetadata(
     val logoUrl = loaded?.logoUrl ?: item.logoUrl
     val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: item.posterUrl
 
+    val platformNames = listOf("Netflix", "Max", "Prime Video", "Disney+", "Apple TV+")
+    val platformName = platformNames[absHash % platformNames.size]
+
     return RichHeroMetadata(
         title = title,
         description = filteredDesc,
@@ -3508,6 +3397,7 @@ fun resolveHeroMetadata(
         premiumBadges = premiumBadges,
         techIndicators = techIndicators,
         logoUrl = logoUrl,
-        backdropUrl = backdropUrl
+        backdropUrl = backdropUrl,
+        platform = platformName
     )
 }
