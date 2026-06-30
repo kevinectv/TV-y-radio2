@@ -27,6 +27,9 @@ import com.example.data.MdbListService
 import com.example.data.TmdbService
 import com.example.data.TraktService
 import kotlinx.coroutines.launch
+import com.example.ui.components.tvFocusEffect
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,15 +63,23 @@ fun ApiSettingsScreen(
     LaunchedEffect(Unit) {
         if (tmdbKey.isNotEmpty()) {
             val res = tmdbService.testConnection(tmdbKey)
-            tmdbStatus = if (res.first) "🟢 Conectado" else "🔴 Desconectado"
+            tmdbStatus = if (res.first) "🟢 Conectado" else "🔴 Error de Conexión"
+        } else {
+            tmdbStatus = "🟡 Falta API Key"
         }
+        
         if (mdblistKey.isNotEmpty()) {
             val res = mdbListService.testConnection(mdblistKey)
-            mdbStatus = if (res.first) "🟢 Conectado" else "🔴 Desconectado"
+            mdbStatus = if (res.first) "🟢 Conectado" else "🔴 Error de Conexión"
+        } else {
+            mdbStatus = "🟡 Falta API Key"
         }
+        
         if (traktKey.isNotEmpty()) {
             val res = traktService.testConnection(traktKey)
-            traktStatus = if (res.first) "🟢 Conectado" else "🔴 Desconectado"
+            traktStatus = if (res.first) "🟢 Conectado" else "🔴 Error de Conexión"
+        } else {
+            traktStatus = "🟡 Falta Client ID"
         }
     }
 
@@ -77,7 +88,7 @@ fun ApiSettingsScreen(
             TopAppBar(
                 title = { Text("Ajustes de APIs", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(8.dp))) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
@@ -125,7 +136,8 @@ fun ApiSettingsScreen(
                             focusedBorderColor = Color(0xFF00E5FF),
                             unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
                         ),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         singleLine = true
                     )
 
@@ -136,7 +148,7 @@ fun ApiSettingsScreen(
                     ) {
                         Text(
                             text = "Estado: $tmdbStatus",
-                            color = if (tmdbStatus.contains("🟢")) Color(0xFF00E676) else if (tmdbStatus.contains("🔴")) Color(0xFFFF5252) else Color.White.copy(alpha = 0.5f),
+                            color = if (tmdbStatus.contains("🟢")) Color(0xFF00E676) else if (tmdbStatus.contains("🔴")) Color(0xFFFF5252) else if (tmdbStatus.contains("🟡")) Color(0xFFFFD600) else Color.White.copy(alpha = 0.5f),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
                         )
@@ -146,13 +158,14 @@ fun ApiSettingsScreen(
                                 isTestingTmdb = true
                                 coroutineScope.launch {
                                     val res = tmdbService.testConnection(tmdbKey)
-                                    tmdbStatus = if (res.first) "🟢 Conectado" else "🔴 Desconectado"
+                                    tmdbStatus = if (res.first) "🟢 Conectado" else "🔴 Error de Conexión"
                                     isTestingTmdb = false
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f), contentColor = Color(0xFF00E5FF)),
                             shape = RoundedCornerShape(6.dp),
-                            enabled = !isTestingTmdb
+                            enabled = !isTestingTmdb,
+                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
                         ) {
                             if (isTestingTmdb) {
                                 CircularProgressIndicator(color = Color(0xFF00E5FF), modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -182,7 +195,8 @@ fun ApiSettingsScreen(
                             focusedBorderColor = Color(0xFF00E5FF),
                             unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
                         ),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         singleLine = true
                     )
 
@@ -193,7 +207,7 @@ fun ApiSettingsScreen(
                     ) {
                         Text(
                             text = "Estado: $mdbStatus",
-                            color = if (mdbStatus.contains("🟢")) Color(0xFF00E676) else if (mdbStatus.contains("🔴")) Color(0xFFFF5252) else Color.White.copy(alpha = 0.5f),
+                            color = if (mdbStatus.contains("🟢")) Color(0xFF00E676) else if (mdbStatus.contains("🔴")) Color(0xFFFF5252) else if (mdbStatus.contains("🟡")) Color(0xFFFFD600) else Color.White.copy(alpha = 0.5f),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
                         )
@@ -203,13 +217,14 @@ fun ApiSettingsScreen(
                                 isTestingMdb = true
                                 coroutineScope.launch {
                                     val res = mdbListService.testConnection(mdblistKey)
-                                    mdbStatus = if (res.first) "🟢 Conectado" else "🔴 Desconectado"
+                                    mdbStatus = if (res.first) "🟢 Conectado" else "🔴 Error de Conexión"
                                     isTestingMdb = false
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f), contentColor = Color(0xFF00E5FF)),
                             shape = RoundedCornerShape(6.dp),
-                            enabled = !isTestingMdb
+                            enabled = !isTestingMdb,
+                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
                         ) {
                             if (isTestingMdb) {
                                 CircularProgressIndicator(color = Color(0xFF00E5FF), modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -239,7 +254,8 @@ fun ApiSettingsScreen(
                             focusedBorderColor = Color(0xFF00E5FF),
                             unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
                         ),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         singleLine = true
                     )
 
@@ -253,7 +269,8 @@ fun ApiSettingsScreen(
                             focusedBorderColor = Color(0xFF00E5FF),
                             unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
                         ),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         singleLine = true
                     )
 
@@ -264,7 +281,7 @@ fun ApiSettingsScreen(
                     ) {
                         Text(
                             text = "Estado: $traktStatus",
-                            color = if (traktStatus.contains("🟢")) Color(0xFF00E676) else if (traktStatus.contains("🔴")) Color(0xFFFF5252) else Color.White.copy(alpha = 0.5f),
+                            color = if (traktStatus.contains("🟢")) Color(0xFF00E676) else if (traktStatus.contains("🔴")) Color(0xFFFF5252) else if (traktStatus.contains("🟡")) Color(0xFFFFD600) else Color.White.copy(alpha = 0.5f),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp
                         )
@@ -274,13 +291,14 @@ fun ApiSettingsScreen(
                                 isTestingTrakt = true
                                 coroutineScope.launch {
                                     val res = traktService.testConnection(traktKey)
-                                    traktStatus = if (res.first) "🟢 Conectado" else "🔴 Desconectado"
+                                    traktStatus = if (res.first) "🟢 Conectado" else "🔴 Error de Conexión"
                                     isTestingTrakt = false
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f), contentColor = Color(0xFF00E5FF)),
                             shape = RoundedCornerShape(6.dp),
-                            enabled = !isTestingTrakt
+                            enabled = !isTestingTrakt,
+                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
                         ) {
                             if (isTestingTrakt) {
                                 CircularProgressIndicator(color = Color(0xFF00E5FF), modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
@@ -324,7 +342,7 @@ fun ApiSettingsScreen(
                         showSavedMessage = false
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp).tvFocusEffect(shape = RoundedCornerShape(8.dp)),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
                 shape = RoundedCornerShape(8.dp)
             ) {

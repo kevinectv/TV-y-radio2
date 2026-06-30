@@ -52,6 +52,12 @@ fun PremiumCatalogSearchScreen(
 ) {
     val context = LocalContext.current
     val installedCatalogs by viewModel.catalogsStateFlow.collectAsState()
+
+    val hasTmdbKey = remember {
+        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.getString("tmdb_api_key", "")?.trim()?.isNotEmpty() == true
+    }
+
     
     var searchQuery by remember { mutableStateOf("") }
     
@@ -83,7 +89,7 @@ fun PremiumCatalogSearchScreen(
                 id = "premium_marvel_anim",
                 name = "Marvel Animation Essentials",
                 sourceType = "MDBList",
-                url = "https://mdblist.com/lists/marvel-animation/json",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_companies=420&with_genres=16",
                 posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
                 numItems = 20,
                 description = "Series icónicas de los 90s, X-Men '97, Spider-Man: TAS, What If...? y películas animadas clásicas.",
@@ -125,7 +131,7 @@ fun PremiumCatalogSearchScreen(
                 id = "premium_anime_new",
                 name = "Nuevos Estrenos Anime",
                 sourceType = "MDBList",
-                url = "https://mdblist.com/lists/new-anime/json",
+                url = "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=first_air_date.desc",
                 posterUrl = "https://images.unsplash.com/photo-1528360983277-13d401ccd795?q=80&w=600",
                 numItems = 25,
                 description = "Las series más recientes que acaban de ser transmitidas y estrenadas en Japón.",
@@ -179,7 +185,7 @@ fun PremiumCatalogSearchScreen(
                 id = "premium_oscar",
                 name = "Películas Ganadoras del Óscar",
                 sourceType = "MDBList",
-                url = "https://mdblist.com/lists/oscar-winners/json",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&sort_by=vote_average.desc&vote_count.gte=10000",
                 posterUrl = "https://images.unsplash.com/photo-1598257006458-087169a1f08d?q=80&w=600",
                 numItems = 45,
                 description = "Todas las cintas memorables coronadas con el premio de la Academia de Cine a Mejor Película.",
@@ -189,7 +195,7 @@ fun PremiumCatalogSearchScreen(
                 id = "premium_imdb_top250",
                 name = "IMDb Top 250 de la Historia",
                 sourceType = "MDBList",
-                url = "https://mdblist.com/lists/imdb-top-250/json",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&sort_by=vote_average.desc&vote_count.gte=15000",
                 posterUrl = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600",
                 numItems = 50,
                 description = "El estándar de oro del cine mundial. Las 250 mejores películas de todos los tiempos.",
@@ -368,6 +374,14 @@ fun PremiumCatalogSearchScreen(
                         premium = premium,
                         isInstalled = isAlreadyInstalled,
                         onAdd = {
+                            if (premium.url.contains("INSERT_KEY_HERE") && !hasTmdbKey) {
+                                Toast.makeText(context, "⚠️ Requiere TMDB API Key. Configúrala en Ajustes -> Configuración API.", Toast.LENGTH_LONG).show()
+                                return@PremiumCatalogGridCard
+                            }
+                            if (premium.url.contains("mdblist.com") && !premium.url.contains("/garycrawfordgc/")) {
+                                Toast.makeText(context, "⚠️ Este catálogo MDBList público requiere una API Key configurada o URL válida.", Toast.LENGTH_LONG).show()
+                                return@PremiumCatalogGridCard
+                            }
                             val catalog = Catalog(
                                 id = "premium_${premium.id}",
                                 name = premium.name,

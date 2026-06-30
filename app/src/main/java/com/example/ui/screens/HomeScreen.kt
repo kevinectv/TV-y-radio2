@@ -478,6 +478,7 @@ fun HomeScreen(
     if (trailerToShow != null) {
         TrailerYoutubePlayerDialog(
             item = trailerToShow,
+            viewModel = viewModel,
             onDismiss = {
                 activeTrailerItem = null
                 viewModel.activeTrailerItem = null
@@ -3074,67 +3075,118 @@ fun CatalogItemNumberedCard(
 @Composable
 fun TrailerYoutubePlayerDialog(
     item: CatalogItem,
+    viewModel: MediaViewModel,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    
-    val videoUrl = remember(item) { item.trailerUrl ?: item.streamUrl ?: "" }
-
-    LaunchedEffect(videoUrl) {
-        if (videoUrl.contains("youtube.com") || videoUrl.contains("youtu.be")) {
-            try {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(videoUrl))
-                context.startActivity(intent)
-            } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "No se pudo abrir YouTube", android.widget.Toast.LENGTH_SHORT).show()
-            }
-            onDismiss()
-        } else if (videoUrl.isEmpty()) {
-            android.widget.Toast.makeText(context, "Tráiler no disponible", android.widget.Toast.LENGTH_SHORT).show()
-            onDismiss()
-        }
-    }
-
-    if (videoUrl.contains("youtube.com") || videoUrl.contains("youtu.be") || videoUrl.isEmpty()) {
-        return
-    }
-    
-    var isPlaying by remember { mutableStateOf(true) }
-    var currentPosition by remember { mutableStateOf(0) }
-    var totalDuration by remember { mutableStateOf(0) }
-    var isMuted by remember { mutableStateOf(false) }
+    var fetchedVideoUrl by remember { mutableStateOf(item.trailerUrl ?: item.streamUrl ?: "") }
+    var isFetching by remember { mutableStateOf(fetchedVideoUrl.isEmpty()) }
     var isBuffering by remember { mutableStateOf(true) }
-    var videoViewInstance by remember { mutableStateOf<VideoView?>(null) }
-    var showControls by remember { mutableStateOf(true) }
-    var isFitMode by remember { mutableStateOf(false) }
-    
-    // Auto-hide controls after 3.5 seconds
-    LaunchedEffect(showControls, isPlaying) {
-        if (showControls && isPlaying) {
-            kotlinx.coroutines.delay(3500)
-            showControls = false
+
+    LaunchedEffect(item) {
+        if (fetchedVideoUrl.isEmpty()) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
+                    val rawApiKey = prefs.getString("tmdb_api_key", "") ?: ""
+                    val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
+                    
+                    val tmdbId = item.tmdbId ?: item.id.replace(Regex("[^0-9]"), "")
+                    val isTv = item.isTvShow
+                    val mediaType = if (isTv) "tv" else "movie"
+                    
+                    val videosUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId/videos?language=es-MX"
+                    val request = okhttp3.Request.Builder()
+                    if (apiKey.startsWith("ey")) {
+                        request.url(videosUrl).header("Authorization", "Bearer $apiKey")
+                    } else {
+                        request.url("$videosUrl&api_key=$apiKey")
+                    }
+                    val client = okhttp3.OkHttpClient()
+                    client.newCall(request.build()).execute().use { resp ->
+                        if (resp.isSuccessful) {
+                            val body = resp.body?.string() ?: ""
+                            val results = org.json.JSONObject(body).optJSONArray("results")
+                            if (results != null && results.length() > 0) {
+                                var ytKey = ""
+                                for (i in 0 until results.length()) {
+                                    val videoObj = results.getJSONObject(i)
+                                    val site = videoObj.optString("site", "")
+                                    val type = videoObj.optString("type", "")
+                                    val key = videoObj.optString("key", "")
+                                    if (site.lowercase() == "youtube" && (type.lowercase() == "trailer" || ytKey.isEmpty())) {
+                                        ytKey = key
+                                        if (type.lowercase() == "trailer") break
+                                    }
+                                }
+                                if (ytKey.isNotEmpty()) {
+                                    fetchedVideoUrl = "https://www.youtube.com/watch?v=$ytKey"
+                                    val enriched = item.copy(trailerUrl = fetchedVideoUrl)
+                                    viewModel.catalogRepository?.let { repo ->
+                                        val currentList = repo.catalogs.value.map { cat ->
+                                            if (cat.items.any { it.id == item.id }) {
+                                                cat.copy(items = cat.items.map { if (it.id == item.id) enriched else it })
+                                            } else cat
+                                        }
+                                        repo.saveCatalogsList(currentList)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    isFetching = false
+                }
+            }
+        } else {
+            isFetching = false
         }
     }
 
-    // Position progress tracking thread
-    LaunchedEffect(isPlaying, videoViewInstance) {
-        while (isPlaying && videoViewInstance != null) {
+    val ytId = remember(fetchedVideoUrl) {
+        if (fetchedVideoUrl.isEmpty()) null
+        else {
             try {
-                val vv = videoViewInstance!!
-                if (vv.isPlaying) {
-                    currentPosition = vv.currentPosition
-                    val duration = vv.duration
-                    if (duration > 0) {
-                        totalDuration = duration
+                var id: String? = null
+                val prefixes = listOf(
+                    "watch?v=", "youtu.be/", "embed/", "/v/", "/e/",
+                    "watch?feature=player_embedded&v="
+                )
+                for (prefix in prefixes) {
+                    val idx = fetchedVideoUrl.indexOf(prefix)
+                    if (idx != -1) {
+                        val start = idx + prefix.length
+                        var end = fetchedVideoUrl.length
+                        val breakChars = charArrayOf('#', '&', '?')
+                        for (i in start until fetchedVideoUrl.length) {
+                            if (fetchedVideoUrl[i] in breakChars) {
+                                end = i
+                                break
+                            }
+                        }
+                        id = fetchedVideoUrl.substring(start, end)
+                        break
                     }
-                    isBuffering = false
                 }
+                val finalId = if (id != null && id.length >= 11) id.substring(0, 11) else id
+                if (finalId.isNullOrBlank()) null else finalId
             } catch (e: Exception) {
-                // Ignore transient errors
+                null
             }
-            kotlinx.coroutines.delay(200)
         }
     }
+
+    val useWebView = ytId != null
+
+    LaunchedEffect(isBuffering, isFetching) {
+        if (isBuffering && !isFetching) {
+            kotlinx.coroutines.delay(4000)
+            isBuffering = false
+        }
+    }
+
 
     androidx.activity.compose.BackHandler {
         onDismiss()
@@ -3152,308 +3204,155 @@ fun TrailerYoutubePlayerDialog(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .clickable(
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                    indication = null
-                ) {
-                    showControls = !showControls
-                }
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    VideoView(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        videoViewInstance = this
+            if (useWebView) {
+                var webViewRef by remember { mutableStateOf<android.webkit.WebView?>(null) }
+                DisposableEffect(Unit) {
+                    onDispose {
+                        webViewRef?.loadUrl("about:blank")
+                        webViewRef?.destroy()
                     }
-                },
-                update = { videoView ->
-                    if (videoView.tag != videoUrl) {
-                        videoView.tag = videoUrl
-                        try {
-                            isBuffering = true
-                            videoView.stopPlayback()
-                            videoView.setVideoPath(videoUrl)
-                            videoView.setOnPreparedListener { mp ->
-                                isBuffering = false
-                                mp.isLooping = true
-                                val vol = if (isMuted) 0f else 1f
-                                mp.setVolume(vol, vol)
-                                totalDuration = videoView.duration
-                                if (isPlaying) {
-                                    videoView.start()
+                }
+                
+                AndroidView(
+                    factory = { ctx ->
+                        android.webkit.WebView(ctx).apply {
+                            layoutParams = android.view.ViewGroup.LayoutParams(
+                                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            webViewRef = this
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.mediaPlaybackRequiresUserGesture = false
+                            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+                            isFocusable = true
+                            isFocusableInTouchMode = true
+                            requestFocus()
+                            
+                            webChromeClient = object : android.webkit.WebChromeClient() {
+                                override fun onProgressChanged(view: android.webkit.WebView?, newProgress: Int) {
+                                    if (newProgress > 80) isBuffering = false
                                 }
                             }
-                            videoView.setOnErrorListener { _, _, _ ->
-                                isBuffering = false
-                                Toast.makeText(context, "Error al reproducir tráiler", Toast.LENGTH_SHORT).show()
-                                true
+                            webViewClient = object : android.webkit.WebViewClient() {
+                                override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                                    isBuffering = false
+                                }
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            isBuffering = false
+                            setBackgroundColor(android.graphics.Color.BLACK)
+                            
+                            val embedHtml = """
+                                <!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                    <style>
+                                        body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+                                        iframe { width: 100vw; height: 100vh; border: none; }
+                                    </style>
+                                </head>
+                                <body>
+                                    <iframe id="player" src="https://www.youtube.com/embed/$ytId?autoplay=1&controls=1&fs=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                                </body>
+                                </html>
+                            """.trimIndent()
+                            
+                            loadDataWithBaseURL("https://www.youtube.com/", embedHtml, "text/html", "UTF-8", "https://www.youtube.com/")
                         }
+                    },
+                    update = {},
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (fetchedVideoUrl.isNotEmpty() && !isFetching) {
+                if (fetchedVideoUrl.contains("youtube.com") || fetchedVideoUrl.contains("youtu.be")) {
+                    LaunchedEffect(Unit) {
+                        Toast.makeText(context, "Tráiler no disponible o ID inválido", Toast.LENGTH_SHORT).show()
+                        onDismiss()
                     }
-                },
-                modifier = if (isFitMode) {
-                    Modifier.fillMaxSize()
                 } else {
-                    Modifier
+                var videoViewInstance by remember { mutableStateOf<VideoView?>(null) }
+                AndroidView(
+                    factory = { ctx ->
+                        VideoView(ctx).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            videoViewInstance = this
+                        }
+                    },
+                    update = { videoView ->
+                        if (videoView.tag != fetchedVideoUrl) {
+                            videoView.tag = fetchedVideoUrl
+                            try {
+                                isBuffering = true
+                                videoView.stopPlayback()
+                                videoView.setVideoPath(fetchedVideoUrl)
+                                videoView.setOnPreparedListener { mp ->
+                                    isBuffering = false
+                                    mp.start()
+                                }
+                                videoView.setOnErrorListener { _, _, _ ->
+                                    isBuffering = false
+                                    Toast.makeText(context, "Error al reproducir video", Toast.LENGTH_SHORT).show()
+                                    true
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                isBuffering = false
+                            }
+                        }
+                    },
+                    modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(16f / 9f)
                         .align(Alignment.Center)
+                )
                 }
-            )
-
-            if (isBuffering) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = Color(0xFFFF0000),
-                        strokeWidth = 3.dp,
-                        modifier = Modifier.size(54.dp)
-                    )
+            } else if (!isFetching) {
+                LaunchedEffect(Unit) {
+                    Toast.makeText(context, "Tráiler no disponible", Toast.LENGTH_SHORT).show()
+                    onDismiss()
                 }
             }
 
-            AnimatedVisibility(
-                visible = showControls,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
-                modifier = Modifier.fillMaxSize()
+            // Close button (overlay)
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
             ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cerrar",
+                    tint = Color.White
+                )
+            }
+
+            // Buffering Indicator
+            if (isBuffering || isFetching) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.75f),
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.85f)
-                                )
-                            )
-                        )
+                        .background(Color.Black.copy(alpha = 0.8f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // TOP BAR: Navigation title
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                            .align(Alignment.TopCenter),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { onDismiss() },
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(Color.White.copy(alpha = 0.12f), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.ArrowBack,
-                                    contentDescription = "Cerrar",
-                                    tint = Color.White
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = item.title,
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Reproduciendo Tráiler Oficial",
-                                    color = Color.White.copy(alpha = 0.6f),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
-                        // Premium Tag
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color.Red.copy(alpha = 0.18f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayCircle,
-                                contentDescription = null,
-                                tint = Color.Red,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = "TRÁILER EXCLUSIVO",
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.8.sp
-                            )
-                        }
-                    }
-
-                    // CENTER: Playback controllers
-                    Row(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalArrangement = Arrangement.spacedBy(40.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = {
-                                videoViewInstance?.let { vv ->
-                                    val newPos = (vv.currentPosition - 10000).coerceAtLeast(0)
-                                    vv.seekTo(newPos)
-                                    currentPosition = newPos
-                                }
-                            },
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Replay10,
-                                contentDescription = "Retroceder 10 Segundos",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                isPlaying = !isPlaying
-                                videoViewInstance?.let { vv ->
-                                    if (isPlaying) {
-                                        vv.start()
-                                    } else {
-                                        vv.pause()
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .size(76.dp)
-                                .background(Color(0xFFFF0000), CircleShape)
-                                .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                contentDescription = "Reproducir o Pausar",
-                                tint = Color.White,
-                                modifier = Modifier.size(38.dp)
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                videoViewInstance?.let { vv ->
-                                    val duration = vv.duration
-                                    val newPos = (vv.currentPosition + 10000).coerceAtMost(if (duration > 0) duration else 999999)
-                                    vv.seekTo(newPos)
-                                    currentPosition = newPos
-                                }
-                            },
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Forward10,
-                                contentDescription = "Adelantar 10 Segundos",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-
-                    // BOTTOM BAR: Timeline timeline
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 24.dp, vertical = 20.dp)
-                            .align(Alignment.BottomCenter),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Slider(
-                            value = if (totalDuration > 0) currentPosition.toFloat() / totalDuration else 0f,
-                            onValueChange = { percent ->
-                                val targetPos = (percent * totalDuration).toInt()
-                                currentPosition = targetPos
-                                videoViewInstance?.seekTo(targetPos)
-                            },
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color(0xFFFF0000),
-                                activeTrackColor = Color(0xFFFF0000),
-                                inactiveTrackColor = Color.White.copy(alpha = 0.24f)
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            color = Color(0xFFFF0000),
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(54.dp)
                         )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val elapsedStr = remember(currentPosition) { formatSeconds(currentPosition) }
-                            val durationStr = remember(totalDuration) { formatSeconds(totalDuration) }
-                            Text(
-                                text = "$elapsedStr / $durationStr",
-                                color = Color.White.copy(alpha = 0.82f),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        isMuted = !isMuted
-                                        videoViewInstance?.let { vv ->
-                                            val vol = if (isMuted) 0f else 1f
-                                            // Set volume dynamically
-                                            Toast.makeText(context, if (isMuted) "Silenciado" else "Sonido Reanudado", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = if (isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
-                                        contentDescription = "Mudo",
-                                        tint = Color.White
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = {
-                                        isFitMode = !isFitMode
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = if (isFitMode) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                                        contentDescription = "Aspecto",
-                                        tint = Color.White
-                                    )
-                                }
-                            }
-                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = if (isFetching) "Buscando Tráiler..." else "Cargando Tráiler...",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
