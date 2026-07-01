@@ -115,7 +115,7 @@ fun HeroSkeleton(isWideLayout: Boolean, bannerHeight: androidx.compose.ui.unit.D
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(bannerHeight)
+            .height(if (isWideLayout) bannerHeight else 440.dp.responsive())
             .padding(
                 start = if (isWideLayout) 48.dp else 20.dp.responsive(),
                 end = if (isWideLayout) 48.dp else 20.dp.responsive(),
@@ -322,8 +322,8 @@ fun HomeScreen(
     }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    // Adjust height for layout (TV vs Mobile) to avoid pushing cards down too much
-    val bannerHeight = if (isWideLayout) 135.dp else 75.dp.responsive()
+    // Adjust height for layout: TV uses cinematic banner (360.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
+    val bannerHeight = if (isWideLayout) 360.dp else 0.dp
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -339,79 +339,83 @@ fun HomeScreen(
                 HomeSkeleton(isWideLayout, bannerHeight)
             } else {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND ---
-                    Crossfade(
-                        targetState = currentMovie,
-                        animationSpec = tween(750),
-                        label = "home_full_backdrop",
-                        modifier = Modifier.fillMaxSize()
-                    ) { movie ->
-                        movie?.let { currentSafeMovie ->
-                            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: currentSafeMovie.posterUrl
+                    // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND (ONLY ON TV / WIDE) ---
+                    if (isWideLayout) {
+                        Crossfade(
+                            targetState = currentMovie,
+                            animationSpec = tween(750),
+                            label = "home_full_backdrop",
+                            modifier = Modifier.fillMaxSize()
+                        ) { movie ->
+                            movie?.let { currentSafeMovie ->
+                                val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: currentSafeMovie.posterUrl
 
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                AsyncImage(
-                                    model = backdropUrlToUse,
-                                    contentDescription = currentSafeMovie.title,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    AsyncImage(
+                                        model = backdropUrlToUse,
+                                        contentDescription = currentSafeMovie.title,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
 
-                                // Cinematic horizontal dark gradient to protect left-aligned text of Hero Banner
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.horizontalGradient(
-                                                colors = listOf(
-                                                    Color.Black.copy(alpha = 0.95f),
-                                                    Color.Black.copy(alpha = 0.82f),
-                                                    Color.Black.copy(alpha = 0.35f),
-                                                    Color.Transparent
-                                                ),
-                                                endX = 1200f
-                                            )
-                                        )
-                                )
-
-                                // Cinematic vertical dark gradient to smoothly fade to pure black at bottom
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Black.copy(alpha = 0.30f),
-                                                    Color.Black.copy(alpha = 0.55f),
-                                                    Color(0xFF030406)
+                                    // Cinematic horizontal dark gradient to protect left-aligned text of Hero Banner
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(
+                                                Brush.horizontalGradient(
+                                                    colors = listOf(
+                                                        Color.Black.copy(alpha = 0.95f),
+                                                        Color.Black.copy(alpha = 0.82f),
+                                                        Color.Black.copy(alpha = 0.35f),
+                                                        Color.Transparent
+                                                    ),
+                                                    endX = 1200f
                                                 )
                                             )
-                                        )
-                                )
+                                    )
+
+                                    // Cinematic vertical dark gradient to smoothly fade to pure black at bottom
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(
+                                                Brush.verticalGradient(
+                                                    colors = listOf(
+                                                        Color.Black.copy(alpha = 0.30f),
+                                                        Color.Black.copy(alpha = 0.55f),
+                                                        Color(0xFF030406)
+                                                    )
+                                                )
+                                            )
+                                    )
+                                }
                             }
                         }
                     }
 
                     // --- 2. MAIN STRUCTURAL LAYOUT ---
                     Column(modifier = Modifier.fillMaxSize()) {
-                        // A) Fixed Hero Banner
-                        currentMovie?.let { currentSafeMovie ->
-                            HomeHeroBanner(
-                                currentMovie = currentSafeMovie,
-                                activeHeroLoadedDetails = activeHeroLoadedDetails,
-                                featuredMovies = featuredMovies,
-                                favoriteCatalogItems = favoriteCatalogItems,
-                                bannerHeight = bannerHeight,
-                                isWideLayout = isWideLayout,
-                                viewModel = viewModel,
-                                scrollState = listState,
-                                onTrailerClick = { movie ->
-                                    activeTrailerItem = movie
-                                },
-                                onDetailsClick = { movie ->
-                                    viewModel.selectedDetailsItem.value = movie
-                                }
-                            )
+                        // A) Fixed Hero Banner (ONLY FOR TV / WIDE LAYOUT)
+                        if (isWideLayout) {
+                            currentMovie?.let { currentSafeMovie ->
+                                HomeHeroBanner(
+                                    currentMovie = currentSafeMovie,
+                                    activeHeroLoadedDetails = activeHeroLoadedDetails,
+                                    featuredMovies = featuredMovies,
+                                    favoriteCatalogItems = favoriteCatalogItems,
+                                    bannerHeight = bannerHeight,
+                                    isWideLayout = isWideLayout,
+                                    viewModel = viewModel,
+                                    scrollState = listState,
+                                    onTrailerClick = { movie ->
+                                        activeTrailerItem = movie
+                                    },
+                                    onDetailsClick = { movie ->
+                                        viewModel.selectedDetailsItem.value = movie
+                                    }
+                                )
+                            }
                         }
 
                         // B) Scrollable Content Rows
@@ -422,6 +426,29 @@ fun HomeScreen(
                                 .weight(1f),
                             contentPadding = PaddingValues(bottom = 90.dp)
                         ) {
+                            // EN TELÉFONO: Carrusel Destacado Vertical estilo móvil adentro de la lista scrollable
+                            if (!isWideLayout) {
+                                item {
+                                    currentMovie?.let { currentSafeMovie ->
+                                        HomeHeroBannerMobile(
+                                            currentMovie = currentSafeMovie,
+                                            activeHeroLoadedDetails = activeHeroLoadedDetails,
+                                            featuredMovies = featuredMovies,
+                                            favoriteCatalogItems = favoriteCatalogItems,
+                                            bannerHeight = 460.dp.responsive(),
+                                            viewModel = viewModel,
+                                            scrollState = listState,
+                                            onTrailerClick = { movie ->
+                                                activeTrailerItem = movie
+                                            },
+                                            onDetailsClick = { movie ->
+                                                viewModel.selectedDetailsItem.value = movie
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
                             val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
 
                             if (homeCatalogs.isEmpty()) {
