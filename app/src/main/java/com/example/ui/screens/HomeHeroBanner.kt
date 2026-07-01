@@ -23,6 +23,21 @@ import com.example.data.model.CatalogItem
 import com.example.ui.MediaViewModel
 import com.example.ui.components.responsive
 
+private val PlatformLogos = mapOf(
+    "Netflix" to "https://image.tmdb.org/t/p/w300/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg",
+    "Disney+" to "https://image.tmdb.org/t/p/w300/7rwgEs15tFwyR9NPQ5vlURnb3x1.jpg",
+    "Prime Video" to "https://image.tmdb.org/t/p/w300/5NyLm42TmCqCMOZFvH4fcoSNKEW.jpg",
+    "Apple TV+" to "https://image.tmdb.org/t/p/w300/6uhKBfmtzFqOcLousHwZuzcrScK.jpg",
+    "Max" to "https://image.tmdb.org/t/p/w300/c2uuPbxqFJoGtwAunvGqHk98jC8.jpg",
+    "Hulu" to "https://image.tmdb.org/t/p/w300/giwM8XX4V2AQb9vsoN7yti82tKK.jpg",
+    "Paramount+" to "https://image.tmdb.org/t/p/w300/xbhHHa1YgtpwhC8lb1NQ3ACVcLd.jpg",
+    "Peacock" to "https://image.tmdb.org/t/p/w300/dB8G41Q6tSL5NBisrIeqByfepBc.jpg",
+    "Crunchyroll" to "https://image.tmdb.org/t/p/w300/f6TRLB3H4jDpFEZ0z2KWSSvu1SB.jpg",
+    "MUBI" to "https://image.tmdb.org/t/p/w300/aS2zvJWn9mwiCOZI4GAnkQxH0mL.jpg",
+    "Pluto TV" to "https://image.tmdb.org/t/p/w300/4KAy34EHvRM25Ih8wb82AuGU7zJ.jpg",
+    "Tubi TV" to "https://image.tmdb.org/t/p/w300/3QQKYFUD8x5g4PUNn7IEtqJWhJK.jpg"
+)
+
 data class LoadedTmdbDetails(
     val description: String,
     val rating: String,
@@ -302,18 +317,10 @@ fun HomeHeroBannerTv(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Platform Logo
-                        val fallbackLogoUrl = when(richMeta.platform) {
-                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/300px-Netflix_2015_logo.svg.png"
-                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Prime_Video.png/300px-Prime_Video.png"
-                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/300px-Disney%2B_logo.svg.png"
-                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Max_logo.svg/300px-Max_logo.svg.png"
-                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/300px-Apple_TV_Plus_Logo.svg.png"
-                            else -> ""
-                        }
-                        val platformLogoUrl = if (richMeta.platformLogoUrl.isNullOrBlank()) {
-                            fallbackLogoUrl
-                        } else {
+                        val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
                             richMeta.platformLogoUrl
+                        } else {
+                            PlatformLogos[richMeta.platform]
                         }
 
                         if (!platformLogoUrl.isNullOrBlank()) {
@@ -490,18 +497,10 @@ fun HomeHeroBannerMobile(
                         horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
                     ) {
                         // Platform Logo
-                        val fallbackLogoUrl = when(richMeta.platform) {
-                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/300px-Netflix_2015_logo.svg.png"
-                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Prime_Video.png/300px-Prime_Video.png"
-                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/300px-Disney%2B_logo.svg.png"
-                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Max_logo.svg/300px-Max_logo.svg.png"
-                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/300px-Apple_TV_Plus_Logo.svg.png"
-                            else -> ""
-                        }
-                        val platformLogoUrl = if (richMeta.platformLogoUrl.isNullOrBlank()) {
-                            fallbackLogoUrl
-                        } else {
+                        val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
                             richMeta.platformLogoUrl
+                        } else {
+                            PlatformLogos[richMeta.platform]
                         }
 
                         if (!platformLogoUrl.isNullOrBlank()) {
