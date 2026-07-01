@@ -322,8 +322,8 @@ fun HomeScreen(
     }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    // Height optimizado
-    val bannerHeight = if (isWideLayout) 230.dp else 250.dp.responsive()
+    // Adjust height for layout (TV vs Mobile) to avoid pushing cards down too much
+    val bannerHeight = if (isWideLayout) 135.dp else 75.dp.responsive()
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -442,7 +442,7 @@ fun HomeScreen(
                                                     layoutType = "Landscape Row",
                                                     isFavorite = item.id in favoriteCatalogItems,
                                                     progress = progressVal,
-                                                    onFocus = { activeHeroMovie = item },
+                                                    onFocus = { },
                                                     onClick = {
                                                         activeHeroMovie = item
                                                         viewModel.selectedDetailsItem.value = item
@@ -463,7 +463,7 @@ fun HomeScreen(
                                                 seenProgress = seenProgress,
                                                 customTitle = displayName,
                                                 customIcon = displayIcon,
-                                                onFocus = { activeHeroMovie = it },
+                                                onFocus = { if (index == 0) activeHeroMovie = it },
                                                 onClick = { clickedItem ->
                                                     activeHeroMovie = clickedItem
                                                     viewModel.selectedDetailsItem.value = clickedItem
@@ -490,7 +490,7 @@ fun HomeScreen(
                                                         layoutType = "Landscape Row",
                                                         isFavorite = item.id in favoriteCatalogItems,
                                                         progress = progressVal,
-                                                        onFocus = { activeHeroMovie = item },
+                                                        onFocus = { },
                                                         onClick = {
                                                             activeHeroMovie = item
                                                             viewModel.selectedDetailsItem.value = item

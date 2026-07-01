@@ -6,7 +6,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +25,11 @@ import coil.compose.AsyncImage
 import com.example.data.model.CatalogItem
 import com.example.ui.MediaViewModel
 import com.example.ui.components.responsive
+
+import androidx.compose.ui.platform.LocalContext
+import coil.request.ImageRequest
+import coil.transform.Transformation
+import android.graphics.Bitmap
 
 private val PlatformLogos = mapOf(
     "Netflix" to "https://image.tmdb.org/t/p/w300/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg",
@@ -226,97 +234,87 @@ fun HomeHeroBannerTv(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 48.dp, end = 48.dp, bottom = 8.dp, top = 8.dp),
-                verticalAlignment = Alignment.Bottom
+                    .padding(start = 48.dp, end = 48.dp, bottom = 12.dp, top = 8.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(32.dp)
             ) {
+                // 1. IZQUIERDA: Logo o Título de la película (acostado al lado de la información)
+                Box(
+                    modifier = Modifier
+                        .weight(0.40f)
+                        .wrapContentHeight(),
+                    contentAlignment = Alignment.BottomStart
+                ) {
+                    if (!richMeta.logoUrl.isNullOrBlank()) {
+                        val context = LocalContext.current
+                        coil.compose.SubcomposeAsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(richMeta.logoUrl)
+                                .crossfade(true)
+                                .allowHardware(false)
+                                .transformations(TrimTransparentPixelsTransformation())
+                                .build(),
+                            contentDescription = richMeta.title,
+                            modifier = Modifier
+                                .heightIn(max = 100.dp)
+                                .fillMaxWidth(),
+                            contentScale = ContentScale.Fit,
+                            alignment = Alignment.BottomStart,
+                            loading = { },
+                            error = {
+                                Text(
+                                    text = richMeta.title,
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 24.sp,
+                                        color = Color.White,
+                                        letterSpacing = (-1).sp,
+                                        shadow = androidx.compose.ui.graphics.Shadow(
+                                            color = Color.Black.copy(alpha = 0.95f),
+                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                            blurRadius = 12f
+                                        )
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = 28.sp
+                                )
+                            }
+                        )
+                    } else {
+                        Text(
+                            text = richMeta.title,
+                            style = TextStyle(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 24.sp,
+                                color = Color.White,
+                                letterSpacing = (-1).sp,
+                                shadow = androidx.compose.ui.graphics.Shadow(
+                                    color = Color.Black.copy(alpha = 0.95f),
+                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                    blurRadius = 12f
+                                )
+                            ),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 28.sp
+                        )
+                    }
+                }
+
+                // 2. DERECHA: Logo plataforma, Porcentaje estrellas (puntuación), Año, Duración y Sinopsis
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 520.dp) // Reducido para modo TV
+                        .weight(0.60f)
                         .wrapContentHeight(),
-                    verticalArrangement = Arrangement.Bottom,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // 1. Logo o Título
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight(),
-                        contentAlignment = Alignment.BottomStart
-                    ) {
-                        if (!richMeta.logoUrl.isNullOrBlank()) {
-                            coil.compose.SubcomposeAsyncImage(
-                                model = richMeta.logoUrl,
-                                contentDescription = richMeta.title,
-                                modifier = Modifier
-                                    .heightIn(max = 80.dp)
-                                    .widthIn(max = 260.dp),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart,
-                                loading = { },
-                                error = {
-                                    Text(
-                                        text = richMeta.title,
-                                        style = TextStyle(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 22.sp,
-                                            color = Color.White,
-                                            letterSpacing = (-1).sp,
-                                            shadow = androidx.compose.ui.graphics.Shadow(
-                                                color = Color.Black.copy(alpha = 0.95f),
-                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                blurRadius = 12f
-                                            )
-                                        ),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        lineHeight = 26.sp
-                                    )
-                                }
-                            )
-                        } else {
-                            Text(
-                                text = richMeta.title,
-                                style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 22.sp,
-                                    color = Color.White,
-                                    letterSpacing = (-1).sp,
-                                    shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.95f),
-                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                        blurRadius = 12f
-                                    )
-                                ),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                lineHeight = 26.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // 2. Información base agrupada (Año, Género, Duración)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Text(text = richMeta.year, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
-                        Text(text = richMeta.genres, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
-                        Text(text = richMeta.duration, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // 3. Platform & Rating
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Platform Logo
+                        // Logo plataforma streaming "bien hecho"
                         val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
                             richMeta.platformLogoUrl
                         } else {
@@ -324,41 +322,69 @@ fun HomeHeroBannerTv(
                         }
 
                         if (!platformLogoUrl.isNullOrBlank()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .height(26.dp)
+                                    .widthIn(max = 95.dp)
+                                    .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 coil.compose.AsyncImage(
                                     model = platformLogoUrl,
                                     contentDescription = richMeta.platform,
-                                    modifier = Modifier
-                                        .height(22.dp)
-                                        .widthIn(max = 100.dp)
-                                        .clip(RoundedCornerShape(4.dp)),
+                                    modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Fit
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .height(26.dp)
+                                    .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = richMeta.platform, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 
-                        // IMDb Logo + Rating
+                        // Porcentaje de estrellas (puntuación)
+                        val ratingFloatVal = (activeHeroLoadedDetails?.rating ?: currentMovie.rating).toFloatOrNull() ?: 7.8f
+                        val percentScore = (ratingFloatVal * 10).toInt().coerceIn(10, 99)
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
-                                .background(Color(0xFFE5B91E), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .background(Color(0xFFE5B91E), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            Text(text = "IMDb", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "Rating",
+                                tint = Color.Black,
+                                modifier = Modifier.size(14.dp)
+                            )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = richMeta.ratingImdb, color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = "$percentScore% • ${richMeta.ratingImdb}/10",
+                                color = Color.Black,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
+                            )
                         }
+
+                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp)
+                        Text(text = richMeta.year, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp)
+                        Text(text = richMeta.duration, color = Color.White, fontWeight = FontWeight.Medium, fontSize = 13.sp)
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // 4. Sinopsis y Tags extras
+                    // Sinopsis compacta y tags en 2 líneas
                     val extendedDescription = buildString {
                         append(richMeta.description)
                         if (richMeta.premiumBadges.isNotEmpty() || richMeta.techIndicators.isNotEmpty()) {
-                            append("\n\n")
+                            append(" • ")
                             val tags = richMeta.premiumBadges + richMeta.techIndicators
                             append(tags.joinToString(" • "))
                         }
@@ -366,10 +392,10 @@ fun HomeHeroBannerTv(
                     
                     Text(
                         text = extendedDescription,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 11.sp,
-                        maxLines = 3,
-                        lineHeight = 15.sp,
+                        color = Color.White.copy(alpha = 0.88f),
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        lineHeight = 16.sp,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -408,154 +434,182 @@ fun HomeHeroBannerMobile(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(
-                        start = 20.dp.responsive(),
-                        end = 20.dp.responsive(),
-                        bottom = 12.dp.responsive(),
-                        top = 12.dp.responsive()
-                    ),
-                verticalAlignment = Alignment.Bottom
+                    .padding(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive()),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 420.dp.responsive())
-                        .wrapContentHeight(),
-                    verticalArrangement = Arrangement.Bottom,
-                    horizontalAlignment = Alignment.Start
+                // IZQUIERDA: Logo compacto de película + Puntuación en estrellas y Año
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
                 ) {
-                    // 1. Logo
+                    // Logo o título compacto
+                    if (!richMeta.logoUrl.isNullOrBlank()) {
+                        val context = LocalContext.current
+                        coil.compose.SubcomposeAsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(richMeta.logoUrl)
+                                .crossfade(true)
+                                .allowHardware(false)
+                                .transformations(TrimTransparentPixelsTransformation())
+                                .build(),
+                            contentDescription = richMeta.title,
+                            modifier = Modifier
+                                .heightIn(max = 44.dp.responsive())
+                                .widthIn(max = 150.dp.responsive()),
+                            contentScale = ContentScale.Fit,
+                            alignment = Alignment.CenterStart,
+                            loading = { },
+                            error = {
+                                Text(
+                                    text = richMeta.title,
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 15.sp.responsive(),
+                                        color = Color.White
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
+                    } else {
+                        Text(
+                            text = richMeta.title,
+                            style = TextStyle(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 15.sp.responsive(),
+                                color = Color.White
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    // Píldora compacta de Puntuación (Porcentaje de estrellas) + Año
+                    val ratingFloatVal = (activeHeroLoadedDetails?.rating ?: currentMovie.rating).toFloatOrNull() ?: 7.8f
+                    val percentScore = (ratingFloatVal * 10).toInt().coerceIn(10, 99)
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 8.dp.responsive(), vertical = 4.dp.responsive())
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFE5B91E),
+                            modifier = Modifier.size(12.dp.responsive())
+                        )
+                        Spacer(modifier = Modifier.width(3.dp.responsive()))
+                        Text(
+                            text = "$percentScore%",
+                            color = Color.White,
+                            fontSize = 11.sp.responsive(),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(5.dp.responsive()))
+                        Text(
+                            text = "• ${richMeta.year}",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 11.sp.responsive()
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp.responsive()))
+
+                // DERECHA: Logo plataforma de streaming compacto
+                val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
+                    richMeta.platformLogoUrl
+                } else {
+                    PlatformLogos[richMeta.platform]
+                }
+
+                if (!platformLogoUrl.isNullOrBlank()) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight(),
-                        contentAlignment = Alignment.BottomStart
+                            .height(24.dp.responsive())
+                            .widthIn(max = 70.dp.responsive())
+                            .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 6.dp.responsive(), vertical = 3.dp.responsive()),
+                        contentAlignment = Alignment.Center
                     ) {
-                        if (!richMeta.logoUrl.isNullOrBlank()) {
-                            coil.compose.SubcomposeAsyncImage(
-                                model = richMeta.logoUrl,
-                                contentDescription = richMeta.title,
-                                modifier = Modifier
-                                    .heightIn(max = 70.dp.responsive())
-                                    .widthIn(max = 180.dp.responsive()),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart,
-                                loading = { },
-                                error = {
-                                    Text(
-                                        text = richMeta.title,
-                                        style = TextStyle(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 18.sp.responsive(),
-                                            color = Color.White,
-                                            letterSpacing = (-0.5).sp,
-                                            shadow = androidx.compose.ui.graphics.Shadow(
-                                                color = Color.Black.copy(alpha = 0.95f),
-                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                blurRadius = 12f
-                                            )
-                                        )
-                                    )
-                                }
-                            )
-                        } else {
-                            Text(
-                                text = richMeta.title,
-                                style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 18.sp.responsive(),
-                                    color = Color.White,
-                                    letterSpacing = (-0.5).sp,
-                                    shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.95f),
-                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                        blurRadius = 12f
-                                    )
-                                )
-                            )
-                        }
+                        coil.compose.AsyncImage(
+                            model = platformLogoUrl,
+                            contentDescription = richMeta.platform,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(6.dp.responsive()))
-
-                    // 2. Info base
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp.responsive())
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .height(24.dp.responsive())
+                            .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp.responsive(), vertical = 3.dp.responsive()),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(text = richMeta.year, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp.responsive())
-                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
-                        Text(text = richMeta.genres, color = Color.White, fontSize = 11.sp.responsive(), fontWeight = FontWeight.Medium)
-                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
-                        Text(text = richMeta.duration, color = Color.White, fontSize = 11.sp.responsive(), fontWeight = FontWeight.Medium)
+                        Text(
+                            text = richMeta.platform,
+                            color = Color.White,
+                            fontSize = 10.sp.responsive(),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-
-                    Spacer(modifier = Modifier.height(6.dp.responsive()))
-
-                    // 3. Platform & Rating
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
-                    ) {
-                        // Platform Logo
-                        val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
-                            richMeta.platformLogoUrl
-                        } else {
-                            PlatformLogos[richMeta.platform]
-                        }
-
-                        if (!platformLogoUrl.isNullOrBlank()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                coil.compose.AsyncImage(
-                                    model = platformLogoUrl,
-                                    contentDescription = richMeta.platform,
-                                    modifier = Modifier
-                                        .height(16.dp.responsive())
-                                        .widthIn(max = 80.dp.responsive())
-                                        .clip(RoundedCornerShape(4.dp)),
-                                    contentScale = ContentScale.Fit
-                                )
-                                Spacer(modifier = Modifier.width(10.dp.responsive()))
-                                Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
-                            }
-                        }
-
-                        // IMDb Logo + Rating
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFFE5B91E), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp.responsive(), vertical = 2.dp.responsive())
-                        ) {
-                            Text(text = "IMDb", color = Color.Black, fontSize = 10.sp.responsive(), fontWeight = FontWeight.Black)
-                            Spacer(modifier = Modifier.width(3.dp.responsive()))
-                            Text(text = richMeta.ratingImdb, color = Color.Black, fontSize = 11.sp.responsive(), fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp.responsive()))
-
-                    // 4. Sinopsis y Tags extras
-                    val extendedDescription = buildString {
-                        append(richMeta.description)
-                        if (richMeta.premiumBadges.isNotEmpty() || richMeta.techIndicators.isNotEmpty()) {
-                            append("\n\n")
-                            val tags = richMeta.premiumBadges + richMeta.techIndicators
-                            append(tags.joinToString(" • "))
-                        }
-                    }
-
-                    Text(
-                        text = extendedDescription,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 11.sp.responsive(),
-                        maxLines = 3,
-                        lineHeight = 15.sp.responsive(),
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             }
+        }
+    }
+}
+
+class TrimTransparentPixelsTransformation : Transformation {
+    override val cacheKey: String = "TrimTransparentPixelsTransformation_v2"
+
+    override suspend fun transform(input: Bitmap, size: coil.size.Size): Bitmap {
+        return try {
+            val softwareBitmap = if (input.config == Bitmap.Config.HARDWARE || !input.isMutable) {
+                input.copy(Bitmap.Config.ARGB_8888, true) ?: return input
+            } else {
+                input
+            }
+            val width = softwareBitmap.width
+            val height = softwareBitmap.height
+            if (width <= 0 || height <= 0 || width * height > 16_000_000) return input
+
+            val pixels = IntArray(width * height)
+            softwareBitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+            var minX = width
+            var minY = height
+            var maxX = -1
+            var maxY = -1
+
+            for (y in 0 until height) {
+                val rowOffset = y * width
+                for (x in 0 until width) {
+                    val alpha = (pixels[rowOffset + x] ushr 24) and 0xFF
+                    // Use alpha threshold (> 10) to ignore near-transparent glows/shadows and empty padding
+                    if (alpha > 10) {
+                        if (x < minX) minX = x
+                        if (x > maxX) maxX = x
+                        if (y < minY) minY = y
+                        if (y > maxY) maxY = y
+                    }
+                }
+            }
+
+            if (maxX < minX || maxY < minY) return input
+
+            if (minX == 0 && minY == 0 && maxX == width - 1 && maxY == height - 1) {
+                return if (softwareBitmap !== input) softwareBitmap else input
+            }
+
+            Bitmap.createBitmap(softwareBitmap, minX, minY, maxX - minX + 1, maxY - minY + 1)
+        } catch (e: Throwable) {
+            input
         }
     }
 }
