@@ -241,19 +241,18 @@ fun HomeHeroBannerTv(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .defaultMinSize(minHeight = 45.dp)
                             .wrapContentHeight(),
-                        contentAlignment = Alignment.BottomStart
+                        contentAlignment = Alignment.CenterStart
                     ) {
                         if (!richMeta.logoUrl.isNullOrBlank()) {
                             coil.compose.SubcomposeAsyncImage(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 45.dp)
-                                    .widthIn(max = 200.dp),
+                                    .heightIn(max = 55.dp)
+                                    .widthIn(max = 240.dp),
                                 contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart,
+                                alignment = Alignment.CenterStart,
                                 loading = { },
                                 error = {
                                     Text(
@@ -429,19 +428,18 @@ fun HomeHeroBannerMobile(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .defaultMinSize(minHeight = 35.dp.responsive())
                             .wrapContentHeight(),
-                        contentAlignment = Alignment.BottomStart
+                        contentAlignment = Alignment.CenterStart
                     ) {
                         if (!richMeta.logoUrl.isNullOrBlank()) {
                             coil.compose.SubcomposeAsyncImage(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 35.dp.responsive())
+                                    .heightIn(max = 45.dp.responsive())
                                     .widthIn(max = 140.dp.responsive()),
                                 contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart,
+                                alignment = Alignment.CenterStart,
                                 loading = { },
                                 error = {
                                     Text(
