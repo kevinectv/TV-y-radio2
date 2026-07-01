@@ -229,15 +229,35 @@ fun HomeHeroBannerTv(
                             .wrapContentHeight(),
                         contentAlignment = Alignment.CenterStart
                     ) {
-                        if (richMeta.logoUrl != null) {
-                            AsyncImage(
+                        if (!richMeta.logoUrl.isNullOrBlank()) {
+                            coil.compose.SubcomposeAsyncImage(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 55.dp)
-                                    .widthIn(max = 240.dp),
+                                    .heightIn(max = 45.dp)
+                                    .widthIn(max = 200.dp),
                                 contentScale = ContentScale.Fit,
-                                alignment = Alignment.CenterStart
+                                alignment = Alignment.BottomStart,
+                                loading = { },
+                                error = {
+                                    Text(
+                                        text = richMeta.title,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 22.sp,
+                                            color = Color.White,
+                                            letterSpacing = (-1).sp,
+                                            shadow = androidx.compose.ui.graphics.Shadow(
+                                                color = Color.Black.copy(alpha = 0.95f),
+                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                blurRadius = 12f
+                                            )
+                                        ),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        lineHeight = 26.sp
+                                    )
+                                }
                             )
                         } else {
                             Text(
@@ -274,7 +294,7 @@ fun HomeHeroBannerTv(
                         Text(text = richMeta.duration, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // 3. Platform & Rating
                     Row(
@@ -283,12 +303,12 @@ fun HomeHeroBannerTv(
                     ) {
                         // Platform Logo
                         val fallbackLogoUrl = when(richMeta.platform) {
-                            "Netflix" -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
-                            "Prime Video" -> "https://image.tmdb.org/t/p/w154/5NyLm42TmCqCMOZFvH4fcoSNKEW.jpg"
-                            "Disney+" -> "https://image.tmdb.org/t/p/w154/7rwgEs15tFwyR9NPQ5vlURnb3x1.jpg"
-                            "Max" -> "https://image.tmdb.org/t/p/w154/c2uuPbxqFJoGtwAunvGqHk98jC8.jpg"
-                            "Apple TV+" -> "https://image.tmdb.org/t/p/w154/q6tl6Ib6X5FT80RMlcDbexIo4St.jpg"
-                            else -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
+                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/300px-Netflix_2015_logo.svg.png"
+                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Prime_Video.png/300px-Prime_Video.png"
+                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/300px-Disney%2B_logo.svg.png"
+                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Max_logo.svg/300px-Max_logo.svg.png"
+                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/300px-Apple_TV_Plus_Logo.svg.png"
+                            else -> ""
                         }
                         val platformLogoUrl = if (richMeta.platformLogoUrl.isNullOrBlank()) {
                             fallbackLogoUrl
@@ -297,17 +317,19 @@ fun HomeHeroBannerTv(
                         }
 
                         if (!platformLogoUrl.isNullOrBlank()) {
-                            coil.compose.AsyncImage(
-                                model = platformLogoUrl,
-                                contentDescription = richMeta.platform,
-                                modifier = Modifier
-                                    .height(22.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                contentScale = ContentScale.Fit
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                coil.compose.AsyncImage(
+                                    model = platformLogoUrl,
+                                    contentDescription = richMeta.platform,
+                                    modifier = Modifier
+                                        .heightIn(max = 22.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    contentScale = ContentScale.Fit
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
+                            }
                         }
-
-                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
 
                         // IMDb Logo + Rating
                         Row(
@@ -322,7 +344,7 @@ fun HomeHeroBannerTv(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // 4. Sinopsis y Tags extras
                     val extendedDescription = buildString {
@@ -401,15 +423,32 @@ fun HomeHeroBannerMobile(
                             .wrapContentHeight(),
                         contentAlignment = Alignment.CenterStart
                     ) {
-                        if (richMeta.logoUrl != null) {
-                            AsyncImage(
+                        if (!richMeta.logoUrl.isNullOrBlank()) {
+                            coil.compose.SubcomposeAsyncImage(
                                 model = richMeta.logoUrl,
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 45.dp.responsive()) // Reducido
+                                    .heightIn(max = 35.dp.responsive())
                                     .widthIn(max = 140.dp.responsive()),
                                 contentScale = ContentScale.Fit,
-                                alignment = Alignment.CenterStart
+                                alignment = Alignment.BottomStart,
+                                loading = { },
+                                error = {
+                                    Text(
+                                        text = richMeta.title,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 18.sp.responsive(),
+                                            color = Color.White,
+                                            letterSpacing = (-0.5).sp,
+                                            shadow = androidx.compose.ui.graphics.Shadow(
+                                                color = Color.Black.copy(alpha = 0.95f),
+                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                blurRadius = 12f
+                                            )
+                                        )
+                                    )
+                                }
                             )
                         } else {
                             Text(
@@ -429,7 +468,7 @@ fun HomeHeroBannerMobile(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp.responsive()))
+                    Spacer(modifier = Modifier.height(6.dp.responsive()))
 
                     // 2. Info base
                     Row(
@@ -443,7 +482,7 @@ fun HomeHeroBannerMobile(
                         Text(text = richMeta.duration, color = Color.White, fontSize = 11.sp.responsive(), fontWeight = FontWeight.Medium)
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp.responsive()))
+                    Spacer(modifier = Modifier.height(6.dp.responsive()))
 
                     // 3. Platform & Rating
                     Row(
@@ -452,12 +491,12 @@ fun HomeHeroBannerMobile(
                     ) {
                         // Platform Logo
                         val fallbackLogoUrl = when(richMeta.platform) {
-                            "Netflix" -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
-                            "Prime Video" -> "https://image.tmdb.org/t/p/w154/5NyLm42TmCqCMOZFvH4fcoSNKEW.jpg"
-                            "Disney+" -> "https://image.tmdb.org/t/p/w154/7rwgEs15tFwyR9NPQ5vlURnb3x1.jpg"
-                            "Max" -> "https://image.tmdb.org/t/p/w154/c2uuPbxqFJoGtwAunvGqHk98jC8.jpg"
-                            "Apple TV+" -> "https://image.tmdb.org/t/p/w154/q6tl6Ib6X5FT80RMlcDbexIo4St.jpg"
-                            else -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
+                            "Netflix" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/300px-Netflix_2015_logo.svg.png"
+                            "Prime Video" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Prime_Video.png/300px-Prime_Video.png"
+                            "Disney+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/300px-Disney%2B_logo.svg.png"
+                            "Max" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Max_logo.svg/300px-Max_logo.svg.png"
+                            "Apple TV+" -> "https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/300px-Apple_TV_Plus_Logo.svg.png"
+                            else -> ""
                         }
                         val platformLogoUrl = if (richMeta.platformLogoUrl.isNullOrBlank()) {
                             fallbackLogoUrl
@@ -466,17 +505,19 @@ fun HomeHeroBannerMobile(
                         }
 
                         if (!platformLogoUrl.isNullOrBlank()) {
-                            coil.compose.AsyncImage(
-                                model = platformLogoUrl,
-                                contentDescription = richMeta.platform,
-                                modifier = Modifier
-                                    .height(16.dp.responsive())
-                                    .clip(RoundedCornerShape(4.dp)),
-                                contentScale = ContentScale.Fit
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                coil.compose.AsyncImage(
+                                    model = platformLogoUrl,
+                                    contentDescription = richMeta.platform,
+                                    modifier = Modifier
+                                        .heightIn(max = 16.dp.responsive())
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    contentScale = ContentScale.Fit
+                                )
+                                Spacer(modifier = Modifier.width(10.dp.responsive()))
+                                Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
+                            }
                         }
-
-                        Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
 
                         // IMDb Logo + Rating
                         Row(
@@ -491,7 +532,7 @@ fun HomeHeroBannerMobile(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp.responsive()))
+                    Spacer(modifier = Modifier.height(6.dp.responsive()))
 
                     // 4. Sinopsis y Tags extras
                     val extendedDescription = buildString {
