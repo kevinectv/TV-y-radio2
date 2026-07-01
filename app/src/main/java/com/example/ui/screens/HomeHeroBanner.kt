@@ -290,16 +290,22 @@ fun HomeHeroBannerTv(
                             "Apple TV+" -> "https://image.tmdb.org/t/p/w154/q6tl6Ib6X5FT80RMlcDbexIo4St.jpg"
                             else -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
                         }
-                        val platformLogoUrl = richMeta.platformLogoUrl ?: fallbackLogoUrl
+                        val platformLogoUrl = if (richMeta.platformLogoUrl.isNullOrBlank()) {
+                            fallbackLogoUrl
+                        } else {
+                            richMeta.platformLogoUrl
+                        }
 
-                        coil.compose.AsyncImage(
-                            model = platformLogoUrl,
-                            contentDescription = richMeta.platform,
-                            modifier = Modifier
-                                .height(22.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            contentScale = ContentScale.Fit
-                        )
+                        if (!platformLogoUrl.isNullOrBlank()) {
+                            coil.compose.AsyncImage(
+                                model = platformLogoUrl,
+                                contentDescription = richMeta.platform,
+                                modifier = Modifier
+                                    .height(22.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
 
                         Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
 
@@ -453,16 +459,22 @@ fun HomeHeroBannerMobile(
                             "Apple TV+" -> "https://image.tmdb.org/t/p/w154/q6tl6Ib6X5FT80RMlcDbexIo4St.jpg"
                             else -> "https://image.tmdb.org/t/p/w154/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg"
                         }
-                        val platformLogoUrl = richMeta.platformLogoUrl ?: fallbackLogoUrl
+                        val platformLogoUrl = if (richMeta.platformLogoUrl.isNullOrBlank()) {
+                            fallbackLogoUrl
+                        } else {
+                            richMeta.platformLogoUrl
+                        }
 
-                        coil.compose.AsyncImage(
-                            model = platformLogoUrl,
-                            contentDescription = richMeta.platform,
-                            modifier = Modifier
-                                .height(16.dp.responsive())
-                                .clip(RoundedCornerShape(4.dp)),
-                            contentScale = ContentScale.Fit
-                        )
+                        if (!platformLogoUrl.isNullOrBlank()) {
+                            coil.compose.AsyncImage(
+                                model = platformLogoUrl,
+                                contentDescription = richMeta.platform,
+                                modifier = Modifier
+                                    .height(16.dp.responsive())
+                                    .clip(RoundedCornerShape(4.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
 
                         Text(text = "|", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp.responsive())
 
