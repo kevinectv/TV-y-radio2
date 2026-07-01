@@ -241,8 +241,9 @@ fun HomeHeroBannerTv(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .defaultMinSize(minHeight = 45.dp)
                             .wrapContentHeight(),
-                        contentAlignment = Alignment.CenterStart
+                        contentAlignment = Alignment.BottomStart
                     ) {
                         if (!richMeta.logoUrl.isNullOrBlank()) {
                             coil.compose.SubcomposeAsyncImage(
@@ -329,7 +330,8 @@ fun HomeHeroBannerTv(
                                     model = platformLogoUrl,
                                     contentDescription = richMeta.platform,
                                     modifier = Modifier
-                                        .heightIn(max = 22.dp)
+                                        .height(22.dp)
+                                        .widthIn(max = 100.dp)
                                         .clip(RoundedCornerShape(4.dp)),
                                     contentScale = ContentScale.Fit
                                 )
@@ -427,8 +429,9 @@ fun HomeHeroBannerMobile(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .defaultMinSize(minHeight = 35.dp.responsive())
                             .wrapContentHeight(),
-                        contentAlignment = Alignment.CenterStart
+                        contentAlignment = Alignment.BottomStart
                     ) {
                         if (!richMeta.logoUrl.isNullOrBlank()) {
                             coil.compose.SubcomposeAsyncImage(
@@ -509,7 +512,8 @@ fun HomeHeroBannerMobile(
                                     model = platformLogoUrl,
                                     contentDescription = richMeta.platform,
                                     modifier = Modifier
-                                        .heightIn(max = 16.dp.responsive())
+                                        .height(16.dp.responsive())
+                                        .widthIn(max = 80.dp.responsive())
                                         .clip(RoundedCornerShape(4.dp)),
                                     contentScale = ContentScale.Fit
                                 )
