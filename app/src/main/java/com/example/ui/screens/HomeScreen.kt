@@ -469,7 +469,7 @@ fun HomeScreen(
                                                     layoutType = "Landscape Row",
                                                     isFavorite = item.id in favoriteCatalogItems,
                                                     progress = progressVal,
-                                                    onFocus = { },
+                                                    onFocus = { activeHeroMovie = item },
                                                     onClick = {
                                                         activeHeroMovie = item
                                                         viewModel.selectedDetailsItem.value = item
@@ -490,7 +490,7 @@ fun HomeScreen(
                                                 seenProgress = seenProgress,
                                                 customTitle = displayName,
                                                 customIcon = displayIcon,
-                                                onFocus = { if (index == 0) activeHeroMovie = it },
+                                                onFocus = { activeHeroMovie = it },
                                                 onClick = { clickedItem ->
                                                     activeHeroMovie = clickedItem
                                                     viewModel.selectedDetailsItem.value = clickedItem
@@ -517,7 +517,7 @@ fun HomeScreen(
                                                         layoutType = "Landscape Row",
                                                         isFavorite = item.id in favoriteCatalogItems,
                                                         progress = progressVal,
-                                                        onFocus = { },
+                                                        onFocus = { activeHeroMovie = item },
                                                         onClick = {
                                                             activeHeroMovie = item
                                                             viewModel.selectedDetailsItem.value = item
