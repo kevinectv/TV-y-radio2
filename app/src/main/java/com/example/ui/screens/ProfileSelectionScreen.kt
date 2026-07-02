@@ -291,30 +291,42 @@ fun ProfileSelectionScreen(
                             Spacer(modifier = Modifier.height(48.dp))
 
                             // Action Menu button at the bottom of standard select
-                            OutlinedButton(
-                                onClick = {
-                                    screenMode = if (screenMode == ProfileScreenMode.SELECT) {
-                                        ProfileScreenMode.MANAGE
-                                    } else {
-                                        ProfileScreenMode.SELECT
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color.White
-                                ),
+                            val manageInteractionSource = remember { MutableInteractionSource() }
+                            Box(
                                 modifier = Modifier
                                     .padding(8.dp)
                                     .focusRequester(manageButtonFocusRequester)
-                                    .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                                    .semantics { testTag = "manage_profiles_button" }
+                                    .tvFocusEffect(
+                                        shape = RoundedCornerShape(12.dp),
+                                        focusedBorderColor = Color.White,
+                                        unfocusedBorderColor = Color.White.copy(alpha = 0.35f),
+                                        borderWidth = 1.5.dp,
+                                        scaleAmount = 1.15f,
+                                        liftOnFocus = true,
+                                        interactionSource = manageInteractionSource
+                                    )
+                                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable(
+                                        interactionSource = manageInteractionSource,
+                                        indication = LocalIndication.current,
+                                        onClick = {
+                                            screenMode = if (screenMode == ProfileScreenMode.SELECT) {
+                                                ProfileScreenMode.MANAGE
+                                            } else {
+                                                ProfileScreenMode.SELECT
+                                            }
+                                        }
+                                    )
+                                    .semantics { testTag = "manage_profiles_button" },
+                                contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = if (screenMode == ProfileScreenMode.SELECT) "Administrar Perfiles" else "Listo (Guardar)",
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp)
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
                                 )
                             }
                         }
@@ -381,7 +393,7 @@ fun ProfileSelectionScreen(
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp))
+                                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp), scaleAmount = 1.12f)
                                             ) {
                                                 Icon(Icons.Default.Refresh, contentDescription = "Aleatorio", modifier = Modifier.size(16.dp), tint = Color.White)
                                                 Spacer(modifier = Modifier.width(6.dp))
@@ -444,7 +456,7 @@ fun ProfileSelectionScreen(
                                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp))
+                                                    .tvFocusEffect(shape = RoundedCornerShape(10.dp), scaleAmount = 1.12f)
                                             ) {
                                                 Icon(Icons.Default.Refresh, contentDescription = "Aleatorio", modifier = Modifier.size(16.dp), tint = Color.White)
                                                 Spacer(modifier = Modifier.width(6.dp))
@@ -490,7 +502,7 @@ fun ProfileSelectionScreen(
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
                                             shape = RoundedCornerShape(8.dp),
                                             modifier = Modifier
-                                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                                                .tvFocusEffect(shape = RoundedCornerShape(8.dp), scaleAmount = 1.12f)
                                                 .semantics { testTag = "delete_profile_button" }
                                         ) {
                                             Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.White, modifier = Modifier.size(16.dp))
@@ -504,7 +516,8 @@ fun ProfileSelectionScreen(
                                         onClick = { screenMode = ProfileScreenMode.SELECT },
                                         shape = RoundedCornerShape(8.dp),
                                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                        modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(8.dp), scaleAmount = 1.12f)
                                     ) {
                                         Text("Cancelar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
@@ -544,7 +557,7 @@ fun ProfileSelectionScreen(
                                         colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier
-                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                                            .tvFocusEffect(shape = RoundedCornerShape(8.dp), scaleAmount = 1.12f)
                                             .semantics { testTag = "save_profile_button" }
                                     ) {
                                         Icon(Icons.Default.Check, contentDescription = "Guardar", tint = Color.Black, modifier = Modifier.size(16.dp))
@@ -801,10 +814,11 @@ private fun ProfileItemView(
                 .size(112.dp.responsive())
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
-                    focusedBorderColor = Color(0xCCECEFF8),
+                    focusedBorderColor = Color.White,
                     unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
                     borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
-                    scaleAmount = 1.08f,
+                    scaleAmount = 1.15f,
+                    liftOnFocus = true,
                     interactionSource = interactionSource
                 )
                 .clickable(
@@ -929,10 +943,11 @@ private fun AddProfileItemView(
                 .size(112.dp.responsive())
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
-                    focusedBorderColor = Color(0xCCECEFF8),
+                    focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
                     borderWidth = 1.5.dp,
-                    scaleAmount = 1.08f,
+                    scaleAmount = 1.15f,
+                    liftOnFocus = true,
                     interactionSource = interactionSource
                 )
                 .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))

@@ -721,22 +721,22 @@ fun ChannelHomeCard(
     }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    Card(
+    Box(
         modifier = Modifier
             .width(180.dp.responsive())
             .height(115.dp.responsive())
+            .tvFocusEffect(
+                shape = RoundedCornerShape(6.dp),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+                interactionSource = interactionSource
+            )
+            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(6.dp))
             .clickable(
                 interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
+                indication = null,
                 onClick = onPlayClick
             )
-            .tvFocusEffect(
-                shape = RoundedCornerShape(4.dp),
-                interactionSource = interactionSource
-            ),
-        shape = RoundedCornerShape(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Background Artwork
@@ -842,22 +842,22 @@ fun RadioHomeCard(
     }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    Card(
+    Box(
         modifier = Modifier
             .width(180.dp.responsive())
             .height(115.dp.responsive())
+            .tvFocusEffect(
+                shape = RoundedCornerShape(6.dp),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                interactionSource = interactionSource
+            )
+            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(6.dp))
             .clickable(
                 interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
+                indication = null,
                 onClick = onPlayClick
             )
-            .tvFocusEffect(
-                shape = RoundedCornerShape(4.dp),
-                interactionSource = interactionSource
-            ),
-        shape = RoundedCornerShape(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-        border = BorderStroke(1.dp, CardColorGradientOverlay(cardColor))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -979,24 +979,23 @@ fun CatalogItemHomeCard(
     }.responsive()
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    Card(
+    Box(
         modifier = modifier
             .width(cardWidth)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick
-            )
             .tvFocusEffect(
-                shape = RoundedCornerShape(4.dp),
-                focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.08f,
+                shape = RoundedCornerShape(6.dp),
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
                 interactionSource = interactionSource,
                 onFocus = onFocus
-            ),
-        shape = RoundedCornerShape(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+            )
+            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
     ) {
         Column {
             Box(
@@ -1453,7 +1452,7 @@ fun CatalogItemFullScreenDetails(
                             color = Color.White.copy(alpha = 0.88f),
                             fontSize = if (isWide) 13.sp else 12.sp,
                             lineHeight = if (isWide) 18.sp else 16.sp,
-                            modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(4.dp)).padding(4.dp)
+                            modifier = Modifier.padding(4.dp)
                         )
                 }
 
@@ -1486,15 +1485,15 @@ fun CatalogItemFullScreenDetails(
                             contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(dynamicCast) { actor ->
-                                Card(
+                                val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                                Box(
                                     modifier = Modifier
                                         .width(100.dp.responsive())
                                         .wrapContentHeight()
-                                        .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                                        .clickable {  },
-                                    shape = RoundedCornerShape(4.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
-                                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f))
+                                        .tvFocusEffect(shape = RoundedCornerShape(6.dp), unfocusedBorderColor = Color.White.copy(alpha = 0.08f), interactionSource = interactionSource)
+                                        .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(6.dp))
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable(interactionSource = interactionSource, indication = null) {  }
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(8.dp.responsive()),
@@ -1552,14 +1551,14 @@ fun CatalogItemFullScreenDetails(
                             contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(extraImages) { imageUrl ->
-                                Card(
+                                val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                                Box(
                                     modifier = Modifier
                                         .width(180.dp.responsive())
                                         .height(101.dp.responsive())
-                                        .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-                                        .clickable { },
-                                    shape = RoundedCornerShape(4.dp),
-                                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                                        .tvFocusEffect(shape = RoundedCornerShape(6.dp), unfocusedBorderColor = Color.White.copy(alpha = 0.15f), interactionSource = interactionSource)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable(interactionSource = interactionSource, indication = null) { }
                                 ) {
                                     AsyncImage(
                                         model = imageUrl,
@@ -1583,16 +1582,16 @@ fun CatalogItemFullScreenDetails(
                         letterSpacing = 0.8.sp
                     )
 
-                    Card(
+                    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp.responsive())
-                            .clickable {
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp), unfocusedBorderColor = Color.White.copy(alpha = 0.1f), interactionSource = interactionSource)
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(interactionSource = interactionSource, indication = null) {
                                 viewModel.activeTrailerItem = item
                             }
-                            .tvFocusEffect(shape = RoundedCornerShape(4.dp)),
-                        shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             AsyncImage(
@@ -1643,16 +1642,16 @@ fun CatalogItemFullScreenDetails(
                             contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(similarItems) { similar ->
-                                Card(
+                                val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                                Box(
                                     modifier = Modifier
                                         .width(90.dp.responsive())
                                         .height(135.dp.responsive())
-                                        .clickable {
+                                        .tvFocusEffect(shape = RoundedCornerShape(6.dp), unfocusedBorderColor = Color.White.copy(alpha = 0.15f), interactionSource = interactionSource)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable(interactionSource = interactionSource, indication = null) {
                                             onNavigateToSimilar(similar)
                                         }
-                                        .tvFocusEffect(shape = RoundedCornerShape(4.dp)),
-                                    shape = RoundedCornerShape(4.dp),
-                                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
                                 ) {
                                     AsyncImage(
                                         model = similar.posterUrl,
@@ -2555,17 +2554,16 @@ fun CatalogItemNumberedCard(
         modifier = Modifier
             .width(150.dp)
             .height(175.dp)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick
-            )
             .tvFocusEffect(
-                shape = RoundedCornerShape(4.dp),
-                focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.12f,
+                shape = RoundedCornerShape(6.dp),
+                focusedBorderColor = Color.White,
                 interactionSource = interactionSource,
                 onFocus = onFocus
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
             )
     ) {
         // 1. Giant Number Rank (Drawn FIRST on the bottom layer to stay behind the poster card)
