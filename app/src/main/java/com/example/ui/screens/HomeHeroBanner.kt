@@ -233,7 +233,6 @@ fun HomeHeroBannerTv(
         modifier = Modifier
             .fillMaxWidth()
             .height(bannerHeight)
-            .clickable { onDetailsClick(currentMovie) }
     ) {
         Crossfade(
             targetState = currentMovie,
@@ -245,12 +244,12 @@ fun HomeHeroBannerTv(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 56.dp, end = 48.dp, bottom = 28.dp, top = 28.dp),
+                    .padding(start = 56.dp, end = 48.dp, bottom = 14.dp, top = 16.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
                     // 1. Logo o Título en la parte superior del bloque (estilo cine / Apple TV+)
