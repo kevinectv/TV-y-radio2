@@ -244,7 +244,7 @@ fun HomeHeroBannerTv(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 56.dp, end = 48.dp, bottom = 12.dp, top = 92.dp),
+                    .padding(start = 38.dp, end = 48.dp, bottom = 28.dp, top = 74.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
                 Column(

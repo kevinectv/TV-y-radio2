@@ -720,12 +720,20 @@ fun ChannelHomeCard(
         isFavorite = viewModel.isChannelFavorite(channel.id)
     }
 
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Card(
         modifier = Modifier
             .width(180.dp.responsive())
             .height(115.dp.responsive())
-            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-            .clickable { onPlayClick() },
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onPlayClick
+            )
+            .tvFocusEffect(
+                shape = RoundedCornerShape(4.dp),
+                interactionSource = interactionSource
+            ),
         shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
@@ -833,12 +841,20 @@ fun RadioHomeCard(
         }
     }
 
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Card(
         modifier = Modifier
             .width(180.dp.responsive())
             .height(115.dp.responsive())
-            .tvFocusEffect(shape = RoundedCornerShape(4.dp))
-            .clickable { onPlayClick() },
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onPlayClick
+            )
+            .tvFocusEffect(
+                shape = RoundedCornerShape(4.dp),
+                interactionSource = interactionSource
+            ),
         shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
         border = BorderStroke(1.dp, CardColorGradientOverlay(cardColor))
@@ -962,14 +978,21 @@ fun CatalogItemHomeCard(
         else -> 180.dp
     }.responsive()
 
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Card(
         modifier = modifier
             .width(cardWidth)
-            .clickable { onClick() }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick
+            )
             .tvFocusEffect(
                 shape = RoundedCornerShape(4.dp),
                 focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.08f
+                scaleAmount = 1.08f,
+                interactionSource = interactionSource,
+                onFocus = onFocus
             ),
         shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
@@ -2527,20 +2550,22 @@ fun CatalogItemNumberedCard(
     onFocus: () -> Unit = {},
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .onFocusChanged { state ->
-                if (state.isFocused || state.hasFocus) {
-                    onFocus()
-                }
-            }
             .width(150.dp)
             .height(175.dp)
-            .clickable { onClick() }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick
+            )
             .tvFocusEffect(
                 shape = RoundedCornerShape(4.dp),
                 focusedBorderColor = Color(0xFF00E5FF),
-                scaleAmount = 1.12f
+                scaleAmount = 1.12f,
+                interactionSource = interactionSource,
+                onFocus = onFocus
             )
     ) {
         // 1. Giant Number Rank (Drawn FIRST on the bottom layer to stay behind the poster card)
