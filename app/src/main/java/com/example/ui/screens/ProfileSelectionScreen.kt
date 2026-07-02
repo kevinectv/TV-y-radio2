@@ -33,6 +33,7 @@ import com.example.data.database.ProfileEntity
 import com.example.ui.MediaViewModel
 import com.example.ui.components.CharacterAvatar
 import com.example.ui.components.tvFocusEffect
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.example.ui.components.responsive
 import com.example.ui.components.getResponsiveScale
 import java.util.Locale
@@ -794,6 +795,7 @@ private fun ProfileItemView(
             .width(128.dp.responsive())
             .padding(vertical = 12.dp)
     ) {
+        val interactionSource = remember { MutableInteractionSource() }
         Box(
             modifier = Modifier
                 .size(112.dp.responsive())
@@ -802,15 +804,20 @@ private fun ProfileItemView(
                     focusedBorderColor = Color(0xCCECEFF8),
                     unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
                     borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
-                    scaleAmount = 1.04f
+                    scaleAmount = 1.08f,
+                    interactionSource = interactionSource
                 )
-                .clickable {
-                    if (screenMode == ProfileScreenMode.SELECT) {
-                        onSelectProfile(profile)
-                    } else {
-                        onEditProfile(profile)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = {
+                        if (screenMode == ProfileScreenMode.SELECT) {
+                            onSelectProfile(profile)
+                        } else {
+                            onEditProfile(profile)
+                        }
                     }
-                }
+                )
                 .clip(RoundedCornerShape(16.dp))
         ) {
             CharacterAvatar(
@@ -916,6 +923,7 @@ private fun AddProfileItemView(
             .width(128.dp.responsive())
             .padding(vertical = 12.dp)
     ) {
+        val interactionSource = remember { MutableInteractionSource() }
         Box(
             modifier = Modifier
                 .size(112.dp.responsive())
@@ -924,10 +932,15 @@ private fun AddProfileItemView(
                     focusedBorderColor = Color(0xCCECEFF8),
                     unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
                     borderWidth = 1.5.dp,
-                    scaleAmount = 1.04f
+                    scaleAmount = 1.08f,
+                    interactionSource = interactionSource
                 )
                 .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-                .clickable { onAddClick() }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    onClick = onAddClick
+                )
                 .clip(RoundedCornerShape(16.dp))
                 .semantics { testTag = "add_profile_card" },
             contentAlignment = Alignment.Center

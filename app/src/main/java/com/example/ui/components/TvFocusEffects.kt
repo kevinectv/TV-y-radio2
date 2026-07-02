@@ -7,12 +7,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -49,12 +45,10 @@ fun Modifier.tvFocusEffect(
         properties["unfocusedBorderColor"] = unfocusedBorderColor
     }
 ) {
-    val internalInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
-    val isHovered by internalInteractionSource.collectIsHoveredAsState()
-    val isPressed by internalInteractionSource.collectIsPressedAsState()
+    val isHovered = interactionSource?.collectIsHoveredAsState()?.value ?: false
     var isFocusedState by remember { mutableStateOf(false) }
 
-    val isActive = isFocusedState || isHovered || isPressed
+    val isActive = isFocusedState || isHovered
 
     LaunchedEffect(isActive) {
         if (isActive) {
@@ -101,8 +95,6 @@ fun Modifier.tvFocusEffect(
     )
 
     val baseModifier = this
-        .hoverable(internalInteractionSource)
-        .focusable(interactionSource = internalInteractionSource)
         .onFocusChanged { focusState ->
             isFocusedState = focusState.isFocused || focusState.hasFocus
         }
