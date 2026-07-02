@@ -114,7 +114,7 @@ fun ProfileSelectionScreen(
             if (screenMode == ProfileScreenMode.SELECT || screenMode == ProfileScreenMode.MANAGE) {
                 Text(
                     text = "LUMINA",
-                    fontSize = 32.sp,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
                     letterSpacing = 6.sp,
@@ -124,11 +124,11 @@ fun ProfileSelectionScreen(
 
                 Text(
                     text = if (screenMode == ProfileScreenMode.SELECT) "¿Quién está viendo?" else "Administrar Perfiles",
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 40.dp)
+                    modifier = Modifier.padding(bottom = 48.dp)
                 )
             }
 
@@ -153,14 +153,14 @@ fun ProfileSelectionScreen(
                                         .fillMaxWidth()
                                         .padding(vertical = 12.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     val itemsCount = profilesList.size + (if (profilesList.size < 6) 1 else 0)
                                     val rowsCount = (itemsCount + 1) / 2
                                     
                                     for (i in 0 until rowsCount) {
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(24.dp),
                                             verticalAlignment = Alignment.Top,
                                             modifier = Modifier.padding(vertical = 4.dp)
                                         ) {
@@ -244,9 +244,9 @@ fun ProfileSelectionScreen(
                                 Row(
                                     modifier = Modifier
                                         .padding(horizontal = 24.dp)
-                                        .padding(vertical = 16.dp)
+                                        .padding(vertical = 24.dp)
                                         .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(32.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     profilesList.forEachIndexed { index, profile ->
@@ -323,7 +323,7 @@ fun ProfileSelectionScreen(
                             ) {
                                 Text(
                                     text = if (screenMode == ProfileScreenMode.SELECT) "Administrar Perfiles" else "Listo (Guardar)",
-                                    fontSize = 14.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color.White,
                                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
@@ -805,13 +805,16 @@ private fun ProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(128.dp.responsive())
+            .width(150.dp.responsive())
             .padding(vertical = 12.dp)
     ) {
         val interactionSource = remember { MutableInteractionSource() }
         Box(
             modifier = Modifier
-                .size(112.dp.responsive())
+                .size(132.dp.responsive())
+                .focusProperties {
+                    down = manageButtonFocusRequester
+                }
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
                     focusedBorderColor = Color.White,
@@ -902,7 +905,7 @@ private fun ProfileItemView(
         } else {
             Text(
                 text = profile.name,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center,
@@ -934,13 +937,16 @@ private fun AddProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(128.dp.responsive())
+            .width(150.dp.responsive())
             .padding(vertical = 12.dp)
     ) {
         val interactionSource = remember { MutableInteractionSource() }
         Box(
             modifier = Modifier
-                .size(112.dp.responsive())
+                .size(132.dp.responsive())
+                .focusProperties {
+                    down = manageButtonFocusRequester
+                }
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
                     focusedBorderColor = Color.White,
@@ -972,7 +978,7 @@ private fun AddProfileItemView(
 
         Text(
             text = "Añadir Perfil",
-            fontSize = 14.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
