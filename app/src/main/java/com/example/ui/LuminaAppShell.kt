@@ -350,15 +350,21 @@ fun LuminaAppShell(
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
             ) { tab ->
-                when (tab) {
-                    AppTab.HOME -> HomeScreen(viewModel = viewModel)
-                    AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
-                    AppTab.TV -> TvScreen(viewModel = viewModel)
-                    AppTab.RADIO -> RadioScreen(viewModel = viewModel)
-                    AppTab.SEARCH -> SearchScreen(viewModel = viewModel)
-                    AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                val tabPadding = if (isWideLayout && tab == AppTab.HOME) {
+                    PaddingValues(top = 0.dp, bottom = innerPadding.calculateBottomPadding())
+                } else {
+                    innerPadding
+                }
+                Box(modifier = Modifier.fillMaxSize().padding(tabPadding)) {
+                    when (tab) {
+                        AppTab.HOME -> HomeScreen(viewModel = viewModel)
+                        AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
+                        AppTab.TV -> TvScreen(viewModel = viewModel)
+                        AppTab.RADIO -> RadioScreen(viewModel = viewModel)
+                        AppTab.SEARCH -> SearchScreen(viewModel = viewModel)
+                        AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                    }
                 }
             }
         }

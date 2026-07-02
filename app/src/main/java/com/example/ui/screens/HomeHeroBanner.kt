@@ -244,12 +244,12 @@ fun HomeHeroBannerTv(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(start = 56.dp, end = 48.dp, bottom = 14.dp, top = 16.dp),
+                    .padding(start = 56.dp, end = 48.dp, bottom = 12.dp, top = 92.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
                     // 1. Logo o Título en la parte superior del bloque (estilo cine / Apple TV+)
@@ -264,8 +264,8 @@ fun HomeHeroBannerTv(
                                 .build(),
                             contentDescription = richMeta.title,
                             modifier = Modifier
-                                .heightIn(max = 110.dp)
-                                .widthIn(max = 360.dp),
+                                .heightIn(max = 85.dp)
+                                .widthIn(max = 340.dp),
                             contentScale = ContentScale.Fit,
                             alignment = Alignment.CenterStart,
                             loading = { },
@@ -274,7 +274,7 @@ fun HomeHeroBannerTv(
                                     text = richMeta.title,
                                     style = TextStyle(
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 34.sp,
+                                        fontSize = 28.sp,
                                         color = Color.White,
                                         letterSpacing = (-1).sp,
                                         shadow = androidx.compose.ui.graphics.Shadow(
@@ -293,7 +293,7 @@ fun HomeHeroBannerTv(
                             text = richMeta.title,
                             style = TextStyle(
                                 fontWeight = FontWeight.Black,
-                                fontSize = 34.sp,
+                                fontSize = 28.sp,
                                 color = Color.White,
                                 letterSpacing = (-1).sp,
                                 shadow = androidx.compose.ui.graphics.Shadow(
@@ -425,7 +425,7 @@ fun HomeHeroBannerTv(
                         text = richMeta.description,
                         color = Color.White.copy(alpha = 0.90f),
                         fontSize = 13.sp,
-                        maxLines = 5,
+                        maxLines = 3,
                         lineHeight = 18.sp,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.fillMaxWidth()
