@@ -40,7 +40,6 @@ import coil.compose.AsyncImage
 import com.example.ui.AppTab
 import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
-import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SearchScreen(
@@ -68,15 +67,8 @@ fun SearchScreenTv(
     val favoriteRadioStations by viewModel.favoriteRadioStations.collectAsState()
 
     // Filters Configuration
-    val filters = remember {
-        listOf(
-            com.example.R.string.label_filter_all,
-            com.example.R.string.label_tv_channels,
-            com.example.R.string.label_radio_stations,
-            com.example.R.string.label_filter_favorites
-        )
-    }
-    var selectedFilterRes by remember { mutableStateOf(com.example.R.string.label_filter_all) }
+    var selectedFilter by remember { mutableStateOf("Todos") }
+    val filters = listOf("Todos", "Canales de TV", "Emisoras de Radio", "Favoritos")
 
     val categories = remember {
         listOf("Deportes", "Cine", "Noticias", "Entretenimiento", "Música")
@@ -84,25 +76,23 @@ fun SearchScreenTv(
     var activeCategoryFilter by remember { mutableStateOf<String?>(null) }
 
     // Unified Match Logic
-    val matchedChannels = remember(query, allChannels, selectedFilterRes, activeCategoryFilter, favoriteChannels) {
+    val matchedChannels = remember(query, allChannels, selectedFilter, activeCategoryFilter, favoriteChannels) {
         allChannels.filter { channel ->
             val matchesQuery = query.isEmpty() || channel.name.contains(query, ignoreCase = true) || channel.description.contains(query, ignoreCase = true)
-            val matchesFilter = selectedFilterRes == com.example.R.string.label_filter_all || 
-                    selectedFilterRes == com.example.R.string.label_tv_channels ||
-                    (selectedFilterRes == com.example.R.string.label_filter_favorites && favoriteChannels.any { it.id == channel.id })
+            val matchesFilter = selectedFilter == "Todos" || selectedFilter == "Canales de TV" ||
+                    (selectedFilter == "Favoritos" && favoriteChannels.any { it.id == channel.id })
             val matchesCategory = activeCategoryFilter == null || channel.category.contains(activeCategoryFilter!!, ignoreCase = true) || channel.description.contains(activeCategoryFilter!!, ignoreCase = true)
 
             matchesQuery && matchesFilter && matchesCategory
         }
     }
 
-    val matchedRadioStations = remember(query, allRadioStations, selectedFilterRes, activeCategoryFilter, favoriteRadioStations) {
-        if (selectedFilterRes == com.example.R.string.label_tv_channels || activeCategoryFilter != null) emptyList() else {
+    val matchedRadioStations = remember(query, allRadioStations, selectedFilter, activeCategoryFilter, favoriteRadioStations) {
+        if (selectedFilter == "Canales de TV" || activeCategoryFilter != null) emptyList() else {
             allRadioStations.filter { radio ->
                 val matchesQuery = query.isEmpty() || radio.name.contains(query, ignoreCase = true) || radio.genre.contains(query, ignoreCase = true)
-                val matchesFilter = selectedFilterRes == com.example.R.string.label_filter_all || 
-                        selectedFilterRes == com.example.R.string.label_radio_stations ||
-                        (selectedFilterRes == com.example.R.string.label_filter_favorites && favoriteRadioStations.any { it.id == radio.id })
+                val matchesFilter = selectedFilter == "Todos" || selectedFilter == "Emisoras de Radio" ||
+                        (selectedFilter == "Favoritos" && favoriteRadioStations.any { it.id == radio.id })
                 matchesQuery && matchesFilter
             }
         }
@@ -136,12 +126,12 @@ fun SearchScreenTv(
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = null,
+                    contentDescription = "Search Title Icon",
                     tint = Color(0xFF00E5FF),
                     modifier = Modifier.size(24.dp)
                 )
                 Text(
-                    text = stringResource(com.example.R.string.search_header_title),
+                    text = "BÚSQUEDA INTEGRADA Y DIRECTA",
                     color = Color.White,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -150,7 +140,7 @@ fun SearchScreenTv(
             }
             
             Text(
-                text = stringResource(com.example.R.string.search_results_count, matchedChannels.size + matchedRadioStations.size),
+                text = "${matchedChannels.size + matchedRadioStations.size} resultados",
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
@@ -163,7 +153,7 @@ fun SearchScreenTv(
             onValueChange = { query = it },
             placeholder = {
                 Text(
-                    stringResource(com.example.R.string.search_input_placeholder),
+                    "Busca películas, series, fútbol, canales de TV o emisoras radiales...",
                     fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.45f)
                 )
@@ -185,7 +175,7 @@ fun SearchScreenTv(
                     IconButton(onClick = { query = "" }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = stringResource(com.example.R.string.clear_query),
+                            contentDescription = "Limpiar consulta",
                             tint = Color.White.copy(alpha = 0.6f),
                             modifier = Modifier.size(18.dp)
                         )
@@ -212,21 +202,21 @@ fun SearchScreenTv(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(filters) { filterRes ->
-                val isSel = selectedFilterRes == filterRes
-                val activeThemeColor = if (filterRes == com.example.R.string.label_radio_stations) Color(0xFF00E5FF) else Color(0xFF4A89FF)
+            items(filters) { filterOpt ->
+                val isSel = selectedFilter == filterOpt
+                val activeThemeColor = if (filterOpt == "Emisoras de Radio") Color(0xFF00E5FF) else Color(0xFF4A89FF)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (isSel) activeThemeColor else Color.White.copy(alpha = 0.04f))
                         .border(1.dp, if (isSel) activeThemeColor else Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
-                        .clickable { selectedFilterRes = filterRes }
+                        .clickable { selectedFilter = filterOpt }
                         .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(horizontal = 14.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(filterRes),
+                        text = filterOpt,
                         color = if (isSel) Color.Black else Color.White,
                         fontSize = 11.sp,
                         fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
@@ -236,7 +226,7 @@ fun SearchScreenTv(
         }
 
         // Subcategory badges row (only showing when TV channels or general is chosen)
-        if (selectedFilterRes == com.example.R.string.label_filter_all || selectedFilterRes == com.example.R.string.label_tv_channels) {
+        if (selectedFilter == "Todos" || selectedFilter == "Canales de TV") {
             Spacer(modifier = Modifier.height(10.dp))
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -254,7 +244,7 @@ fun SearchScreenTv(
                             .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            stringResource(com.example.R.string.all_genres),
+                            "Todo-Género",
                             color = Color.White,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
@@ -296,20 +286,20 @@ fun SearchScreenTv(
                 ) {
                     Icon(
                         imageVector = Icons.Default.SearchOff,
-                        contentDescription = null,
+                        contentDescription = "Sin resultados icon",
                         tint = Color.White.copy(alpha = 0.15f),
                         modifier = Modifier.size(54.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = stringResource(com.example.R.string.no_results_found),
+                        text = "Sin resultados para tu búsqueda",
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(com.example.R.string.no_results_advice),
+                        text = "Valida la ortografía o cambia de categoría en los filtros superiores.",
                         color = Color.White.copy(alpha = 0.4f),
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center
@@ -325,7 +315,7 @@ fun SearchScreenTv(
                     if (matchedChannels.isNotEmpty()) {
                         item {
                             Text(
-                                text = stringResource(com.example.R.string.tv_channels_section, matchedChannels.size),
+                                text = "CANALES DE TELEVISIÓN (${matchedChannels.size})",
                                 color = Color(0xFF4A89FF),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -367,7 +357,7 @@ fun SearchScreenTv(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
-                                            text = stringResource(com.example.R.string.label_channel_number, chan.number),
+                                            text = "CH ${chan.number}",
                                             color = Color(0xFF4A89FF),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.ExtraBold
@@ -383,7 +373,7 @@ fun SearchScreenTv(
                                         if (isFav) {
                                             Icon(
                                                 imageVector = Icons.Default.Favorite,
-                                                contentDescription = stringResource(com.example.R.string.label_favorite),
+                                                contentDescription = "Favorito",
                                                 tint = Color.Red,
                                                 modifier = Modifier.size(12.dp)
                                             )
@@ -405,7 +395,7 @@ fun SearchScreenTv(
                                 ) {
                                     Icon(
                                         imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = null,
+                                        contentDescription = "Favorito icon toggle",
                                         tint = if (isFav) Color.Red else Color.White.copy(alpha = 0.4f),
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -422,7 +412,7 @@ fun SearchScreenTv(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = stringResource(com.example.R.string.view_channel),
+                                        contentDescription = "Ver canal",
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -436,7 +426,7 @@ fun SearchScreenTv(
                         item {
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = stringResource(com.example.R.string.radio_stations_section, matchedRadioStations.size),
+                                text = "EMISORAS DE RADIO (${matchedRadioStations.size})",
                                 color = Color(0xFF00E5FF),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -498,7 +488,7 @@ fun SearchScreenTv(
                                         if (isRadioFav) {
                                             Icon(
                                                 imageVector = Icons.Default.Favorite,
-                                                contentDescription = stringResource(com.example.R.string.label_favorite),
+                                                contentDescription = "Favorito",
                                                 tint = Color.Red,
                                                 modifier = Modifier.size(12.dp)
                                             )
@@ -518,7 +508,7 @@ fun SearchScreenTv(
                                 ) {
                                     Icon(
                                         imageVector = if (isRadioFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = null,
+                                        contentDescription = "Favorito radio icon toggle",
                                         tint = if (isRadioFav) Color.Red else Color.White.copy(alpha = 0.4f),
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -535,7 +525,7 @@ fun SearchScreenTv(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = stringResource(com.example.R.string.listen_radio),
+                                        contentDescription = "Escuchar radio",
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -561,15 +551,8 @@ fun SearchScreenMobile(
     val favoriteRadioStations by viewModel.favoriteRadioStations.collectAsState()
 
     // Filters Configuration
-    val filters = remember {
-        listOf(
-            com.example.R.string.label_filter_all,
-            com.example.R.string.label_tv_channels,
-            com.example.R.string.label_radio_stations,
-            com.example.R.string.label_filter_favorites
-        )
-    }
-    var selectedFilterRes by remember { mutableStateOf(com.example.R.string.label_filter_all) }
+    var selectedFilter by remember { mutableStateOf("Todos") }
+    val filters = listOf("Todos", "Canales de TV", "Emisoras de Radio", "Favoritos")
 
     val categories = remember {
         listOf("Deportes", "Cine", "Noticias", "Entretenimiento", "Música")
@@ -577,25 +560,23 @@ fun SearchScreenMobile(
     var activeCategoryFilter by remember { mutableStateOf<String?>(null) }
 
     // Unified Match Logic
-    val matchedChannels = remember(query, allChannels, selectedFilterRes, activeCategoryFilter, favoriteChannels) {
+    val matchedChannels = remember(query, allChannels, selectedFilter, activeCategoryFilter, favoriteChannels) {
         allChannels.filter { channel ->
             val matchesQuery = query.isEmpty() || channel.name.contains(query, ignoreCase = true) || channel.description.contains(query, ignoreCase = true)
-            val matchesFilter = selectedFilterRes == com.example.R.string.label_filter_all || 
-                    selectedFilterRes == com.example.R.string.label_tv_channels ||
-                    (selectedFilterRes == com.example.R.string.label_filter_favorites && favoriteChannels.any { it.id == channel.id })
+            val matchesFilter = selectedFilter == "Todos" || selectedFilter == "Canales de TV" ||
+                    (selectedFilter == "Favoritos" && favoriteChannels.any { it.id == channel.id })
             val matchesCategory = activeCategoryFilter == null || channel.category.contains(activeCategoryFilter!!, ignoreCase = true) || channel.description.contains(activeCategoryFilter!!, ignoreCase = true)
 
             matchesQuery && matchesFilter && matchesCategory
         }
     }
 
-    val matchedRadioStations = remember(query, allRadioStations, selectedFilterRes, activeCategoryFilter, favoriteRadioStations) {
-        if (selectedFilterRes == com.example.R.string.label_tv_channels || activeCategoryFilter != null) emptyList() else {
+    val matchedRadioStations = remember(query, allRadioStations, selectedFilter, activeCategoryFilter, favoriteRadioStations) {
+        if (selectedFilter == "Canales de TV" || activeCategoryFilter != null) emptyList() else {
             allRadioStations.filter { radio ->
                 val matchesQuery = query.isEmpty() || radio.name.contains(query, ignoreCase = true) || radio.genre.contains(query, ignoreCase = true)
-                val matchesFilter = selectedFilterRes == com.example.R.string.label_filter_all || 
-                        selectedFilterRes == com.example.R.string.label_radio_stations ||
-                        (selectedFilterRes == com.example.R.string.label_filter_favorites && favoriteRadioStations.any { it.id == radio.id })
+                val matchesFilter = selectedFilter == "Todos" || selectedFilter == "Emisoras de Radio" ||
+                        (selectedFilter == "Favoritos" && favoriteRadioStations.any { it.id == radio.id })
                 matchesQuery && matchesFilter
             }
         }
@@ -603,7 +584,7 @@ fun SearchScreenMobile(
 
     val focusRequester = remember { FocusRequester() }
     
-    // Auto-focus search text field on entry
+    // Auto-focus search text field on entry for premium TV / Dpad UX
     LaunchedEffect(Unit) {
         try {
             focusRequester.requestFocus()
@@ -629,12 +610,12 @@ fun SearchScreenMobile(
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = null,
+                    contentDescription = "Search Title Icon",
                     tint = Color(0xFF00E5FF),
                     modifier = Modifier.size(24.dp)
                 )
                 Text(
-                    text = stringResource(com.example.R.string.search_header_title),
+                    text = "BÚSQUEDA INTEGRADA Y DIRECTA",
                     color = Color.White,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -643,7 +624,7 @@ fun SearchScreenMobile(
             }
             
             Text(
-                text = stringResource(com.example.R.string.search_results_count, matchedChannels.size + matchedRadioStations.size),
+                text = "${matchedChannels.size + matchedRadioStations.size} resultados",
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
@@ -656,7 +637,7 @@ fun SearchScreenMobile(
             onValueChange = { query = it },
             placeholder = {
                 Text(
-                    stringResource(com.example.R.string.search_input_placeholder),
+                    "Busca películas, series, fútbol, canales de TV o emisoras radiales...",
                     fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.45f)
                 )
@@ -678,7 +659,7 @@ fun SearchScreenMobile(
                     IconButton(onClick = { query = "" }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = stringResource(com.example.R.string.clear_query),
+                            contentDescription = "Limpiar consulta",
                             tint = Color.White.copy(alpha = 0.6f),
                             modifier = Modifier.size(18.dp)
                         )
@@ -705,21 +686,21 @@ fun SearchScreenMobile(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(filters) { filterRes ->
-                val isSel = selectedFilterRes == filterRes
-                val activeThemeColor = if (filterRes == com.example.R.string.label_radio_stations) Color(0xFF00E5FF) else Color(0xFF4A89FF)
+            items(filters) { filterOpt ->
+                val isSel = selectedFilter == filterOpt
+                val activeThemeColor = if (filterOpt == "Emisoras de Radio") Color(0xFF00E5FF) else Color(0xFF4A89FF)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (isSel) activeThemeColor else Color.White.copy(alpha = 0.04f))
                         .border(1.dp, if (isSel) activeThemeColor else Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
-                        .clickable { selectedFilterRes = filterRes }
+                        .clickable { selectedFilter = filterOpt }
                         .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         .padding(horizontal = 14.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(filterRes),
+                        text = filterOpt,
                         color = if (isSel) Color.Black else Color.White,
                         fontSize = 11.sp,
                         fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium
@@ -728,8 +709,8 @@ fun SearchScreenMobile(
             }
         }
 
-        // Subcategory badges row
-        if (selectedFilterRes == com.example.R.string.label_filter_all || selectedFilterRes == com.example.R.string.label_tv_channels) {
+        // Subcategory badges row (only showing when TV channels or general is chosen)
+        if (selectedFilter == "Todos" || selectedFilter == "Canales de TV") {
             Spacer(modifier = Modifier.height(10.dp))
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -747,7 +728,7 @@ fun SearchScreenMobile(
                             .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            stringResource(com.example.R.string.all_genres),
+                            "Todo-Género",
                             color = Color.White,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
@@ -789,20 +770,20 @@ fun SearchScreenMobile(
                 ) {
                     Icon(
                         imageVector = Icons.Default.SearchOff,
-                        contentDescription = null,
+                        contentDescription = "Sin resultados icon",
                         tint = Color.White.copy(alpha = 0.15f),
                         modifier = Modifier.size(54.dp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = stringResource(com.example.R.string.no_results_found),
+                        text = "Sin resultados para tu búsqueda",
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(com.example.R.string.no_results_advice),
+                        text = "Valida la ortografía o cambia de categoría en los filtros superiores.",
                         color = Color.White.copy(alpha = 0.4f),
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center
@@ -818,7 +799,7 @@ fun SearchScreenMobile(
                     if (matchedChannels.isNotEmpty()) {
                         item {
                             Text(
-                                text = stringResource(com.example.R.string.tv_channels_section, matchedChannels.size),
+                                text = "CANALES DE TELEVISIÓN (${matchedChannels.size})",
                                 color = Color(0xFF4A89FF),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -860,7 +841,7 @@ fun SearchScreenMobile(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
-                                            text = stringResource(com.example.R.string.label_channel_number, chan.number),
+                                            text = "CH ${chan.number}",
                                             color = Color(0xFF4A89FF),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.ExtraBold
@@ -876,7 +857,7 @@ fun SearchScreenMobile(
                                         if (isFav) {
                                             Icon(
                                                 imageVector = Icons.Default.Favorite,
-                                                contentDescription = stringResource(com.example.R.string.label_favorite),
+                                                contentDescription = "Favorito",
                                                 tint = Color.Red,
                                                 modifier = Modifier.size(12.dp)
                                             )
@@ -898,7 +879,7 @@ fun SearchScreenMobile(
                                 ) {
                                     Icon(
                                         imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = null,
+                                        contentDescription = "Favorito icon toggle",
                                         tint = if (isFav) Color.Red else Color.White.copy(alpha = 0.4f),
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -915,7 +896,7 @@ fun SearchScreenMobile(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = stringResource(com.example.R.string.view_channel),
+                                        contentDescription = "Ver canal",
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -929,7 +910,7 @@ fun SearchScreenMobile(
                         item {
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = stringResource(com.example.R.string.radio_stations_section, matchedRadioStations.size),
+                                text = "EMISORAS DE RADIO (${matchedRadioStations.size})",
                                 color = Color(0xFF00E5FF),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -991,7 +972,7 @@ fun SearchScreenMobile(
                                         if (isRadioFav) {
                                             Icon(
                                                 imageVector = Icons.Default.Favorite,
-                                                contentDescription = stringResource(com.example.R.string.label_favorite),
+                                                contentDescription = "Favorito",
                                                 tint = Color.Red,
                                                 modifier = Modifier.size(12.dp)
                                             )
@@ -1011,7 +992,7 @@ fun SearchScreenMobile(
                                 ) {
                                     Icon(
                                         imageVector = if (isRadioFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = null,
+                                        contentDescription = "Favorito radio icon toggle",
                                         tint = if (isRadioFav) Color.Red else Color.White.copy(alpha = 0.4f),
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -1028,7 +1009,7 @@ fun SearchScreenMobile(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = stringResource(com.example.R.string.listen_radio),
+                                        contentDescription = "Escuchar radio",
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )

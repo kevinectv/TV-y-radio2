@@ -1,107 +1,56 @@
 package com.example.ui
 
 import androidx.compose.animation.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.border
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.focusable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import coil.compose.rememberAsyncImagePainter
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.ElegantBackground
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.tvFocusEffect
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.responsive
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.getResponsiveScale
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.CharacterAvatar
-import androidx.compose.ui.res.stringResource
 import com.example.ui.screens.ProfileSelectionScreen
-import androidx.compose.ui.res.stringResource
 import com.example.ui.screens.*
-import androidx.compose.ui.res.stringResource
 import com.example.data.model.CatalogItem
-import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
-import androidx.compose.ui.res.stringResource
 import java.util.*
-import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import com.example.R
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.res.stringResource
 
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -260,17 +209,8 @@ fun LuminaAppShell(
                                             modifier = Modifier.size(16.dp.responsive())
                                         )
 
-                                        val labelStr = when (tab) {
-                                            AppTab.HOME -> stringResource(com.example.R.string.tab_home)
-                                            AppTab.WATCHLIST -> stringResource(com.example.R.string.tab_watchlist)
-                                            AppTab.TV -> stringResource(com.example.R.string.tab_tv)
-                                            AppTab.RADIO -> stringResource(com.example.R.string.tab_radio)
-                                            AppTab.SEARCH -> stringResource(com.example.R.string.tab_search)
-                                            AppTab.SETTINGS -> stringResource(com.example.R.string.tab_settings)
-                                        }
-
                                         Text(
-                                            text = labelStr,
+                                            text = tab.label,
                                             color = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
                                             fontSize = 11.sp.responsive(),
                                             fontWeight = if (isSelected || isTabFocused) FontWeight.ExtraBold else FontWeight.Medium,
@@ -379,12 +319,12 @@ fun LuminaAppShell(
                                 },
                                 label = {
                                     val labelStr = when (tab) {
-                                        AppTab.HOME -> stringResource(com.example.R.string.tab_home)
-                                        AppTab.WATCHLIST -> stringResource(com.example.R.string.tab_watchlist)
-                                        AppTab.TV -> stringResource(com.example.R.string.tab_tv)
-                                        AppTab.RADIO -> stringResource(com.example.R.string.tab_radio)
-                                        AppTab.SEARCH -> stringResource(com.example.R.string.tab_search)
-                                        AppTab.SETTINGS -> stringResource(com.example.R.string.tab_settings)
+                                        AppTab.HOME -> "Home"
+                                        AppTab.WATCHLIST -> "Favoritos"
+                                        AppTab.TV -> "TV"
+                                        AppTab.RADIO -> "Radio"
+                                        AppTab.SEARCH -> "Buscar"
+                                        AppTab.SETTINGS -> "Ajustes"
                                     }
                                     Text(
                                         text = labelStr,

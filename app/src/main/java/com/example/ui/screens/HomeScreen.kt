@@ -1,137 +1,71 @@
 package com.example.ui.screens
 
 import android.view.ViewGroup
-import androidx.compose.ui.res.stringResource
 import android.widget.VideoView
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.border
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.focusable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.composed
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
-import androidx.compose.ui.res.stringResource
 import coil.compose.SubcomposeAsyncImage
-import androidx.compose.ui.res.stringResource
 import android.widget.Toast
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import com.example.data.model.Channel
-import androidx.compose.ui.res.stringResource
 import com.example.data.model.RadioStation
-import androidx.compose.ui.res.stringResource
 import com.example.data.model.Catalog
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.res.stringResource
 import com.example.data.model.CatalogItem
-import androidx.compose.ui.res.stringResource
 import com.example.ui.AppTab
-import androidx.compose.ui.res.stringResource
 import com.example.ui.MediaViewModel
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.tvFocusEffect
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.responsive
-import androidx.compose.ui.res.stringResource
 import com.example.ui.components.getResponsiveScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
-import androidx.compose.ui.res.stringResource
 
 // --- Skeleton Loading Effect Extension ---
 @Composable
@@ -521,7 +455,7 @@ fun HomeScreen(
                                 if (progressItems.isNotEmpty()) {
                                     item {
                                         HomeSectionRowHeader(
-                                            title = stringResource(com.example.R.string.section_continue_watching),
+                                            title = "⏱️ CONTINUAR VIENDO",
                                             icon = Icons.Filled.PlayCircle,
                                             color = Color(0xFF00FF87)
                                         )
@@ -549,7 +483,7 @@ fun HomeScreen(
                                 homeCatalogs.forEachIndexed { index, catalog ->
                                     if (catalog.items.isNotEmpty()) {
                                         item {
-                                            val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name, LocalContext.current)
+                                            val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
                                             DrawCatalogRow(
                                                 catalog = catalog,
                                                 favoriteCatalogItems = favoriteCatalogItems,
@@ -569,7 +503,7 @@ fun HomeScreen(
                                     if (index == 0 && progressItems.isNotEmpty()) {
                                         item {
                                             HomeSectionRowHeader(
-                                                title = stringResource(com.example.R.string.section_continue_watching),
+                                                title = "⏱️ CONTINUAR VIENDO",
                                                 icon = Icons.Filled.PlayCircle,
                                                 color = Color(0xFF00FF87)
                                             )
@@ -686,7 +620,7 @@ fun DrawCatalogRow(
                 onClick(item)
             }
         )
-    } else if (layoutToDraw == "Top Numerado" || layoutToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("top", ignoreCase = true) || titleToDraw.contains(stringResource(com.example.R.string.search_best_rated), ignoreCase = true) || titleToDraw.contains(stringResource(com.example.R.string.search_top_250), ignoreCase = true)) {
+    } else if (layoutToDraw == "Top Numerado" || layoutToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("Mejor Valorad", ignoreCase = true) || titleToDraw.contains("Top 250", ignoreCase = true)) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(4.dp.responsive()),
             contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
@@ -843,7 +777,7 @@ fun ChannelHomeCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(com.example.R.string.label_channel_number, channel.number),
+                        text = "CH ${channel.number}",
                         color = Color.White,
                         fontSize = 9.sp.responsive(),
                         fontWeight = FontWeight.Bold,
@@ -852,19 +786,19 @@ fun ChannelHomeCard(
                             .padding(horizontal = 5.dp, vertical = 2.dp)
                     )
 
-                        IconButton(
-                            onClick = { viewModel.toggleChannelFavorite(channel.id) },
-                            modifier = Modifier
-                                .size(24.dp)
-                                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = stringResource(com.example.R.string.content_desc_favorito),
-                                tint = if (isFavorite) Color.Red else Color.White,
-                                modifier = Modifier.size(13.dp)
-                            )
-                        }
+                    IconButton(
+                        onClick = { viewModel.toggleChannelFavorite(channel.id) },
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (isFavorite) Color.Red else Color.White,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
                 }
 
                 // Channel metadata
@@ -980,7 +914,7 @@ fun RadioHomeCard(
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = stringResource(com.example.R.string.content_desc_favoritos),
+                            contentDescription = "Favoritos",
                             tint = if (isFavorite) Color.Red else Color.White,
                             modifier = Modifier.size(13.dp)
                         )
@@ -1267,7 +1201,7 @@ fun CatalogItemFullScreenDetails(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = stringResource(com.example.R.string.label_detalles),
+                        text = "DETALLES",
                         color = Color.White.copy(alpha = 0.60f),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -1395,7 +1329,7 @@ fun CatalogItemFullScreenDetails(
                             }
                             if (score > 0) {
                                 Text(
-                                    text = stringResource(com.example.R.string.label_popularity, score),
+                                    text = "Popularidad: $score",
                                     color = Color(0xFF00FF87),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 11.sp,
@@ -1435,7 +1369,7 @@ fun CatalogItemFullScreenDetails(
                             ) {
                                 Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(com.example.R.string.label_reproducir), fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 11.sp)
                             }
 
                             // Trailer
@@ -1453,7 +1387,7 @@ fun CatalogItemFullScreenDetails(
                             ) {
                                 Icon(Icons.Filled.Movie, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(com.example.R.string.label_trailer), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                Text("TRÁILER", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
 
                             // Guardar / Mi Lista
@@ -1475,7 +1409,7 @@ fun CatalogItemFullScreenDetails(
                             ) {
                                 Icon(if (isInMyList) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(if (isInMyList) stringResource(com.example.R.string.label_guardado) else stringResource(com.example.R.string.label_guardar), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                Text(if (isInMyList) "GUARDADO" else "GUARDAR", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                             
                             // Compartir
@@ -1487,7 +1421,7 @@ fun CatalogItemFullScreenDetails(
                                             type = "text/plain"
                                             putExtra(android.content.Intent.EXTRA_TEXT, shareStr)
                                         }
-                                        context.startActivity(android.content.Intent.createChooser(intent, context.getString(com.example.R.string.label_compartir_con)))
+                                        context.startActivity(android.content.Intent.createChooser(intent, "Compartir con"))
                                     } catch (e: Exception) {}
                                 },
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
@@ -1498,7 +1432,7 @@ fun CatalogItemFullScreenDetails(
                             ) {
                                 Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(com.example.R.string.label_compartir), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                Text("COMPARTIR", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                         }
                 }
@@ -1507,7 +1441,7 @@ fun CatalogItemFullScreenDetails(
                 // Synopsis Section
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = stringResource(com.example.R.string.label_sinopsis_completa),
+                            text = "SINOPSIS COMPLETA",
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -1524,14 +1458,14 @@ fun CatalogItemFullScreenDetails(
 
                 // Spec Grid section: "Mostrar director. Mostrar productora."
                 SpecInformationGrid(
-                    director = item.director ?: stringResource(com.example.R.string.label_no_especificado),
-                    productora = item.producer ?: stringResource(com.example.R.string.label_estudio_independiente),
+                    director = item.director ?: "No especificado",
+                    productora = item.producer ?: "Estudio Independiente",
                     pais = "United States",
-                    idioma = item.languages ?: stringResource(com.example.R.string.label_idioma_default),
-                    subtitulos = item.subtitles ?: stringResource(com.example.R.string.label_idioma_default),
+                    idioma = item.languages ?: "Español Latino / Inglés",
+                    subtitulos = item.subtitles ?: "Español Latino / Inglés",
                     clasificacion = "PG-13 / TV-14",
-                    temporadas = if (item.isTvShow) stringResource(com.example.R.string.label_series) else stringResource(com.example.R.string.label_pelicula),
-                    status = stringResource(com.example.R.string.label_disponible),
+                    temporadas = if (item.isTvShow) "Series" else "Película",
+                    status = "Disponible",
                     duracion = item.duration ?: "2h 15m"
                 )
 
@@ -1539,7 +1473,7 @@ fun CatalogItemFullScreenDetails(
                 if (dynamicCast.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = stringResource(com.example.R.string.label_reparto_actores),
+                            text = "REPARTO / ACTORES",
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -1605,7 +1539,7 @@ fun CatalogItemFullScreenDetails(
                 if (extraImages.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = stringResource(com.example.R.string.label_imagenes_adicionales),
+                            text = "IMÁGENES ADICIONALES Y CAPTURAS",
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -1641,7 +1575,7 @@ fun CatalogItemFullScreenDetails(
                 // Trailers block: "Mostrar trailers."
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = stringResource(com.example.R.string.label_trailers_oficiales),
+                        text = "TRAILERS OFICIALES Y VIDEOS",
                         color = Color.White.copy(alpha = 0.5f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -1682,7 +1616,7 @@ fun CatalogItemFullScreenDetails(
                             ) {
                                 Icon(Icons.Filled.PlayArrow, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(24.dp))
                                 Text(
-                                    text = stringResource(com.example.R.string.label_play_trailer),
+                                    text = "REPRODUCIR TRÁILER",
                                     color = Color.White,
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.Black
@@ -1696,7 +1630,7 @@ fun CatalogItemFullScreenDetails(
                 if (similarItems.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = stringResource(com.example.R.string.label_contenido_similar),
+                            text = "CONTENIDO SIMILAR RECOMENDADO",
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -2116,7 +2050,7 @@ fun CatalogItemDetailsDialog_Original(
                                     // Synopsis Segment
                                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Text(
-                                            text = stringResource(com.example.R.string.label_synopsis),
+                                            text = "SINOPSIS / RESUMEN",
                                             color = Color(0xFF00E5FF),
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.ExtraBold,
@@ -2230,7 +2164,7 @@ fun CatalogItemDetailsDialog_Original(
                                 // Synopsis Card
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text(
-                                        text = stringResource(com.example.R.string.label_synopsis),
+                                        text = "SINOPSIS / RESUMEN",
                                         color = Color(0xFF00E5FF),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
@@ -2270,7 +2204,7 @@ fun CatalogItemDetailsDialog_Original(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = stringResource(com.example.R.string.label_cast),
+                                text = "REPARTO Y ELENCO PRINCIPAL",
                                 color = Color.White.copy(alpha = 0.45f),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
@@ -2360,7 +2294,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.Movie, contentDescription = "Ver Tráiler", tint = Color.White, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.label_play_trailer), fontWeight = FontWeight.Black, fontSize = 10.5.sp)
+            Text("VER TRÁILER", fontWeight = FontWeight.Black, fontSize = 10.5.sp)
         }
 
         // ▶ Reproducir
@@ -2386,7 +2320,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.label_play), fontWeight = FontWeight.Black, fontSize = 10.5.sp)
+            Text("REPRODUCIR", fontWeight = FontWeight.Black, fontSize = 10.5.sp)
         }
 
         // ▶ Continuar Viendo
@@ -2413,7 +2347,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.SkipNext, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.section_continue_watching), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+            Text("CONTINUAR VIENDO", fontWeight = FontWeight.Bold, fontSize = 10.sp)
         }
 
         // ➕ Mi Lista
@@ -2429,7 +2363,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.label_my_list), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+            Text("MI LISTA", fontWeight = FontWeight.Bold, fontSize = 10.sp)
         }
 
         // ❤ Favoritos
@@ -2445,7 +2379,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.Favorite, contentDescription = null, tint = Color.Red, modifier = Modifier.size(13.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.label_favorites), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+            Text("FAVORITOS", fontWeight = FontWeight.Bold, fontSize = 10.sp)
         }
 
         // ⬇ Descargar
@@ -2461,7 +2395,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.label_download), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+            Text("DESCARGAR", fontWeight = FontWeight.Bold, fontSize = 10.sp)
         }
 
         // 📤 Compartir
@@ -2488,7 +2422,7 @@ fun DetailsActionsGrid(
         ) {
             Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(13.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.example.R.string.label_share), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+            Text("COMPARTIR", fontWeight = FontWeight.Bold, fontSize = 10.sp)
         }
     }
 }
@@ -3046,7 +2980,7 @@ fun TrailerYoutubePlayerDialog(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = if (isFetching) stringResource(com.example.R.string.msg_searching_trailer) else stringResource(com.example.R.string.msg_loading_trailer),
+                            text = if (isFetching) "Buscando Tráiler..." else "Cargando Tráiler...",
                             color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -3065,16 +2999,16 @@ fun formatSeconds(ms: Int): String {
     return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
 }
 
-private fun getCategoryDisplayInfo(name: String, context: android.content.Context): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
+private fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
     val cleanName = name.trim().lowercase()
     return when {
-        cleanName.contains("tendencia") || cleanName.contains("trending") -> Pair("🔥 " + context.getString(com.example.R.string.category_trending), Icons.Filled.TrendingUp)
-        cleanName.contains("popular") -> Pair("🎬 " + context.getString(com.example.R.string.category_popular), Icons.Filled.Movie)
-        cleanName.contains("cine") || cleanName.contains("película") || cleanName.contains("movie") -> Pair("🎥 " + context.getString(com.example.R.string.category_cinema), Icons.Filled.Movie)
-        cleanName.contains("serie") || cleanName.contains("show") || cleanName.contains("tv") -> Pair("📺 " + context.getString(com.example.R.string.category_series), Icons.Filled.Tv)
-        cleanName.contains("anime") -> Pair("🌸 " + context.getString(com.example.R.string.category_anime), Icons.Filled.Movie)
-        cleanName.contains("favorito") || cleanName.contains("lista") -> Pair("⭐ " + context.getString(com.example.R.string.category_my_list), Icons.Filled.Star)
-        cleanName.contains("recomenda") -> Pair("✨ " + context.getString(com.example.R.string.category_recommended), Icons.Filled.ThumbUp)
+        cleanName.contains("tendencia") || cleanName.contains("trending") -> Pair("🔥 Tendencias", Icons.Filled.TrendingUp)
+        cleanName.contains("popular") -> Pair("🎬 Películas Populares", Icons.Filled.Movie)
+        cleanName.contains("cine") || cleanName.contains("película") || cleanName.contains("movie") -> Pair("🎥 Cine Estelar", Icons.Filled.Movie)
+        cleanName.contains("serie") || cleanName.contains("show") || cleanName.contains("tv") -> Pair("📺 Series Premium", Icons.Filled.Tv)
+        cleanName.contains("anime") -> Pair("🌸 Anime Estelar", Icons.Filled.Movie)
+        cleanName.contains("favorito") || cleanName.contains("lista") -> Pair("⭐ Mi Lista", Icons.Filled.Star)
+        cleanName.contains("recomenda") -> Pair("✨ Recomendados para ti", Icons.Filled.ThumbUp)
         else -> {
             val capitalized = name.split(" ").map { it.replaceFirstChar { char -> char.uppercase() } }.joinToString(" ")
             Pair("🍿 $capitalized", Icons.Filled.VideoLibrary)

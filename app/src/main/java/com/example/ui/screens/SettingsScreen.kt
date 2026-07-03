@@ -1,5 +1,4 @@
 package com.example.ui.screens
-import androidx.compose.ui.res.stringResource
 
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -52,20 +51,20 @@ import androidx.compose.ui.layout.ContentScale
 /**
  * All configurable categories in settings.
  */
-enum class SettingCategory(val icon: ImageVector, val labelRes: Int, val descRes: Int) {
-    PROFILE(Icons.Default.AccountCircle, com.example.R.string.setting_profile, com.example.R.string.desc_profile),
-    IPTV_SOURCES(Icons.Default.Dns, com.example.R.string.setting_iptv_sources, com.example.R.string.desc_iptv_sources),
-    EPG(Icons.Default.Dataset, com.example.R.string.setting_epg, com.example.R.string.desc_epg),
-    RADIO(Icons.Default.Radio, com.example.R.string.setting_radio, com.example.R.string.desc_radio),
-    CATALOGS(Icons.Default.VideoLibrary, com.example.R.string.setting_catalogs, com.example.R.string.desc_catalogs),
-    APARIENCIA(Icons.Default.Palette, com.example.R.string.setting_apariencia, com.example.R.string.desc_apariencia),
-    IDIOMA_REGION(Icons.Default.Language, com.example.R.string.setting_idioma_region, com.example.R.string.desc_idioma_region),
-    RENDIMIENTO(Icons.Default.Speed, com.example.R.string.setting_rendimiento, com.example.R.string.desc_rendimiento),
-    REPRODUCTOR(Icons.Default.PlayCircle, com.example.R.string.setting_reproductor, com.example.R.string.desc_reproductor),
-    NOTIFICATIONS(Icons.Default.Notifications, com.example.R.string.setting_notifications, com.example.R.string.desc_notifications),
-    PRIVACIDAD(Icons.Default.Security, com.example.R.string.setting_privacidad, com.example.R.string.desc_privacidad),
-    BACKUP(Icons.Default.Backup, com.example.R.string.setting_backup, com.example.R.string.desc_backup),
-    ABOUT(Icons.Default.Info, com.example.R.string.setting_about, com.example.R.string.desc_about)
+enum class SettingCategory(val label: String, val icon: ImageVector, val description: String) {
+    PROFILE("Perfil", Icons.Default.AccountCircle, "Configuración del perfil activo y de los avatares integrados"),
+    IPTV_SOURCES("Fuentes IPTV", Icons.Default.Dns, "Gestión integral de playlists M3U, M3U8, Xtream Codes y XMLTV"),
+    EPG("Guía EPG", Icons.Default.Dataset, "Ajustes de escala, sincronización automática e intervalos"),
+    RADIO("Radio & Audio", Icons.Default.Radio, "Acondicionado de buffers de audio y ecualización óptima"),
+    CATALOGS("📚 Catálogos", Icons.Default.VideoLibrary, "Administración de carteleras, tendencias y filas horizontales del Home"),
+    APARIENCIA("Apariencia", Icons.Default.Palette, "Control del tema claro/oscuro y personalización visual"),
+    IDIOMA_REGION("Región e Idioma", Icons.Default.Language, "Selección regional del servidor y traducciones de canales"),
+    RENDIMIENTO("Rendimiento", Icons.Default.Speed, "Aceleración por GPU, purgado de caché y renderizado a 60 FPS"),
+    REPRODUCTOR("Reproductor", Icons.Default.PlayCircle, "Selección de algoritmos de decodificación y optimización HW+"),
+    NOTIFICATIONS("Notificaciones", Icons.Default.Notifications, "Configuración de alertas programadas y recordatorios"),
+    PRIVACIDAD("Privacidad", Icons.Default.Security, "Gestión de telemetría de red y registros locales de uso"),
+    BACKUP("Copia de Seguridad", Icons.Default.Backup, "Respaldo y restauración de bases de datos y favoritos"),
+    ABOUT("Acerca de", Icons.Default.Info, "Información de la versión de Lumina Media y créditos del equipo")
 }
 
 @Composable
@@ -161,7 +160,7 @@ fun SettingsScreenTv(
                         .padding(end = 12.dp)
                 ) {
                     Text(
-                        text = stringResource(com.example.R.string.settings_title),
+                        text = "AJUSTES",
                         color = Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -217,14 +216,14 @@ fun SettingsScreenTv(
                             // Category Title Header
                             Column(modifier = Modifier.padding(vertical = 4.dp)) {
                                 Text(
-                                    text = stringResource(targetCategory.labelRes).uppercase(),
+                                    text = targetCategory.label.uppercase(),
                                     color = Color.White,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
                                 )
                                 Text(
-                                    text = stringResource(targetCategory.descRes),
+                                    text = targetCategory.description,
                                     color = Color.White.copy(alpha = 0.5f),
                                     fontSize = 11.5.sp,
                                     lineHeight = 15.sp
@@ -260,7 +259,7 @@ fun SettingsScreenTv(
                                         downloadLogos = downloadLogos,
                                         onDownloadLogosChange = { downloadLogos = it },
                                         onSyncNow = {
-                                            Toast.makeText(context, context.getString(com.example.R.string.msg_syncing_epg), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Sincronizando guía EPG con XMLTV...", Toast.LENGTH_SHORT).show()
                                         }
                                     )
                                 }
@@ -307,7 +306,7 @@ fun SettingsScreenTv(
                                         forced60fps = forced60fps,
                                         onForced60fpsChange = { forced60fps = it },
                                         onClearCache = {
-                                            Toast.makeText(context, context.getString(com.example.R.string.msg_cache_cleared), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Caché purgado con éxito. Se liberaron 12.8 MB", Toast.LENGTH_SHORT).show()
                                         }
                                     )
                                 }
@@ -322,10 +321,10 @@ fun SettingsScreenTv(
                                 SettingCategory.BACKUP -> {
                                     BackupPaneContent(
                                         onBackup = {
-                                            Toast.makeText(context, context.getString(com.example.R.string.msg_backup_generated), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Copia de respaldo generada localmente", Toast.LENGTH_SHORT).show()
                                         },
                                         onRestore = {
-                                            Toast.makeText(context, context.getString(com.example.R.string.msg_backup_restored), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Copia de respaldo restaurada con éxito", Toast.LENGTH_SHORT).show()
                                         }
                                     )
                                 }
@@ -394,7 +393,7 @@ fun SettingsScreenMobile(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(com.example.R.string.label_category_setting),
+                            text = "CATEGORÍA AJUSTE",
                             color = Color.White.copy(alpha = 0.45f),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -406,7 +405,7 @@ fun SettingsScreenMobile(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = stringResource(com.example.R.string.label_settings_count, selectedCategory.ordinal + 1, SettingCategory.values().size),
+                                text = "${selectedCategory.ordinal + 1} DE ${SettingCategory.values().size}",
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 8.5.sp,
                                 fontWeight = FontWeight.Bold
@@ -415,14 +414,14 @@ fun SettingsScreenMobile(
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = stringResource(selectedCategory.labelRes).uppercase(),
+                        text = selectedCategory.label.uppercase(),
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = stringResource(selectedCategory.descRes),
+                        text = selectedCategory.description,
                         color = Color.White.copy(alpha = 0.6f),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
@@ -472,7 +471,7 @@ fun SettingsScreenMobile(
                                     downloadLogos = downloadLogos,
                                     onDownloadLogosChange = { downloadLogos = it },
                                     onSyncNow = {
-                                        Toast.makeText(context, context.getString(com.example.R.string.msg_syncing_epg), Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Sincronizando guía EPG con XMLTV...", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -519,7 +518,7 @@ fun SettingsScreenMobile(
                                     forced60fps = forced60fps,
                                     onForced60fpsChange = { forced60fps = it },
                                     onClearCache = {
-                                        Toast.makeText(context, context.getString(com.example.R.string.msg_cache_cleared), Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Caché purgado con éxito. Se liberaron 12.8 MB", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -534,10 +533,10 @@ fun SettingsScreenMobile(
                             SettingCategory.BACKUP -> {
                                 BackupPaneContent(
                                     onBackup = {
-                                        Toast.makeText(context, context.getString(com.example.R.string.msg_backup_generated), Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Copia de respaldo generada localmente", Toast.LENGTH_SHORT).show()
                                     },
                                     onRestore = {
-                                        Toast.makeText(context, context.getString(com.example.R.string.msg_backup_restored), Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Copia de respaldo restaurada con éxito", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -554,7 +553,7 @@ fun SettingsScreenMobile(
 
                 // GORGEOUS BOTTOM CATEGORIES MENU (As requested: "menú aparezca abajo en teléfonos")
                 Text(
-                    text = stringResource(com.example.R.string.label_select_setting_channel),
+                    text = "SELECCIONAR CANAL DE AJUSTE",
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
@@ -605,7 +604,7 @@ fun SettingsScreenMobile(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = stringResource(category.labelRes),
+                                    text = category.label,
                                     color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.7f),
                                     fontSize = 9.sp,
                                     fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
@@ -676,7 +675,7 @@ fun SidebarCategoryItem(
         Spacer(modifier = Modifier.width(10.dp))
         
         Text(
-            text = stringResource(category.labelRes),
+            text = category.label,
             color = if (isFocused) Color.Black else Color.White.copy(alpha = textAlpha),
             fontSize = 11.5.sp,
             fontWeight = if (isSelected || isFocused) FontWeight.ExtraBold else FontWeight.Medium,
@@ -724,13 +723,13 @@ fun MobileMasterItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(category.labelRes),
+                    text = category.label,
                     color = Color.White,
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = stringResource(category.descRes),
+                    text = category.description,
                     color = Color.White.copy(alpha = 0.45f),
                     fontSize = 10.sp,
                     maxLines = 1
@@ -810,7 +809,7 @@ fun ProfilePaneContent(
                         if (activeProfile.isKids) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = stringResource(com.example.R.string.label_kids),
+                                text = "KIDS",
                                 color = Color.Black,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -822,13 +821,13 @@ fun ProfilePaneContent(
                     }
                     
                     Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = stringResource(com.example.R.string.label_account_type, if (activeProfile.isKids) stringResource(com.example.R.string.account_parental_control) else stringResource(com.example.R.string.account_admin)),
-                            color = Color.White.copy(alpha = 0.55f),
-                            fontSize = 11.sp
-                        )
                     Text(
-                        text = stringResource(com.example.R.string.label_profile_language, if (activeProfile.languagePref == "es") stringResource(com.example.R.string.label_spanish_latino) else stringResource(com.example.R.string.label_english), activeProfile.interfacePref.uppercase()),
+                        text = "Tipo de Cuenta: ${if (activeProfile.isKids) "Control Parental Activo" else "Administrador General"}",
+                        color = Color.White.copy(alpha = 0.55f),
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = "Idioma: ${if (activeProfile.languagePref == "es") "Español/Latino" else "English"} | Interfaz: ${activeProfile.interfacePref.uppercase()}",
                         color = themeColor.copy(alpha = 0.85f),
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold
@@ -841,7 +840,7 @@ fun ProfilePaneContent(
 
         // Profile switcher list section
         Text(
-            text = stringResource(com.example.R.string.label_change_active_profile),
+            text = "CAMBIAR DE PERFIL ACTIVO",
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
@@ -916,7 +915,7 @@ fun ProfilePaneContent(
                 .height(100.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(stringResource(com.example.R.string.msg_loading_profiles), color = Color.White.copy(alpha = 0.4f))
+            Text("Cargando detalles de perfiles...", color = Color.White.copy(alpha = 0.4f))
         }
     }
 }
@@ -942,7 +941,7 @@ fun IptvSourcesPaneContent(onOpenSources: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = stringResource(com.example.R.string.label_playlist_epg_manager),
+                        text = "GESTOR DE PLAYLISTS EPG",
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold
@@ -1736,138 +1735,83 @@ fun AparienciaPaneContent(
     }
 }
 
-import com.example.ui.util.LanguageHelper
-
 @Composable
 fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
-    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "ZONA GEOGRÁFICA Y REGULACIONES",
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Region Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "ZONA GEOGRÁFICA Y REGULACIONES",
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Región del Servidor IPTV",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Establece tu localización para sintonías de transmisiones locales de noticias.",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 10.5.sp
+                    )
+                }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Button(
+                    onClick = { viewModel.updateRegion(if (viewModel.selectedRegion == "LATAM") "Global" else "LATAM") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Región del Servidor IPTV",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Establece tu localización para sintonías de transmisiones locales de noticias.",
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontSize = 10.5.sp
-                        )
-                    }
-
-                    Button(
-                        onClick = { viewModel.updateRegion(if (viewModel.selectedRegion == "LATAM") "Global" else "LATAM") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
-                    ) {
-                        Text(text = viewModel.selectedRegion, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
-                    }
+                    Text(text = viewModel.selectedRegion, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
-        }
 
-        // Professional Language Selection Section
-        Text(
-            text = stringResource(com.example.R.string.app_language_title).uppercase(),
-            color = Color.White,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.sp,
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-        )
+            Spacer(modifier = Modifier.height(12.dp))
+            Divider(color = Color.White.copy(alpha = 0.06f))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        val supportedLanguages = LanguageHelper.supportedLanguages
-        
-        // Using a Flowing Row or LazyRow for languages
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
-        ) {
-            items(supportedLanguages) { lang ->
-                val isSelected = viewModel.selectedLanguage == lang.code
-                
-                Card(
-                    modifier = Modifier
-                        .width(180.dp)
-                        .clickable {
-                            viewModel.updateLanguage(lang.code)
-                            Toast.makeText(context, context.getString(com.example.R.string.language_changed_success), Toast.LENGTH_SHORT).show()
-                        }
-                        .tvFocusEffect(shape = RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.04f)
-                    ),
-                    border = BorderStroke(
-                        width = if (isSelected) 2.dp else 1.dp,
-                        color = if (isSelected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Idioma del Sistema",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Flag icon
-                        Text(
-                            text = lang.flag,
-                            fontSize = 22.sp
-                        )
-                        
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = lang.nativeName,
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = lang.name,
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    Text(
+                        text = "Regula los descriptores generales y la traducción de tus listas.",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 10.5.sp
+                    )
+                }
 
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF00E5FF),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
+                Button(
+                    onClick = { viewModel.updateLanguage(if (viewModel.selectedLanguage == "Español") "English" else "Español") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
+                ) {
+                    Text(text = viewModel.selectedLanguage, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
         }
