@@ -179,23 +179,11 @@ fun SplashScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                // Gentle backdrop accent to lift the solid container from deep black (no heavy color bleeds)
-                Box(
-                    modifier = Modifier
-                        .size(if (isTvOrWide) 195.dp else 145.dp)
-                        .scale(1.04f)
-                        .background(
-                            color = Color(0xFF101014).copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(32.dp)
-                        )
-                )
-
                 Image(
-                    painter = painterResource(id = R.drawable.img_lumina_logo),
+                    painter = painterResource(id = R.drawable.img_lumina_logo_v2),
                     contentDescription = "Lumina Logo",
                     modifier = Modifier
-                        .size(if (isTvOrWide) 190.dp else 140.dp)
-                        .clip(RoundedCornerShape(28.dp)),
+                        .size(if (isTvOrWide) 220.dp else 160.dp),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             }
