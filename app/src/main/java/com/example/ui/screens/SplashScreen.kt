@@ -136,7 +136,7 @@ fun SplashScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF020202)), // Deep Cinematic Obsidian Base
+            .background(Color.Black), // Pure Black for seamless logo integration
         contentAlignment = Alignment.Center
     ) {
         
@@ -150,7 +150,7 @@ fun SplashScreen(
                 brush = Brush.radialGradient(
                     colors = listOf(
                         Color(0xFF222533).copy(alpha = 0.08f * glowIntensity), // Extremely subtle dark slate touch
-                        Color(0xFF020202)
+                        Color.Black
                     ),
                     center = Offset(width * 0.5f, height * 0.45f),
                     radius = if (isTvOrWide) width * 0.5f else width * 0.8f
