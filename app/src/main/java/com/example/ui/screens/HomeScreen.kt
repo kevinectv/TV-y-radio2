@@ -982,6 +982,7 @@ fun CatalogItemHomeCard(
     Box(
         modifier = modifier
             .width(cardWidth)
+            .clip(RoundedCornerShape(6.dp))
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
@@ -990,7 +991,6 @@ fun CatalogItemHomeCard(
                 onFocus = onFocus
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
-            .clip(RoundedCornerShape(6.dp))
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

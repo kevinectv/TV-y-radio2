@@ -750,7 +750,7 @@ fun FullscreenPlayerScreen(
                                 .tvFocusEffect(
                                     shape = RoundedCornerShape(8.dp),
                                     focusedBorderColor = Color.White.copy(alpha = 0.8f),
-                                    borderWidth = 2.dp,
+                                    borderWidth = 3.dp,
                                     scaleAmount = 1.02f
                                 )
                                 .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(8.dp))

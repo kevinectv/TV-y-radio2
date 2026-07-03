@@ -300,7 +300,7 @@ fun ProfileSelectionScreen(
                                         shape = RoundedCornerShape(12.dp),
                                         focusedBorderColor = Color.White,
                                         unfocusedBorderColor = Color.White.copy(alpha = 0.35f),
-                                        borderWidth = 1.5.dp,
+                                        borderWidth = 1.2.dp,
                                         scaleAmount = 1.15f,
                                         liftOnFocus = true,
                                         interactionSource = manageInteractionSource
@@ -815,6 +815,7 @@ private fun ProfileItemView(
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
+                .clip(RoundedCornerShape(16.dp))
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
                     focusedBorderColor = Color.White,
@@ -835,7 +836,6 @@ private fun ProfileItemView(
                         }
                     }
                 )
-                .clip(RoundedCornerShape(16.dp))
         ) {
             CharacterAvatar(
                 style = profile.avatarStyle,
@@ -947,6 +947,7 @@ private fun AddProfileItemView(
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
+                .clip(RoundedCornerShape(16.dp))
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
                     focusedBorderColor = Color.White,
@@ -962,7 +963,6 @@ private fun AddProfileItemView(
                     indication = LocalIndication.current,
                     onClick = onAddClick
                 )
-                .clip(RoundedCornerShape(16.dp))
                 .semantics { testTag = "add_profile_card" },
             contentAlignment = Alignment.Center
         ) {

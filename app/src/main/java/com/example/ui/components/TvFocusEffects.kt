@@ -101,7 +101,7 @@ fun Modifier.tvFocusEffect(
     )
 
     val currentBorderWidth by animateDpAsState(
-        targetValue = if (isActive) borderWidth.coerceAtLeast(2.5.dp) else borderWidth.coerceAtMost(1.2.dp),
+        targetValue = if (isActive) (if (borderWidth > 0.dp) borderWidth else 2.5.dp) else 1.dp,
         animationSpec = tween(durationMillis = 150),
         label = "tv_focus_border_width"
     )
