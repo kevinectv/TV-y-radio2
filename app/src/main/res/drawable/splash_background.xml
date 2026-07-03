@@ -5,7 +5,7 @@
     
     <!-- Ultra-seamless centered logo in perfect scale with the subsequent Compose loading logo -->
     <item
-        android:drawable="@drawable/img_lumina_logo_v2"
+        android:drawable="@drawable/img_lumina_logo_v3"
         android:gravity="center"
         android:width="140dp"
         android:height="140dp"/>
