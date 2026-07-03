@@ -286,6 +286,7 @@ class MediaViewModel(
         activeProfile = profile
         isDarkTheme = (profile.interfacePref == "dark")
         selectedLanguage = profile.languagePref
+        com.example.ui.util.LanguageHelper.applyLanguage(profile.languagePref)
         activeProfileIdFlow.value = profile.id
         showProfileSelector = false
         sharedPreferences?.edit()?.putString("last_active_profile_id", profile.id)?.apply()
@@ -559,7 +560,7 @@ class MediaViewModel(
         private set
     var epgScale by mutableStateOf("Standard")
         private set
-    var selectedLanguage by mutableStateOf("Español")
+    var selectedLanguage by mutableStateOf("es")
         private set
     var selectedRegion by mutableStateOf("LATAM")
         private set
@@ -585,10 +586,11 @@ class MediaViewModel(
         epgScale = scale
     }
 
-    fun updateLanguage(lang: String) {
-        selectedLanguage = lang
+    fun updateLanguage(langCode: String) {
+        selectedLanguage = langCode
+        com.example.ui.util.LanguageHelper.applyLanguage(langCode)
         activeProfile?.let { prof ->
-            val updated = prof.copy(languagePref = lang)
+            val updated = prof.copy(languagePref = langCode)
             activeProfile = updated
             viewModelScope.launch {
                 repository.insertProfile(updated)

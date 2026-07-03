@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Lumina</string>
+    <string name="tab_home">Inicio</string>
+    <string name="tab_watchlist">Favoritos</string>
+    <string name="tab_tv">TV</string>
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Buscar</string>
+    <string name="tab_settings">Ajustes</string>
+    <string name="settings_title">AJUSTES</string>
+    <string name="setting_profile">Perfil</string>
+    <string name="setting_iptv_sources">Fuentes IPTV</string>
+    <string name="setting_epg">Guía EPG</string>
+    <string name="setting_radio">Radio &amp; Audio</string>
+    <string name="setting_catalogs">Catálogos</string>
+    <string name="setting_apariencia">Apariencia</string>
+    <string name="setting_idioma_region">Región e Idioma</string>
+    <string name="setting_rendimiento">Rendimiento</string>
+    <string name="setting_reproductor">Reproductor</string>
+    <string name="setting_notifications">Notificaciones</string>
+    <string name="setting_privacidad">Privacidad</string>
+    <string name="setting_backup">Copia de Seguridad</string>
+    <string name="setting_about">Acerca de</string>
+    <string name="language_changed_success">Idioma cambiado correctamente.</string>
+    <string name="app_language_title">Idioma de la aplicación</string>
+    <string name="current_language_label">Idioma actual</string>
+    <string name="search_placeholder">Escribe para buscar películas, deportes, canales o radios...</string>
+    <string name="no_results">Sin resultados coincidentes</string>
+    <string name="try_another_search">Intente otra búsqueda temática o cambie de filtro.</string>
+</resources>

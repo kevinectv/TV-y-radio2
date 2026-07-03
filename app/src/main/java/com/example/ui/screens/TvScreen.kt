@@ -1,44 +1,81 @@
 package com.example.ui.screens
 
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 
 
 import androidx.compose.animation.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.focusable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
 import com.example.data.model.Channel
+import androidx.compose.ui.res.stringResource
 import com.example.data.model.EPGProgram
+import androidx.compose.ui.res.stringResource
 import com.example.ui.MediaViewModel
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import com.example.ui.components.tvFocusEffect
+import androidx.compose.ui.res.stringResource
 import java.util.Calendar
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun TvScreen(
@@ -95,11 +132,11 @@ fun TvScreenTv(
     val selectedProgram = viewModel.selectedEpgProgram
 
     // Category Filter system
-    var selectedCategoryFilter by remember { mutableStateOf("All channels") }
+    var selectedCategoryFilter by remember { mutableStateOf(stringResource(com.example.R.string.filter_all_channels)) }
     var dateMenuExpanded by remember { mutableStateOf(false) }
     var catMenuExpanded by remember { mutableStateOf(false) }
-    val datesList = listOf("Today", "Tomorrow", "Wednesday", "Thursday")
-    var selectedDate by remember { mutableStateOf("Today") }
+    val datesList = listOf(stringResource(com.example.R.string.date_today), stringResource(com.example.R.string.date_tomorrow), stringResource(com.example.R.string.date_wednesday), stringResource(com.example.R.string.date_thursday))
+    var selectedDate by remember { mutableStateOf(stringResource(com.example.R.string.date_today)) }
     var searchQuery by remember { mutableStateOf("") }
 
     // Synchronized horizontal scroll state for EPG grid
@@ -135,7 +172,7 @@ fun TvScreenTv(
 
     // Filter channels list dynamically based on category selection AND search query
     val filteredChannels = remember(allChannels, selectedCategoryFilter, searchQuery) {
-        val catFiltered = if (selectedCategoryFilter == "All channels") {
+        val catFiltered = if (selectedCategoryFilter == stringResource(com.example.R.string.filter_all_channels)) {
             allChannels
         } else {
             allChannels.filter {
@@ -321,7 +358,7 @@ fun TvScreenTv(
                                                 )
                                                 Spacer(modifier = Modifier.height(6.dp))
                                                 Text(
-                                                    text = "No hay una lista de reproducción activa",
+                                                    text = stringResource(com.example.R.string.msg_no_active_playlist),
                                                     color = Color.White.copy(alpha = 0.9f),
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold
@@ -341,7 +378,7 @@ fun TvScreenTv(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = "REPRODUCCIÓN EN PORTABLE",
+                                text = stringResource(com.example.R.string.label_live_portable),
                                 color = Color(0xFF00FFD1),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -351,7 +388,7 @@ fun TvScreenTv(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
                                 } else {
-                                    "Ningún Canal Cargado"
+                                    stringResource(com.example.R.string.msg_no_channel_loaded)
                                 },
                                 color = Color.White,
                                 fontSize = 14.sp,
@@ -375,7 +412,7 @@ fun TvScreenTv(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     selectedProgram.description
                                 } else {
-                                    "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                                    stringResource(com.example.R.string.msg_go_to_sources)
                                 },
                                 color = Color.White.copy(alpha = 0.8f),
                                 fontSize = 10.5.sp,
@@ -400,7 +437,7 @@ fun TvScreenTv(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "PROGRAMACIÓN EN VIVO",
+                                text = stringResource(com.example.R.string.label_live_programming),
                                 color = Color.White, // Color de acento blanco de gran estilo
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -414,7 +451,7 @@ fun TvScreenTv(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
                                 } else {
-                                    "Ningún Canal Cargado"
+                                    stringResource(com.example.R.string.msg_no_channel_loaded)
                                 },
                                 color = Color.White,
                                 fontSize = 20.sp,
@@ -444,7 +481,7 @@ fun TvScreenTv(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     selectedProgram.description
                                 } else {
-                                    "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                                    stringResource(com.example.R.string.msg_go_to_sources)
                                 },
                                 color = Color.White.copy(alpha = 0.82f),
                                 fontSize = 12.sp,
@@ -571,14 +608,14 @@ fun TvScreenTv(
                                                     )
                                                     Spacer(modifier = Modifier.height(10.dp))
                                                     Text(
-                                                        text = "No hay una lista de reproducción activa",
+                                                        text = stringResource(com.example.R.string.msg_no_active_playlist),
                                                         color = Color.White.copy(alpha = 0.9f),
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
-                                                        text = "Importa una lista M3U en la sección de 'Fuentes' para comenzar.",
+                                                        text = stringResource(com.example.R.string.msg_import_m3u_instruction),
                                                         color = Color.White.copy(alpha = 0.55f),
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Medium
@@ -703,7 +740,7 @@ fun TvScreenTv(
                                 modifier = Modifier.background(Color(0xFF1F2228))
                             ) {
                                 val categories = remember(allChannels) {
-                                    listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                                    listOf(stringResource(com.example.R.string.filter_all_channels)) + allChannels.map { it.category }.distinct().sorted()
                                 }
                                 categories.forEach { category ->
                                     DropdownMenuItem(
@@ -722,7 +759,7 @@ fun TvScreenTv(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Buscar canal...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                        placeholder = { Text(stringResource(com.example.R.string.search_placeholder_channel), color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(38.dp),
@@ -844,7 +881,7 @@ fun TvScreenTv(
                             modifier = Modifier.background(Color(0xFF1F2228))
                         ) {
                             val categories = remember(allChannels) {
-                                listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                                listOf(stringResource(com.example.R.string.filter_all_channels)) + allChannels.map { it.category }.distinct().sorted()
                             }
                             categories.forEach { category ->
                                 DropdownMenuItem(
@@ -1253,11 +1290,11 @@ fun TvScreenMobile(
     val selectedProgram = viewModel.selectedEpgProgram
 
     // Category Filter system
-    var selectedCategoryFilter by remember { mutableStateOf("All channels") }
+    var selectedCategoryFilter by remember { mutableStateOf(stringResource(com.example.R.string.filter_all_channels)) }
     var dateMenuExpanded by remember { mutableStateOf(false) }
     var catMenuExpanded by remember { mutableStateOf(false) }
-    val datesList = listOf("Today", "Tomorrow", "Wednesday", "Thursday")
-    var selectedDate by remember { mutableStateOf("Today") }
+    val datesList = listOf(stringResource(com.example.R.string.date_today), stringResource(com.example.R.string.date_tomorrow), stringResource(com.example.R.string.date_wednesday), stringResource(com.example.R.string.date_thursday))
+    var selectedDate by remember { mutableStateOf(stringResource(com.example.R.string.date_today)) }
     var searchQuery by remember { mutableStateOf("") }
 
     // Synchronized horizontal scroll state for EPG grid
@@ -1293,7 +1330,7 @@ fun TvScreenMobile(
 
     // Filter channels list dynamically based on category selection AND search query
     val filteredChannels = remember(allChannels, selectedCategoryFilter, searchQuery) {
-        val catFiltered = if (selectedCategoryFilter == "All channels") {
+        val catFiltered = if (selectedCategoryFilter == stringResource(com.example.R.string.filter_all_channels)) {
             allChannels
         } else {
             allChannels.filter {
@@ -1479,7 +1516,7 @@ fun TvScreenMobile(
                                                 )
                                                 Spacer(modifier = Modifier.height(6.dp))
                                                 Text(
-                                                    text = "No hay una lista de reproducción activa",
+                                                    text = stringResource(com.example.R.string.msg_no_active_playlist),
                                                     color = Color.White.copy(alpha = 0.9f),
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold
@@ -1499,7 +1536,7 @@ fun TvScreenMobile(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = "REPRODUCCIÓN EN PORTABLE",
+                                text = stringResource(com.example.R.string.label_live_portable),
                                 color = Color(0xFF00FFD1),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -1509,7 +1546,7 @@ fun TvScreenMobile(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
                                 } else {
-                                    "Ningún Canal Cargado"
+                                    stringResource(com.example.R.string.msg_no_channel_loaded)
                                 },
                                 color = Color.White,
                                 fontSize = 14.sp,
@@ -1533,7 +1570,7 @@ fun TvScreenMobile(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     selectedProgram.description
                                 } else {
-                                    "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                                    stringResource(com.example.R.string.msg_go_to_sources)
                                 },
                                 color = Color.White.copy(alpha = 0.8f),
                                 fontSize = 10.5.sp,
@@ -1558,7 +1595,7 @@ fun TvScreenMobile(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "PROGRAMACIÓN EN VIVO",
+                                text = stringResource(com.example.R.string.label_live_programming),
                                 color = Color.White, // Color de acento blanco de gran estilo
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -1572,7 +1609,7 @@ fun TvScreenMobile(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     "${viewModel.selectedChannel.name} | ${selectedProgram.title}"
                                 } else {
-                                    "Ningún Canal Cargado"
+                                    stringResource(com.example.R.string.msg_no_channel_loaded)
                                 },
                                 color = Color.White,
                                 fontSize = 20.sp,
@@ -1602,7 +1639,7 @@ fun TvScreenMobile(
                                 text = if (viewModel.selectedChannel.id != "no_channel") {
                                     selectedProgram.description
                                 } else {
-                                    "Por favor, dirígete a la pestaña 'Fuentes' para agregar e importar tu lista M3U."
+                                    stringResource(com.example.R.string.msg_go_to_sources)
                                 },
                                 color = Color.White.copy(alpha = 0.82f),
                                 fontSize = 12.sp,
@@ -1729,14 +1766,14 @@ fun TvScreenMobile(
                                                     )
                                                     Spacer(modifier = Modifier.height(10.dp))
                                                     Text(
-                                                        text = "No hay una lista de reproducción activa",
+                                                        text = stringResource(com.example.R.string.msg_no_active_playlist),
                                                         color = Color.White.copy(alpha = 0.9f),
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
-                                                        text = "Importa una lista M3U en la sección de 'Fuentes' para comenzar.",
+                                                        text = stringResource(com.example.R.string.msg_import_m3u_instruction),
                                                         color = Color.White.copy(alpha = 0.55f),
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Medium
@@ -1861,7 +1898,7 @@ fun TvScreenMobile(
                                 modifier = Modifier.background(Color(0xFF1F2228))
                             ) {
                                 val categories = remember(allChannels) {
-                                    listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                                    listOf(stringResource(com.example.R.string.filter_all_channels)) + allChannels.map { it.category }.distinct().sorted()
                                 }
                                 categories.forEach { category ->
                                     DropdownMenuItem(
@@ -1880,7 +1917,7 @@ fun TvScreenMobile(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Buscar canal...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                        placeholder = { Text(stringResource(com.example.R.string.search_placeholder_channel), color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(38.dp),
@@ -2002,7 +2039,7 @@ fun TvScreenMobile(
                             modifier = Modifier.background(Color(0xFF1F2228))
                         ) {
                             val categories = remember(allChannels) {
-                                listOf("All channels") + allChannels.map { it.category }.distinct().sorted()
+                                listOf(stringResource(com.example.R.string.filter_all_channels)) + allChannels.map { it.category }.distinct().sorted()
                             }
                             categories.forEach { category ->
                                 DropdownMenuItem(

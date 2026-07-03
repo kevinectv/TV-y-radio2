@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Lumina</string>
+    <string name="section_continue_watching">CONTINUER À REGARDER</string>
+    <string name="label_channel_number">CH %d</string>
+    <string name="tab_home">Accueil</string>
+    <string name="tab_tv">TV en Direct</string>
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Explorer</string>
+    <string name="tab_settings">Paramètres</string>
+    <string name="search_placeholder">Films, Séries, Chaînes...</string>
+    <string name="filter_all">Tout</string>
+    <string name="filter_movies">Films</string>
+    <string name="filter_series">Séries</string>
+    <string name="filter_channels">Chaînes</string>
+    <string name="filter_radio">Radio</string>
+    <string name="label_results">Résultats</string>
+    <string name="label_recent_searches">Recherches récentes</string>
+    <string name="label_clear">Effacer</string>
+    <string name="label_categories">Catégories</string>
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_desc">Gérez votre compte et vos préférences</string>
+    <string name="category_profile_label">Profil et Compte</string>
+    <string name="category_profile_desc">Personnalisez votre expérience</string>
+    <string name="category_playback_label">Lecture</string>
+    <string name="category_playback_desc">Qualité et contrôles</string>
+    <string name="category_appearance_label">Apparence</string>
+    <string name="category_appearance_desc">Thèmes et visuels</string>
+    <string name="category_language_label">Langue et Région</string>
+    <string name="category_language_desc">Choisissez votre langue</string>
+    <string name="category_privacy_label">Confidentialité</string>
+    <string name="category_privacy_desc">Sécurité et données</string>
+    <string name="category_about_label">À propos</string>
+    <string name="category_about_desc">Informations sur la version</string>
+    <string name="label_app_language">Langue de l\'application</string>
+    <string name="msg_language_changed">Langue modifiée avec succès</string>
+</resources>

@@ -1,38 +1,71 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.example.data.database.EpgSourceEntity
+import androidx.compose.ui.res.stringResource
 import com.example.data.database.PlaylistEntity
+import androidx.compose.ui.res.stringResource
 import com.example.ui.MediaViewModel
+import androidx.compose.ui.res.stringResource
 import com.example.ui.components.tvFocusEffect
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 import java.text.SimpleDateFormat
+import androidx.compose.ui.res.stringResource
 import java.util.*
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -164,7 +197,7 @@ fun IptvSourcesScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "FUENTES IPTV / PLAYLIST MANAGER",
+                            text = stringResource(com.example.R.string.label_iptv_sources),
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
@@ -172,7 +205,7 @@ fun IptvSourcesScreen(
                         )
                     }
                     Text(
-                        text = "Administra listas de reproducción M3U/Xtream y guías de programación electrónica (EPG).",
+                        text = stringResource(com.example.R.string.desc_iptv_sources),
                         color = Color.White.copy(alpha = 0.5f),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -204,7 +237,7 @@ fun IptvSourcesScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Sincronizando fuentes globales...",
+                                    text = stringResource(com.example.R.string.msg_syncing_global),
                                     color = Color.White,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
@@ -270,7 +303,7 @@ fun IptvSourcesScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Actualizar Todo",
+                            text = stringResource(com.example.R.string.btn_update_all),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -391,7 +424,7 @@ fun IptvSourcesScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Actualizar Todo",
+                            text = stringResource(com.example.R.string.btn_update_all),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -499,7 +532,7 @@ fun IptvSourcesScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "LISTAS DE REPRODUCCIÓN (${playlists.size})",
+                        text = stringResource(com.example.R.string.label_playlists_count, playlists.size),
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -527,7 +560,7 @@ fun IptvSourcesScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Añadir Lista",
+                        text = stringResource(com.example.R.string.btn_add_playlist),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -539,8 +572,8 @@ fun IptvSourcesScreen(
         if (playlists.isEmpty()) {
             item {
                 EmptyStateCard(
-                    title = "No hay listas añadidas",
-                    description = "Añade una URL de lista M3U8, M3U local o servidor Xtream Codes para iniciar la reproducción de canales.",
+                    title = stringResource(com.example.R.string.msg_no_playlists),
+                    description = stringResource(com.example.R.string.desc_no_playlists),
                     icon = Icons.Outlined.PlaylistAdd
                 )
             }
@@ -577,7 +610,7 @@ fun IptvSourcesScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "FUENTES EPG / GUÍAS DE TV (${epgSources.size})",
+                        text = stringResource(com.example.R.string.label_epg_sources_count, epgSources.size),
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -605,7 +638,7 @@ fun IptvSourcesScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Añadir EPG",
+                        text = stringResource(com.example.R.string.btn_add_epg),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -617,8 +650,8 @@ fun IptvSourcesScreen(
         if (epgSources.isEmpty()) {
             item {
                 EmptyStateCard(
-                    title = "No hay fuentes EPG",
-                    description = "Agrega un archivo XMLTV o URL EPG compatible para enriquecer los horarios, sinopsis y portadas de los canales de televisión.",
+                    title = stringResource(com.example.R.string.msg_no_epg),
+                    description = stringResource(com.example.R.string.desc_no_epg),
                     icon = Icons.Outlined.CalendarViewMonth
                 )
             }
@@ -821,15 +854,15 @@ fun PlaylistCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(text = "CANALES", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(text = stringResource(com.example.R.string.label_channels), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                             Text(text = if (playlist.channelsCount > 0) "${playlist.channelsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Column {
-                            Text(text = "CATEGORÍAS", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(text = stringResource(com.example.R.string.label_categories), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                             Text(text = if (playlist.groupsCount > 0) "${playlist.groupsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Column {
-                            Text(text = "CONEXIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(text = stringResource(com.example.R.string.label_connection), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                             Text(
                                 text = if (playlist.type == "Local M3U") "Offline" else "Online",
                                 color = if (playlist.type == "Local M3U") Color(0xFFFF9500) else Color(0xFF00E676),
@@ -840,7 +873,7 @@ fun PlaylistCard(
                     }
 
                     Column {
-                        Text(text = "SINCRONIZACIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(com.example.R.string.label_sync_status), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
@@ -858,10 +891,10 @@ fun PlaylistCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when (playlist.syncStatus) {
-                                    "Success" -> "Completada (${formatTimestamp(playlist.lastSynced)})"
-                                    "Error" -> "Error de conexión"
-                                    "Syncing..." -> "Sincronizando..."
-                                    else -> "Pendiente"
+                                    "Success" -> stringResource(com.example.R.string.status_completed, formatTimestamp(playlist.lastSynced))
+                                    "Error" -> stringResource(com.example.R.string.status_error)
+                                    "Syncing..." -> stringResource(com.example.R.string.status_syncing)
+                                    else -> stringResource(com.example.R.string.status_pending)
                                 },
                                 color = Color.White,
                                 fontSize = 11.sp,
@@ -876,11 +909,11 @@ fun PlaylistCard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Column {
-                        Text(text = "CANALES", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(com.example.R.string.label_channels), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         Text(text = if (playlist.channelsCount > 0) "${playlist.channelsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                     }
                     Column {
-                        Text(text = "CATEGORÍAS", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(com.example.R.string.label_categories), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         Text(text = if (playlist.groupsCount > 0) "${playlist.groupsCount}" else "--", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                     }
                     Column {
@@ -897,7 +930,7 @@ fun PlaylistCard(
 
                     // Last synced and status indicator
                     Column(horizontalAlignment = Alignment.End) {
-                        Text(text = "SINCRONIZACIÓN", color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(com.example.R.string.label_sync_status), color = Color.White.copy(alpha = 0.3f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
@@ -915,10 +948,10 @@ fun PlaylistCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when (playlist.syncStatus) {
-                                    "Success" -> "Completada (${formatTimestamp(playlist.lastSynced)})"
-                                    "Error" -> "Error de conexión"
-                                    "Syncing..." -> "Sincronizando..."
-                                    else -> "Pendiente"
+                                    "Success" -> stringResource(com.example.R.string.status_completed, formatTimestamp(playlist.lastSynced))
+                                    "Error" -> stringResource(com.example.R.string.status_error)
+                                    "Syncing..." -> stringResource(com.example.R.string.status_syncing)
+                                    else -> stringResource(com.example.R.string.status_pending)
                                 },
                                 color = Color.White,
                                 fontSize = 11.sp,
@@ -937,21 +970,21 @@ fun PlaylistCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 IconButtonText(
-                    text = "Ver",
+                    text = stringResource(com.example.R.string.btn_view),
                     icon = Icons.Default.Visibility,
                     onClick = onViewDetails,
                     showText = !isMobile
                 )
                 
                 IconButtonText(
-                    text = "Editar",
+                    text = stringResource(com.example.R.string.btn_edit),
                     icon = Icons.Default.Edit,
                     onClick = onEdit,
                     showText = !isMobile
                 )
 
                 IconButtonText(
-                    text = "Sincronizar",
+                    text = stringResource(com.example.R.string.btn_sync),
                     icon = syncIcon,
                     onClick = onSync,
                     showText = !isMobile,
@@ -961,7 +994,7 @@ fun PlaylistCard(
                 Spacer(modifier = Modifier.weight(1f))
 
                 IconButtonText(
-                    text = "Eliminar",
+                    text = stringResource(com.example.R.string.btn_delete),
                     icon = Icons.Default.Delete,
                     tint = Color(0xFFE53935),
                     onClick = onDelete,
@@ -1088,7 +1121,7 @@ fun EpgCard(
                             text = when (epg.syncStatus) {
                                 "Success" -> "Sincronizado: ${formatTimestamp(epg.lastSynced)}"
                                 "Error" -> "Fallo al decodificar XMLTV"
-                                "Syncing..." -> "Sincronizando..."
+                                "Syncing..." -> stringResource(com.example.R.string.status_syncing)
                                 else -> "No sincronizado"
                             },
                             color = Color.White.copy(alpha = 0.6f),
@@ -1152,7 +1185,7 @@ fun EpgCard(
                         text = when (epg.syncStatus) {
                             "Success" -> "Sincronizado: ${formatTimestamp(epg.lastSynced)}"
                             "Error" -> "Fallo al decodificar XMLTV"
-                            "Syncing..." -> "Sincronizando..."
+                            "Syncing..." -> stringResource(com.example.R.string.status_syncing)
                             else -> "No sincronizado"
                         },
                         color = Color.White.copy(alpha = 0.6f),

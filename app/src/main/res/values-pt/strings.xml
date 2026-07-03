@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Lumina</string>
+    <string name="section_continue_watching">CONTINUAR ASSISTINDO</string>
+    <string name="label_channel_number">CH %d</string>
+    <string name="tab_home">Início</string>
+    <string name="tab_tv">TV Ao Vivo</string>
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Explorar</string>
+    <string name="tab_settings">Ajustes</string>
+    <string name="search_placeholder">Filmes, Séries, Canais...</string>
+    <string name="filter_all">Tudo</string>
+    <string name="filter_movies">Filmes</string>
+    <string name="filter_series">Séries</string>
+    <string name="filter_channels">Canais</string>
+    <string name="filter_radio">Radio</string>
+    <string name="label_results">Resultados</string>
+    <string name="label_recent_searches">Buscas recentes</string>
+    <string name="label_clear">Limpar</string>
+    <string name="label_categories">Categorias</string>
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_desc">Gerencie sua conta e preferências</string>
+    <string name="category_profile_label">Perfil e Conta</string>
+    <string name="category_profile_desc">Personalize sua experiência</string>
+    <string name="category_playback_label">Reprodução</string>
+    <string name="category_playback_desc">Qualidade e controles</string>
+    <string name="category_appearance_label">Aparência</string>
+    <string name="category_appearance_desc">Temas e visual</string>
+    <string name="category_language_label">Idioma e Região</string>
+    <string name="category_language_desc">Escolha seu idioma</string>
+    <string name="category_privacy_label">Privacidade</string>
+    <string name="category_privacy_desc">Segurança e dados</string>
+    <string name="category_about_label">Sobre</string>
+    <string name="category_about_desc">Informações da versão</string>
+    <string name="label_app_language">Idioma do Aplicativo</string>
+    <string name="msg_language_changed">Idioma alterado com sucesso</string>
+</resources>

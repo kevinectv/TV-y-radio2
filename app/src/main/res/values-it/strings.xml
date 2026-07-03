@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Lumina</string>
+    <string name="section_continue_watching">CONTINUA A GUARDARE</string>
+    <string name="label_channel_number">CH %d</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_tv">TV in Diretta</string>
+    <string name="tab_radio">Radio</string>
+    <string name="tab_search">Esplora</string>
+    <string name="tab_settings">Impostazioni</string>
+    <string name="search_placeholder">Film, Serie, Canali...</string>
+    <string name="filter_all">Tutto</string>
+    <string name="filter_movies">Film</string>
+    <string name="filter_series">Serie</string>
+    <string name="filter_channels">Canali</string>
+    <string name="filter_radio">Radio</string>
+    <string name="label_results">Risultati</string>
+    <string name="label_recent_searches">Ricerche recenti</string>
+    <string name="label_clear">Cancella</string>
+    <string name="label_categories">Categorie</string>
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_desc">Gestisci il tuo account e le tue preferenze</string>
+    <string name="category_profile_label">Profilo e Account</string>
+    <string name="category_profile_desc">Personalizza la tua esperienza</string>
+    <string name="category_playback_label">Riproduzione</string>
+    <string name="category_playback_desc">Qualità e controlli</string>
+    <string name="category_appearance_label">Aspetto</string>
+    <string name="category_appearance_desc">Temi e stile</string>
+    <string name="category_language_label">Lingua e Regione</string>
+    <string name="category_language_desc">Scegli la tua lingua</string>
+    <string name="category_privacy_label">Privacy</string>
+    <string name="category_privacy_desc">Sicurezza e dati</string>
+    <string name="category_about_label">Informazioni</string>
+    <string name="category_about_desc">Informazioni sulla versione</string>
+    <string name="label_app_language">Lingua dell\'app</string>
+    <string name="msg_language_changed">Lingua cambiata con successo</string>
+</resources>
