@@ -2316,7 +2316,10 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                    modifier = Modifier.weight(1f).tvFocusEffect(
+                        shape = RoundedCornerShape(8.dp),
+                        unfocusedBorderColor = Color.Transparent
+                    )
                 ) {
                     Text("Privacidad", fontSize = 10.sp)
                 }
@@ -2327,7 +2330,10 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                    modifier = Modifier.weight(1f).tvFocusEffect(
+                        shape = RoundedCornerShape(8.dp),
+                        unfocusedBorderColor = Color.Transparent
+                    )
                 ) {
                     Text("Términos", fontSize = 10.sp)
                 }
@@ -2343,7 +2349,10 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                    modifier = Modifier.weight(1f).tvFocusEffect(
+                        shape = RoundedCornerShape(8.dp),
+                        unfocusedBorderColor = Color.Transparent
+                    )
                 ) {
                     Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(6.dp))
@@ -2359,7 +2368,10 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                    modifier = Modifier.weight(1f).tvFocusEffect(
+                        shape = RoundedCornerShape(8.dp),
+                        unfocusedBorderColor = Color.Transparent
+                    )
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(6.dp))
