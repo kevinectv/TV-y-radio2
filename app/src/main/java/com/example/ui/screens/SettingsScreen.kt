@@ -1,7 +1,10 @@
 package com.example.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -120,24 +123,34 @@ fun SettingsScreenTv(
     onOpenApiSettings: () -> Unit,
     onOpenDiagnostics: () -> Unit
 ) {
-    var pushAlerts by remember { mutableStateOf(true) }
-    var updateAlerts by remember { mutableStateOf(true) }
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val streamingQuality by viewModel.streamingQuality.collectAsStateWithLifecycle()
+    val imageQuality by viewModel.imageQuality.collectAsStateWithLifecycle()
+    val autoPlay by viewModel.autoPlay.collectAsStateWithLifecycle()
+    val autoPlayTrailers by viewModel.autoPlayTrailers.collectAsStateWithLifecycle()
+    val continueWatching by viewModel.continueWatching.collectAsStateWithLifecycle()
+    val pushAlerts by viewModel.pushNotifications.collectAsStateWithLifecycle()
+    val updateAlerts by viewModel.updateNotifications.collectAsStateWithLifecycle()
+    val autoEpgSync by viewModel.autoEpgSync.collectAsStateWithLifecycle()
+    val epgScale by viewModel.epgScale.collectAsStateWithLifecycle()
+    val downloadLogos by viewModel.downloadLogos.collectAsStateWithLifecycle()
+    val bufferLatency by viewModel.bufferLatency.collectAsStateWithLifecycle()
+    val hwAudioSync by viewModel.hwAudioSync.collectAsStateWithLifecycle()
+    val eac3Audio by viewModel.eac3Audio.collectAsStateWithLifecycle()
+    val realtimeShadows by viewModel.realtimeShadows.collectAsStateWithLifecycle()
+    val fluidAnimations by viewModel.fluidAnimations.collectAsStateWithLifecycle()
+    val ramOptimization by viewModel.ramOptimization.collectAsStateWithLifecycle()
+    val forced60fps by viewModel.forced60fps.collectAsStateWithLifecycle()
+    val sendErrorStats by viewModel.sendErrorStats.collectAsStateWithLifecycle()
+    val keepLocalHistory by viewModel.keepLocalHistory.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+    val selectedRegion by viewModel.selectedRegion.collectAsStateWithLifecycle()
+    val playerDecoder by viewModel.playerDecoder.collectAsStateWithLifecycle()
 
     val profilesList by viewModel.profiles.collectAsState(initial = emptyList())
     val activeProfile = viewModel.activeProfile
     val context = LocalContext.current
     var selectedCategory by remember { mutableStateOf(SettingCategory.PROFILE) }
-    var autoEpgSync by remember { mutableStateOf(true) }
-    var downloadLogos by remember { mutableStateOf(true) }
-    var bufferLatency by remember { mutableStateOf(true) }
-    var hwAudioSync by remember { mutableStateOf(true) }
-    var eac3Audio by remember { mutableStateOf(true) }
-    var realtimeShadows by remember { mutableStateOf(true) }
-    var fluidAnimations by remember { mutableStateOf(true) }
-    var ramOptimization by remember { mutableStateOf(true) }
-    var forced60fps by remember { mutableStateOf(false) }
-    var sendErrorStats by remember { mutableStateOf(false) }
-    var keepLocalHistory by remember { mutableStateOf(true) }
 
 
     BoxWithConstraints(
@@ -255,11 +268,13 @@ fun SettingsScreenTv(
                                     EpgPaneContent(
                                         viewModel = viewModel,
                                         autoEpgSync = autoEpgSync,
-                                        onAutoEpgSyncChange = { autoEpgSync = it },
+                                        onAutoEpgSyncChange = { viewModel.updateAutoEpgSync(it) },
+                                        epgScale = epgScale,
                                         downloadLogos = downloadLogos,
-                                        onDownloadLogosChange = { downloadLogos = it },
+                                        onDownloadLogosChange = { viewModel.updateDownloadLogos(it) },
                                         onSyncNow = {
                                             Toast.makeText(context, "Sincronizando guía EPG con XMLTV...", Toast.LENGTH_SHORT).show()
+                                            viewModel.syncAllCatalogs()
                                         }
                                     )
                                 }
@@ -267,55 +282,61 @@ fun SettingsScreenTv(
                                     RadioPaneContent(
                                         viewModel = viewModel,
                                         bufferLatency = bufferLatency,
-                                        onBufferLatencyChange = { bufferLatency = it }
+                                        onBufferLatencyChange = { viewModel.updateBufferLatency(it) }
                                     )
                                 }
                                 SettingCategory.REPRODUCTOR -> {
                                     ReproductorPaneContent(
                                         viewModel = viewModel,
+                                        playerDecoder = playerDecoder,
                                         hwAudioSync = hwAudioSync,
-                                        onHwAudioSyncChange = { hwAudioSync = it },
+                                        onHwAudioSyncChange = { viewModel.updateHwAudioSync(it) },
                                         eac3Audio = eac3Audio,
-                                        onEac3AudioChange = { eac3Audio = it }
+                                        onEac3AudioChange = { viewModel.updateEac3Audio(it) }
                                     )
                                 }
                                 SettingCategory.APARIENCIA -> {
                                     AparienciaPaneContent(
                                         viewModel = viewModel,
                                         realtimeShadows = realtimeShadows,
-                                        onRealtimeShadowsChange = { realtimeShadows = it },
+                                        onRealtimeShadowsChange = { viewModel.updateRealtimeShadows(it) },
                                         fluidAnimations = fluidAnimations,
-                                        onFluidAnimationsChange = { fluidAnimations = it }
+                                        onFluidAnimationsChange = { viewModel.updateFluidAnimations(it) }
                                     )
                                 }
                                 SettingCategory.IDIOMA_REGION -> {
-                                    IdiomaRegionPaneContent(viewModel = viewModel)
+                                    IdiomaRegionPaneContent(
+                                        viewModel = viewModel,
+                                        selectedLanguage = selectedLanguage,
+                                        selectedRegion = selectedRegion
+                                    )
                                 }
                                 SettingCategory.NOTIFICATIONS -> {
                                     NotificationsPaneContent(
                                         pushAlerts = pushAlerts,
-                                        onPushAlertsChange = { pushAlerts = it },
+                                        onPushAlertsChange = { viewModel.updatePushNotifications(it) },
                                         updateAlerts = updateAlerts,
-                                        onUpdateAlertsChange = { updateAlerts = it }
+                                        onUpdateAlertsChange = { viewModel.updateUpdateNotifications(it) }
                                     )
                                 }
                                 SettingCategory.RENDIMIENTO -> {
                                     RendimientoPaneContent(
                                         ramOptimization = ramOptimization,
-                                        onRamOptimizationChange = { ramOptimization = it },
+                                        onRamOptimizationChange = { viewModel.updateRamOptimization(it) },
                                         forced60fps = forced60fps,
-                                        onForced60fpsChange = { forced60fps = it },
+                                        onForced60fpsChange = { viewModel.updateForced60fps(it) },
                                         onClearCache = {
-                                            Toast.makeText(context, "Caché purgado con éxito. Se liberaron 12.8 MB", Toast.LENGTH_SHORT).show()
+                                            viewModel.clearCache(context)
+                                            Toast.makeText(context, "Caché purgado con éxito. Optimizando...", Toast.LENGTH_SHORT).show()
                                         }
                                     )
                                 }
                                 SettingCategory.PRIVACIDAD -> {
                                     PrivacidadPaneContent(
                                         sendErrorStats = sendErrorStats,
-                                        onSendErrorStatsChange = { sendErrorStats = it },
+                                        onSendErrorStatsChange = { viewModel.updateSendErrorStats(it) },
                                         keepLocalHistory = keepLocalHistory,
-                                        onKeepLocalHistoryChange = { keepLocalHistory = it }
+                                        onKeepLocalHistoryChange = { viewModel.updateKeepLocalHistory(it) }
                                     )
                                 }
                                 SettingCategory.BACKUP -> {
@@ -324,7 +345,8 @@ fun SettingsScreenTv(
                                             Toast.makeText(context, "Copia de respaldo generada localmente", Toast.LENGTH_SHORT).show()
                                         },
                                         onRestore = {
-                                            Toast.makeText(context, "Copia de respaldo restaurada con éxito", Toast.LENGTH_SHORT).show()
+                                            viewModel.restoreDefaultSettings()
+                                            Toast.makeText(context, "Ajustes restablecidos a valores de fábrica", Toast.LENGTH_SHORT).show()
                                         }
                                     )
                                 }
@@ -349,24 +371,34 @@ fun SettingsScreenMobile(
     onOpenApiSettings: () -> Unit,
     onOpenDiagnostics: () -> Unit
 ) {
-    var pushAlerts by remember { mutableStateOf(true) }
-    var updateAlerts by remember { mutableStateOf(true) }
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val streamingQuality by viewModel.streamingQuality.collectAsStateWithLifecycle()
+    val imageQuality by viewModel.imageQuality.collectAsStateWithLifecycle()
+    val autoPlay by viewModel.autoPlay.collectAsStateWithLifecycle()
+    val autoPlayTrailers by viewModel.autoPlayTrailers.collectAsStateWithLifecycle()
+    val continueWatching by viewModel.continueWatching.collectAsStateWithLifecycle()
+    val pushAlerts by viewModel.pushNotifications.collectAsStateWithLifecycle()
+    val updateAlerts by viewModel.updateNotifications.collectAsStateWithLifecycle()
+    val autoEpgSync by viewModel.autoEpgSync.collectAsStateWithLifecycle()
+    val epgScale by viewModel.epgScale.collectAsStateWithLifecycle()
+    val downloadLogos by viewModel.downloadLogos.collectAsStateWithLifecycle()
+    val bufferLatency by viewModel.bufferLatency.collectAsStateWithLifecycle()
+    val hwAudioSync by viewModel.hwAudioSync.collectAsStateWithLifecycle()
+    val eac3Audio by viewModel.eac3Audio.collectAsStateWithLifecycle()
+    val realtimeShadows by viewModel.realtimeShadows.collectAsStateWithLifecycle()
+    val fluidAnimations by viewModel.fluidAnimations.collectAsStateWithLifecycle()
+    val ramOptimization by viewModel.ramOptimization.collectAsStateWithLifecycle()
+    val forced60fps by viewModel.forced60fps.collectAsStateWithLifecycle()
+    val sendErrorStats by viewModel.sendErrorStats.collectAsStateWithLifecycle()
+    val keepLocalHistory by viewModel.keepLocalHistory.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+    val selectedRegion by viewModel.selectedRegion.collectAsStateWithLifecycle()
+    val playerDecoder by viewModel.playerDecoder.collectAsStateWithLifecycle()
 
     val profilesList by viewModel.profiles.collectAsState(initial = emptyList())
     val activeProfile = viewModel.activeProfile
     val context = LocalContext.current
     var selectedCategory by remember { mutableStateOf(SettingCategory.PROFILE) }
-    var autoEpgSync by remember { mutableStateOf(true) }
-    var downloadLogos by remember { mutableStateOf(true) }
-    var bufferLatency by remember { mutableStateOf(true) }
-    var hwAudioSync by remember { mutableStateOf(true) }
-    var eac3Audio by remember { mutableStateOf(true) }
-    var realtimeShadows by remember { mutableStateOf(true) }
-    var fluidAnimations by remember { mutableStateOf(true) }
-    var ramOptimization by remember { mutableStateOf(true) }
-    var forced60fps by remember { mutableStateOf(false) }
-    var sendErrorStats by remember { mutableStateOf(false) }
-    var keepLocalHistory by remember { mutableStateOf(true) }
 
 
     BoxWithConstraints(
@@ -467,11 +499,13 @@ fun SettingsScreenMobile(
                                 EpgPaneContent(
                                     viewModel = viewModel,
                                     autoEpgSync = autoEpgSync,
-                                    onAutoEpgSyncChange = { autoEpgSync = it },
+                                    onAutoEpgSyncChange = { viewModel.updateAutoEpgSync(it) },
+                                    epgScale = epgScale,
                                     downloadLogos = downloadLogos,
-                                    onDownloadLogosChange = { downloadLogos = it },
+                                    onDownloadLogosChange = { viewModel.updateDownloadLogos(it) },
                                     onSyncNow = {
                                         Toast.makeText(context, "Sincronizando guía EPG con XMLTV...", Toast.LENGTH_SHORT).show()
+                                        viewModel.syncAllCatalogs()
                                     }
                                 )
                             }
@@ -479,55 +513,61 @@ fun SettingsScreenMobile(
                                 RadioPaneContent(
                                     viewModel = viewModel,
                                     bufferLatency = bufferLatency,
-                                    onBufferLatencyChange = { bufferLatency = it }
+                                    onBufferLatencyChange = { viewModel.updateBufferLatency(it) }
                                 )
                             }
                             SettingCategory.REPRODUCTOR -> {
                                 ReproductorPaneContent(
                                     viewModel = viewModel,
+                                    playerDecoder = playerDecoder,
                                     hwAudioSync = hwAudioSync,
-                                    onHwAudioSyncChange = { hwAudioSync = it },
+                                    onHwAudioSyncChange = { viewModel.updateHwAudioSync(it) },
                                     eac3Audio = eac3Audio,
-                                    onEac3AudioChange = { eac3Audio = it }
+                                    onEac3AudioChange = { viewModel.updateEac3Audio(it) }
                                 )
                             }
                             SettingCategory.APARIENCIA -> {
                                 AparienciaPaneContent(
                                     viewModel = viewModel,
                                     realtimeShadows = realtimeShadows,
-                                    onRealtimeShadowsChange = { realtimeShadows = it },
+                                    onRealtimeShadowsChange = { viewModel.updateRealtimeShadows(it) },
                                     fluidAnimations = fluidAnimations,
-                                    onFluidAnimationsChange = { fluidAnimations = it }
+                                    onFluidAnimationsChange = { viewModel.updateFluidAnimations(it) }
                                 )
                             }
                             SettingCategory.IDIOMA_REGION -> {
-                                IdiomaRegionPaneContent(viewModel = viewModel)
+                                IdiomaRegionPaneContent(
+                                    viewModel = viewModel,
+                                    selectedLanguage = selectedLanguage,
+                                    selectedRegion = selectedRegion
+                                )
                             }
                             SettingCategory.NOTIFICATIONS -> {
                                 NotificationsPaneContent(
                                     pushAlerts = pushAlerts,
-                                    onPushAlertsChange = { pushAlerts = it },
+                                    onPushAlertsChange = { viewModel.updatePushNotifications(it) },
                                     updateAlerts = updateAlerts,
-                                    onUpdateAlertsChange = { updateAlerts = it }
+                                    onUpdateAlertsChange = { viewModel.updateUpdateNotifications(it) }
                                 )
                             }
                             SettingCategory.RENDIMIENTO -> {
                                 RendimientoPaneContent(
                                     ramOptimization = ramOptimization,
-                                    onRamOptimizationChange = { ramOptimization = it },
+                                    onRamOptimizationChange = { viewModel.updateRamOptimization(it) },
                                     forced60fps = forced60fps,
-                                    onForced60fpsChange = { forced60fps = it },
+                                    onForced60fpsChange = { viewModel.updateForced60fps(it) },
                                     onClearCache = {
-                                        Toast.makeText(context, "Caché purgado con éxito. Se liberaron 12.8 MB", Toast.LENGTH_SHORT).show()
+                                        viewModel.clearCache(context)
+                                        Toast.makeText(context, "Caché purgado con éxito. Optimizando...", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
                             SettingCategory.PRIVACIDAD -> {
                                 PrivacidadPaneContent(
                                     sendErrorStats = sendErrorStats,
-                                    onSendErrorStatsChange = { sendErrorStats = it },
+                                    onSendErrorStatsChange = { viewModel.updateSendErrorStats(it) },
                                     keepLocalHistory = keepLocalHistory,
-                                    onKeepLocalHistoryChange = { keepLocalHistory = it }
+                                    onKeepLocalHistoryChange = { viewModel.updateKeepLocalHistory(it) }
                                 )
                             }
                             SettingCategory.BACKUP -> {
@@ -536,7 +576,8 @@ fun SettingsScreenMobile(
                                         Toast.makeText(context, "Copia de respaldo generada localmente", Toast.LENGTH_SHORT).show()
                                     },
                                     onRestore = {
-                                        Toast.makeText(context, "Copia de respaldo restaurada con éxito", Toast.LENGTH_SHORT).show()
+                                        viewModel.restoreDefaultSettings()
+                                        Toast.makeText(context, "Ajustes restablecidos a valores de fábrica", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -991,12 +1032,12 @@ fun EpgPaneContent(
     viewModel: MediaViewModel,
     autoEpgSync: Boolean,
     onAutoEpgSyncChange: (Boolean) -> Unit,
+    epgScale: String,
     downloadLogos: Boolean,
     onDownloadLogosChange: (Boolean) -> Unit,
     onSyncNow: () -> Unit
 ) {
-    val scales = listOf("Compacto", "Estándar", "Grande")
-
+    val scales = listOf("Mini", "Standard", "Large")
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1018,7 +1059,7 @@ fun EpgPaneContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 scales.forEach { scale ->
-                    val isSelected = viewModel.epgScale == scale
+                    val isSelected = epgScale == scale
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1553,12 +1594,20 @@ fun RadioPaneContent(
 @Composable
 fun ReproductorPaneContent(
     viewModel: MediaViewModel,
+    playerDecoder: String,
     hwAudioSync: Boolean,
     onHwAudioSyncChange: (Boolean) -> Unit,
     eac3Audio: Boolean,
     onEac3AudioChange: (Boolean) -> Unit
 ) {
     val decoders = listOf("Hardware (HW+)", "Software (SW)", "Modo Auto")
+    val qualities = listOf("Baja (480p)", "Media (720p)", "Alta (1080p)", "Auto")
+    val imageQualities = listOf("Baja", "Media", "Alta")
+    val streamingQuality by viewModel.streamingQuality.collectAsStateWithLifecycle()
+    val imageQuality by viewModel.imageQuality.collectAsStateWithLifecycle()
+    val autoPlay by viewModel.autoPlay.collectAsStateWithLifecycle()
+    val autoPlayTrailers by viewModel.autoPlayTrailers.collectAsStateWithLifecycle()
+    val continueWatching by viewModel.continueWatching.collectAsStateWithLifecycle()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1567,6 +1616,36 @@ fun ReproductorPaneContent(
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "CALIDAD DE STREAMING",
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    qualities.forEach { q ->
+                        val isSelected = streamingQuality == q
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(34.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
+                                .clickable { viewModel.updateStreamQuality(q) }
+                                .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(q, color = if (isSelected) Color.Black else Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = Color.White.copy(alpha = 0.06f))
+            Spacer(modifier = Modifier.height(12.dp))
+
             Text(
                 text = "DECODIFICACIÓN MULTIMEDIA",
                 color = Color.White,
@@ -1581,7 +1660,7 @@ fun ReproductorPaneContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 decoders.forEach { d ->
-                    val isSelected = viewModel.playerDecoder == d
+                    val isSelected = playerDecoder == d
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -1603,6 +1682,92 @@ fun ReproductorPaneContent(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = Color.White.copy(alpha = 0.06f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Autoplay (Siguiente Episodio)", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                    Text("Reproduce automáticamente el siguiente elemento de la lista.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                }
+                Switch(
+                    checked = autoPlay,
+                    onCheckedChange = { viewModel.updateAutoPlay(it) },
+                    colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color.White.copy(alpha = 0.4f))
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Reproducir Tráilers automáticamente", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                    Text("Muestra vistas previas en la pantalla de detalles.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                }
+                Switch(
+                    checked = autoPlayTrailers,
+                    onCheckedChange = { viewModel.updateAutoPlayTrailers(it) },
+                    colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color.White.copy(alpha = 0.4f))
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Continuar viendo", color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                    Text("Guarda el progreso de tus películas y series.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                }
+                Switch(
+                    checked = continueWatching,
+                    onCheckedChange = { viewModel.updateContinueWatching(it) },
+                    colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color.White.copy(alpha = 0.4f))
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Divider(color = Color.White.copy(alpha = 0.06f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "CALIDAD DE IMÁGENES (PÓSTERS)",
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                imageQualities.forEach { q ->
+                    val isSelected = imageQuality == q
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(34.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
+                            .clickable { viewModel.updateImageQuality(q) }
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(q, color = if (isSelected) Color.Black else Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1662,6 +1827,9 @@ fun AparienciaPaneContent(
     fluidAnimations: Boolean,
     onFluidAnimationsChange: (Boolean) -> Unit
 ) {
+    val themeModes = listOf("Light", "Dark", "System")
+    val currentThemeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1669,26 +1837,34 @@ fun AparienciaPaneContent(
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Tema Oscuro Obsidian", color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.Bold)
-                    Text("Recomendado para televisores OLED y Smart TV.", color = Color.White.copy(alpha = 0.5f), fontSize = 10.5.sp)
+            Text(
+                text = "TEMA VISUAL DE LA INTERFAZ",
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                themeModes.forEach { mode ->
+                    val isSelected = currentThemeMode == mode
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(34.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
+                            .clickable { viewModel.setThemeMode(mode) }
+                            .tvFocusEffect(shape = RoundedCornerShape(6.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(mode, color = if (isSelected) Color.Black else Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
-                Switch(
-                    checked = viewModel.isDarkTheme,
-                    onCheckedChange = { viewModel.toggleTheme() },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color.White.copy(alpha = 0.4f)
-                    )
-                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Divider(color = Color.White.copy(alpha = 0.06f))
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -1736,7 +1912,8 @@ fun AparienciaPaneContent(
 }
 
 @Composable
-fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
+fun IdiomaRegionPaneContent(viewModel: MediaViewModel, selectedLanguage: String, selectedRegion: String) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1773,12 +1950,12 @@ fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
                 }
 
                 Button(
-                    onClick = { viewModel.updateRegion(if (viewModel.selectedRegion == "LATAM") "Global" else "LATAM") },
+                    onClick = { viewModel.updateRegion(if (selectedRegion == "LATAM") "Global" else "LATAM") },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White),
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
                 ) {
-                    Text(text = viewModel.selectedRegion, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(text = selectedRegion, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
 
@@ -1806,12 +1983,12 @@ fun IdiomaRegionPaneContent(viewModel: MediaViewModel) {
                 }
 
                 Button(
-                    onClick = { viewModel.updateLanguage(if (viewModel.selectedLanguage == "Español") "English" else "Español") },
+                    onClick = { viewModel.updateLanguage(if (selectedLanguage == "Español") "English" else "Español") },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White),
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier.tvFocusEffect(shape = RoundedCornerShape(6.dp))
                 ) {
-                    Text(text = viewModel.selectedLanguage, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(text = selectedLanguage, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
         }
@@ -2116,6 +2293,79 @@ fun AboutPaneContent(viewModel: MediaViewModel) {
                 lineHeight = 15.sp,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ----------------------------------------
+            // LINKS Y SOPORTE
+            // ----------------------------------------
+            Text(
+                text = "SOPORTE Y COMUNIDAD",
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://lumina-iptv.com/privacy"))
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                ) {
+                    Text("Privacidad", fontSize = 10.sp)
+                }
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://lumina-iptv.com/terms"))
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                ) {
+                    Text("Términos", fontSize = 10.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@lumina-iptv.com"))
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                ) {
+                    Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Contacto", fontSize = 10.sp)
+                }
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "¡Mira esta increíble app de IPTV: Lumina Premium!")
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Compartir Lumina"))
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f).tvFocusEffect(shape = RoundedCornerShape(8.dp))
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Compartir", fontSize = 10.sp)
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

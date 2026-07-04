@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.data.model.Channel
 import com.example.data.model.EPGProgram
@@ -136,8 +137,10 @@ fun FullscreenPlayerScreen(
     var aspectRatioMode by remember { mutableStateOf("Stretch") }
     
     // Quality simulated configuration
-    var selectedQuality by remember { mutableStateOf(viewModel.streamingQuality) }
-    var selectedDecoder by remember { mutableStateOf(viewModel.playerDecoder) }
+    val persistentQuality by viewModel.streamingQuality.collectAsStateWithLifecycle()
+    val persistentDecoder by viewModel.playerDecoder.collectAsStateWithLifecycle()
+    var selectedQuality by remember(persistentQuality) { mutableStateOf(persistentQuality) }
+    var selectedDecoder by remember(persistentDecoder) { mutableStateOf(persistentDecoder) }
 
     // Channel stability and buffer real-time monitoring states
     var simulatedBuffer by remember { mutableStateOf(1.8f) }

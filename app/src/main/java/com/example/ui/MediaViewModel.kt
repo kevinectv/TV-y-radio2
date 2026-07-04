@@ -37,6 +37,7 @@ enum class AppTab(val label: String) {
 
 class MediaViewModel(
     val repository: MediaRepository,
+    val settingsManager: com.example.data.SettingsManager,
     private val sharedPreferences: android.content.SharedPreferences? = null
 ) : ViewModel() {
 
@@ -285,7 +286,7 @@ class MediaViewModel(
     fun selectProfile(profile: ProfileEntity) {
         activeProfile = profile
         isDarkTheme = (profile.interfacePref == "dark")
-        selectedLanguage = profile.languagePref
+        updateLanguage(profile.languagePref)
         activeProfileIdFlow.value = profile.id
         showProfileSelector = false
         sharedPreferences?.edit()?.putString("last_active_profile_id", profile.id)?.apply()
@@ -348,7 +349,7 @@ class MediaViewModel(
                 avatarExpression = expression,
                 profileColor = profileColor,
                 isKids = isKids,
-                languagePref = selectedLanguage,
+                languagePref = selectedLanguage.value,
                 interfacePref = if (isDarkTheme) "dark" else "light"
             )
             repository.insertProfile(updated)
@@ -552,56 +553,161 @@ class MediaViewModel(
         searchQuery = query
     }
 
-    // Settings States
+    // Settings States (Persistent via SettingsManager)
+    val themeMode = settingsManager.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+    val streamingQuality = settingsManager.streamingQuality.stateIn(viewModelScope, SharingStarted.Eagerly, "1080p (FHD)")
+    val imageQuality = settingsManager.imageQuality.stateIn(viewModelScope, SharingStarted.Eagerly, "Alta")
+    val autoPlay = settingsManager.autoPlay.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val autoPlayTrailers = settingsManager.autoPlayTrailers.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val continueWatching = settingsManager.continueWatching.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val pushNotifications = settingsManager.pushNotifications.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val updateNotifications = settingsManager.updateNotifications.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val selectedLanguage = settingsManager.language.stateIn(viewModelScope, SharingStarted.Eagerly, "Español")
+    val selectedRegion = settingsManager.region.stateIn(viewModelScope, SharingStarted.Eagerly, "LATAM")
+    val playerDecoder = settingsManager.playerDecoder.stateIn(viewModelScope, SharingStarted.Eagerly, "Hardware (HW+)")
+    val epgScale = settingsManager.epgScale.stateIn(viewModelScope, SharingStarted.Eagerly, "Standard")
+    
+    val autoEpgSync = settingsManager.autoEpgSync.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val downloadLogos = settingsManager.downloadLogos.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val bufferLatency = settingsManager.bufferLatency.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val hwAudioSync = settingsManager.hwAudioSync.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val eac3Audio = settingsManager.eac3Audio.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val realtimeShadows = settingsManager.realtimeShadows.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val fluidAnimations = settingsManager.fluidAnimations.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val ramOptimization = settingsManager.ramOptimization.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val forced60fps = settingsManager.forced60fps.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val sendErrorStats = settingsManager.sendErrorStats.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val keepLocalHistory = settingsManager.keepLocalHistory.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     var isDarkTheme by mutableStateOf(true)
         private set
-    var streamingQuality by mutableStateOf("1080p (FHD)")
-        private set
-    var epgScale by mutableStateOf("Standard")
-        private set
-    var selectedLanguage by mutableStateOf("Español")
-        private set
-    var selectedRegion by mutableStateOf("LATAM")
-        private set
-    var playerDecoder by mutableStateOf("Hardware (HW+)")
-        private set
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            settingsManager.setThemeMode(mode)
+            if (mode != "system") {
+                isDarkTheme = (mode == "dark")
+            }
+        }
+    }
 
     fun toggleTheme() {
-        isDarkTheme = !isDarkTheme
-        activeProfile?.let { prof ->
-            val updated = prof.copy(interfacePref = if (isDarkTheme) "dark" else "light")
-            activeProfile = updated
-            viewModelScope.launch {
+        viewModelScope.launch {
+            val nextMode = if (isDarkTheme) "light" else "dark"
+            setThemeMode(nextMode)
+            activeProfile?.let { prof ->
+                val updated = prof.copy(interfacePref = nextMode)
+                activeProfile = updated
                 repository.insertProfile(updated)
             }
         }
     }
 
     fun updateStreamQuality(quality: String) {
-        streamingQuality = quality
+        viewModelScope.launch { settingsManager.setStreamingQuality(quality) }
+    }
+
+    fun updateImageQuality(quality: String) {
+        viewModelScope.launch { settingsManager.setImageQuality(quality) }
+    }
+
+    fun updateAutoPlay(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setAutoPlay(enabled) }
+    }
+
+    fun updateAutoPlayTrailers(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setAutoPlayTrailers(enabled) }
+    }
+
+    fun updateContinueWatching(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setContinueWatching(enabled) }
+    }
+
+    fun updatePushNotifications(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setPushNotifications(enabled) }
+    }
+
+    fun updateUpdateNotifications(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setUpdateNotifications(enabled) }
     }
 
     fun updateEpgScale(scale: String) {
-        epgScale = scale
+        viewModelScope.launch { settingsManager.setEpgScale(scale) }
     }
 
     fun updateLanguage(lang: String) {
-        selectedLanguage = lang
-        activeProfile?.let { prof ->
-            val updated = prof.copy(languagePref = lang)
-            activeProfile = updated
-            viewModelScope.launch {
+        viewModelScope.launch {
+            settingsManager.setLanguage(lang)
+            activeProfile?.let { prof ->
+                val updated = prof.copy(languagePref = lang)
+                activeProfile = updated
                 repository.insertProfile(updated)
             }
         }
     }
 
     fun updateRegion(reg: String) {
-        selectedRegion = reg
+        viewModelScope.launch { settingsManager.setRegion(reg) }
     }
 
     fun updateDecoder(dec: String) {
-        playerDecoder = dec
+        viewModelScope.launch { settingsManager.setPlayerDecoder(dec) }
+    }
+
+    fun updateAutoEpgSync(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setAutoEpgSync(enabled) }
+    }
+
+    fun updateDownloadLogos(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setDownloadLogos(enabled) }
+    }
+
+    fun updateBufferLatency(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setBufferLatency(enabled) }
+    }
+
+    fun updateHwAudioSync(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setHwAudioSync(enabled) }
+    }
+
+    fun updateEac3Audio(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setEac3Audio(enabled) }
+    }
+
+    fun updateRealtimeShadows(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setRealtimeShadows(enabled) }
+    }
+
+    fun updateFluidAnimations(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setFluidAnimations(enabled) }
+    }
+
+    fun updateRamOptimization(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setRamOptimization(enabled) }
+    }
+
+    fun updateForced60fps(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setForced60fps(enabled) }
+    }
+
+    fun updateSendErrorStats(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setSendErrorStats(enabled) }
+    }
+
+    fun updateKeepLocalHistory(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setKeepLocalHistory(enabled) }
+    }
+
+    fun clearCache(context: android.content.Context) {
+        viewModelScope.launch {
+            settingsManager.clearCache(context)
+        }
+    }
+
+    fun restoreDefaultSettings() {
+        viewModelScope.launch {
+            settingsManager.restoreDefaultSettings()
+        }
     }
 
     // Reactive Watchlist, Favorites, and Recents Combine flows
@@ -850,12 +956,13 @@ class MediaViewModel(
 // Simple Factory for Constructor Injection
 class MediaViewModelFactory(
     private val repository: MediaRepository,
+    private val settingsManager: com.example.data.SettingsManager,
     private val sharedPreferences: android.content.SharedPreferences
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MediaViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MediaViewModel(repository, sharedPreferences) as T
+            return MediaViewModel(repository, settingsManager, sharedPreferences) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -36,8 +36,9 @@ class MainActivity : ComponentActivity() {
     // Lazy initializations to completely offload heavy constructor tasks from onCreate()
     private val database by lazy { AppDatabase.getDatabase(applicationContext) }
     private val repository by lazy { MediaRepository(database.mediaDao()) }
+    private val settingsManager by lazy { com.example.data.SettingsManager(applicationContext) }
     private val sharedPrefs by lazy { getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
-    private val factory by lazy { MediaViewModelFactory(repository, sharedPrefs) }
+    private val factory by lazy { MediaViewModelFactory(repository, settingsManager, sharedPrefs) }
     private val viewModel by lazy {
         val vm = ViewModelProvider(this, factory)[MediaViewModel::class.java]
         vm.updateManager = com.example.data.util.UpdateManager(applicationContext)
