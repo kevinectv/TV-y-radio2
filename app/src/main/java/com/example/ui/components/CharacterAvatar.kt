@@ -29,63 +29,49 @@ fun CharacterAvatar(
 ) {
     val styleLower = style.lowercase(java.util.Locale.ROOT)
     val imageRes = when (styleLower) {
-        "ninja" -> com.example.R.drawable.img_avatar_ninja
+        "boy", "nino", "niño" -> com.example.R.drawable.av_boy
+        "girl", "nina", "niña" -> com.example.R.drawable.av_girl
+        "robot" -> com.example.R.drawable.av_robot
+        "dragon" -> com.example.R.drawable.av_dragon
+        "astronaut", "astronauta" -> com.example.R.drawable.av_astronaut
+        "ninja" -> com.example.R.drawable.av_ninja
+        "pirate", "pirata" -> com.example.R.drawable.av_pirate
+        "superhero", "superhéroe" -> com.example.R.drawable.av_superhero
+        "panda" -> com.example.R.drawable.av_panda
+        "viking", "vikingo" -> com.example.R.drawable.av_viking
+        "wizard", "mago" -> com.example.R.drawable.av_wizard
+        "monster", "monstruo" -> com.example.R.drawable.av_monster
         "futuristic" -> com.example.R.drawable.img_avatar_futuristic
-        "wizard" -> com.example.R.drawable.img_avatar_wizard
-        "superhero", "kids" -> com.example.R.drawable.img_avatar_kids
-        else -> null
+        "kids" -> com.example.R.drawable.img_avatar_kids
+        else -> com.example.R.drawable.av_boy // Default fallback
     }
 
-    if (imageRes != null) {
+    val profileColor = safeColor(profileColorHex, Color(0xFF00E5FF))
+
+    Box(
+        modifier = modifier
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        profileColor.copy(alpha = 0.4f),
+                        profileColor.copy(alpha = 0.1f),
+                        Color.Black.copy(alpha = 0.8f)
+                    )
+                )
+            )
+    ) {
         androidx.compose.foundation.Image(
             painter = androidx.compose.ui.res.painterResource(id = imageRes),
             contentDescription = "Avatar $style",
-            modifier = modifier,
+            modifier = Modifier.fillMaxSize(),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop
         )
-    } else {
-        val skinColor = safeColor(skinColorHex, Color(0xFFFCD0A1))
-        val hairColor = safeColor(hairColorHex, Color(0xFF3F2B1E))
-        val profileColor = safeColor(profileColorHex, Color(0xFF00E5FF))
-
-        Box(
-            modifier = modifier
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            profileColor.copy(alpha = 0.9f),
-                            profileColor.copy(alpha = 0.4f),
-                            Color(0xFF121212)
-                        )
-                    )
-                )
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                val center = Offset(w / 2f, h * 0.48f)
-                val headRadius = w * 0.28f
-
-                // 1. Draw Body/Shoulders
-                drawShoulders(w, h, skinColor, style, hairColor)
-
-                // 2. Draw Head Base
-                drawHeadBase(center, headRadius, skinColor, style)
-
-                // 3. Draw Style Specifics (Ninja hood, Wizard hair, etc.)
-                drawHairAndHeadwear(center, headRadius, hairColor, style, accessory)
-
-            // 4. Draw Face Expressions (Eyes, Mouth, Eyebrows)
-            drawExpression(center, headRadius, expression, accessory, style)
-
-            // 5. Draw Eyepatch, Visor or Headband Accessories
-            drawAccessories(center, headRadius, accessory, style)
-
-            // 6. Volumetric Overlay / Lighting Glow
-            drawGlassGlossEffect(w, h)
+        
+        // Overlay gloss effect for premium feel
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawGlassGlossEffect(size.width, size.height)
         }
     }
-}
 }
 
 private fun safeColor(hex: String, fallback: Color): Color {
