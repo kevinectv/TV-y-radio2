@@ -864,61 +864,60 @@ private fun ProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(150.dp.responsive())
-            .padding(vertical = 12.dp)
+            .width(160.dp.responsive())
+            .padding(8.dp)
     ) {
-        val interactionSource = remember { MutableInteractionSource() }
-        Box(
+        Surface(
+            onClick = {
+                if (screenMode == ProfileScreenMode.SELECT) {
+                    onSelectProfile(profile)
+                } else {
+                    onEditProfile(profile)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            color = Color.Transparent,
             modifier = Modifier
-                .size(132.dp.responsive())
+                .size(110.dp.responsive())
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
-                .clip(RoundedCornerShape(16.dp))
                 .tvFocusEffect(
-                    shape = RoundedCornerShape(16.dp),
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(20.dp),
+                    focusedBorderColor = focusBorderColor,
+                    unfocusedBorderColor = if (isCurrentActive) focusBorderColor.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.05f),
                     borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
-                    scaleAmount = 1.15f,
-                    liftOnFocus = true,
-                    interactionSource = interactionSource
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = LocalIndication.current,
-                    onClick = {
-                        if (screenMode == ProfileScreenMode.SELECT) {
-                            onSelectProfile(profile)
-                        } else {
-                            onEditProfile(profile)
-                        }
-                    }
+                    scaleAmount = 1.1f,
+                    liftOnFocus = true
                 )
         ) {
-            CharacterAvatar(
-                style = profile.avatarStyle,
-                skinColorHex = profile.avatarSkinColor,
-                hairColorHex = profile.avatarHairColor,
-                accessory = profile.avatarAccessory,
-                expression = profile.avatarExpression,
-                profileColorHex = profile.profileColor,
+            Box(
                 modifier = Modifier.fillMaxSize()
-            )
+            ) {
+                CharacterAvatar(
+                    style = profile.avatarStyle,
+                    skinColorHex = profile.avatarSkinColor,
+                    hairColorHex = profile.avatarHairColor,
+                    accessory = profile.avatarAccessory,
+                    expression = profile.avatarExpression,
+                    profileColorHex = profile.profileColor,
+                    modifier = Modifier.fillMaxSize()
+                )
 
-            if (screenMode == ProfileScreenMode.MANAGE) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar Perfil",
-                        tint = Color.White,
-                        modifier = Modifier.size(36.dp)
-                    )
+                if (screenMode == ProfileScreenMode.MANAGE) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar Perfil",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
             }
         }
@@ -964,9 +963,9 @@ private fun ProfileItemView(
         } else {
             Text(
                 text = profile.name,
-                fontSize = 16.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.85f),
+                color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -996,50 +995,51 @@ private fun AddProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(150.dp.responsive())
-            .padding(vertical = 12.dp)
+            .width(160.dp.responsive())
+            .padding(8.dp)
     ) {
-        val interactionSource = remember { MutableInteractionSource() }
-        Box(
+        Surface(
+            onClick = onAddClick,
+            shape = RoundedCornerShape(20.dp),
+            color = Color.Transparent,
             modifier = Modifier
-                .size(132.dp.responsive())
+                .size(110.dp.responsive())
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
-                .clip(RoundedCornerShape(16.dp))
                 .tvFocusEffect(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(20.dp),
                     focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.05f),
                     borderWidth = 1.5.dp,
-                    scaleAmount = 1.15f,
-                    liftOnFocus = true,
-                    interactionSource = interactionSource
+                    scaleAmount = 1.1f,
+                    liftOnFocus = true
                 )
-                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = LocalIndication.current,
-                    onClick = onAddClick
-                )
-                .semantics { testTag = "add_profile_card" },
-            contentAlignment = Alignment.Center
+                .semantics { testTag = "add_profile_card" }
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Profile Image",
-                tint = Color.White.copy(alpha = 0.6f),
-                modifier = Modifier.size(42.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Profile Image",
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(36.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "Añadir Perfil",
-            fontSize = 16.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White.copy(alpha = 0.7f),
+            color = Color.White.copy(alpha = 0.8f),
             textAlign = TextAlign.Center
         )
     }
