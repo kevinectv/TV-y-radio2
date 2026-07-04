@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+
 @Composable
 fun CharacterAvatar(
     style: String,
@@ -25,6 +28,7 @@ fun CharacterAvatar(
     accessory: String,
     expression: String,
     profileColorHex: String,
+    photoUri: String? = null,
     modifier: Modifier = Modifier
 ) {
     val styleLower = style.lowercase(java.util.Locale.ROOT)
@@ -51,24 +55,43 @@ fun CharacterAvatar(
     Box(
         modifier = modifier
             .background(
-                brush = Brush.radialGradient(
+                brush = Brush.verticalGradient(
                     colors = listOf(
-                        profileColor.copy(alpha = 0.4f),
-                        profileColor.copy(alpha = 0.1f),
-                        Color.Black.copy(alpha = 0.8f)
+                        profileColor.copy(alpha = 0.35f),
+                        profileColor.copy(alpha = 0.15f),
+                        Color.Black.copy(alpha = 0.9f)
                     )
                 )
             )
     ) {
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(id = imageRes),
-            contentDescription = "Avatar $style",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop
-        )
+        if (!photoUri.isNullOrBlank()) {
+            AsyncImage(
+                model = photoUri,
+                contentDescription = "Foto de perfil",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = imageRes),
+                contentDescription = "Avatar $style",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
         
-        // Overlay gloss effect for premium feel
+        // Premium inner glow matching profile color
         Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.Transparent, profileColor.copy(alpha = 0.15f)),
+                    center = center,
+                    radius = size.maxDimension / 2
+                ),
+                blendMode = BlendMode.Screen
+            )
+            
+            // Refined overlay gloss effect
             drawGlassGlossEffect(size.width, size.height)
         }
     }

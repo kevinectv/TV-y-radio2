@@ -15,5 +15,6 @@ data class ProfileEntity(
     val profileColor: String, // hex highlight color
     val isKids: Boolean = false,
     val languagePref: String = "es",
-    val interfacePref: String = "dark"
+    val interfacePref: String = "dark",
+    val photoUri: String? = null
 )

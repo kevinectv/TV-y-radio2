@@ -306,7 +306,8 @@ class MediaViewModel(
         accessory: String,
         expression: String,
         profileColor: String,
-        isKids: Boolean
+        isKids: Boolean,
+        photoUri: String? = null
     ) {
         viewModelScope.launch {
             val id = UUID.randomUUID().toString()
@@ -321,7 +322,8 @@ class MediaViewModel(
                 profileColor = profileColor,
                 isKids = isKids,
                 languagePref = "Español",
-                interfacePref = "dark"
+                interfacePref = "dark",
+                photoUri = photoUri
             )
             repository.insertProfile(newProfile)
         }
@@ -336,7 +338,8 @@ class MediaViewModel(
         accessory: String,
         expression: String,
         profileColor: String,
-        isKids: Boolean
+        isKids: Boolean,
+        photoUri: String? = null
     ) {
         viewModelScope.launch {
             val updated = ProfileEntity(
@@ -350,7 +353,8 @@ class MediaViewModel(
                 profileColor = profileColor,
                 isKids = isKids,
                 languagePref = selectedLanguage.value,
-                interfacePref = if (isDarkTheme) "dark" else "light"
+                interfacePref = if (isDarkTheme) "dark" else "light",
+                photoUri = photoUri
             )
             repository.insertProfile(updated)
             if (activeProfile?.id == id) {
