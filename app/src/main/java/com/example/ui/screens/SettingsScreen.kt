@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 import com.example.BuildConfig
 import java.util.UUID
 import androidx.compose.ui.text.style.TextOverflow
-import com.example.ui.components.CharacterAvatar
+import com.example.ui.components.ProfileAvatar
 import com.example.data.database.ProfileEntity
 import com.example.data.database.RadioStationEntity
 import com.example.data.model.Catalog
@@ -825,13 +825,8 @@ fun ProfilePaneContent(
                         .border(3.dp, themeColor, CircleShape)
                         .background(Color.Black)
                 ) {
-                    CharacterAvatar(
-                        style = activeProfile.avatarStyle,
-                        skinColorHex = activeProfile.avatarSkinColor,
-                        hairColorHex = activeProfile.avatarHairColor,
-                        accessory = activeProfile.avatarAccessory,
-                        expression = activeProfile.avatarExpression,
-                        profileColorHex = activeProfile.profileColor,
+                    ProfileAvatar(
+                        profile = activeProfile,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -925,15 +920,10 @@ fun ProfilePaneContent(
                                 .clip(CircleShape)
                                 .border(1.5.dp, profileBorderColor, CircleShape)
                         ) {
-                            CharacterAvatar(
-                                style = profile.avatarStyle,
-                                skinColorHex = profile.avatarSkinColor,
-                                hairColorHex = profile.avatarHairColor,
-                                accessory = profile.avatarAccessory,
-                                expression = profile.avatarExpression,
-                                profileColorHex = profile.profileColor,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                        ProfileAvatar(
+                            profile = profile,
+                            modifier = Modifier.fillMaxSize()
+                        )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(

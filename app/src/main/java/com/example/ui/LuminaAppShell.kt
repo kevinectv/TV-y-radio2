@@ -38,7 +38,7 @@ import com.example.ui.components.ElegantBackground
 import com.example.ui.components.tvFocusEffect
 import com.example.ui.components.responsive
 import com.example.ui.components.getResponsiveScale
-import com.example.ui.components.CharacterAvatar
+import com.example.ui.components.ProfileAvatar
 import com.example.ui.screens.ProfileSelectionScreen
 import com.example.ui.screens.*
 import com.example.data.model.CatalogItem
@@ -129,13 +129,8 @@ fun LuminaAppShell(
                                 .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         ) {
                             viewModel.activeProfile?.let { profile ->
-                                CharacterAvatar(
-                                    style = profile.avatarStyle,
-                                    skinColorHex = profile.avatarSkinColor,
-                                    hairColorHex = profile.avatarHairColor,
-                                    accessory = profile.avatarAccessory,
-                                    expression = profile.avatarExpression,
-                                    profileColorHex = profile.profileColor,
+                                ProfileAvatar(
+                                    profile = profile,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }

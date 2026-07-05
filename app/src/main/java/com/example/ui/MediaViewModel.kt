@@ -946,9 +946,22 @@ class MediaViewModel(
                 repository.deleteProfile("p3")
                 repository.deleteProfile("p4")
 
-                // Always require explicit profile selection on app startup, as requested
-                showProfileSelector = true
-                activeProfile = null
+                // Try to auto-restore last active profile
+                val lastId = sharedPreferences?.getString("last_active_profile_id", null)
+                if (lastId != null) {
+                    val allProfiles = repository.getProfiles().first()
+                    val lastProfile = allProfiles.find { it.id == lastId }
+                    if (lastProfile != null) {
+                        activeProfile = lastProfile
+                        showProfileSelector = false
+                    } else {
+                        showProfileSelector = true
+                        activeProfile = null
+                    }
+                } else {
+                    showProfileSelector = true
+                    activeProfile = null
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 showProfileSelector = true

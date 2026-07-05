@@ -28,7 +28,6 @@ fun CharacterAvatar(
     accessory: String,
     expression: String,
     profileColorHex: String,
-    photoUri: String? = null,
     modifier: Modifier = Modifier
 ) {
     val styleLower = style.lowercase(java.util.Locale.ROOT)
@@ -64,21 +63,12 @@ fun CharacterAvatar(
                 )
             )
     ) {
-        if (!photoUri.isNullOrBlank()) {
-            AsyncImage(
-                model = photoUri,
-                contentDescription = "Foto de perfil",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(id = imageRes),
-                contentDescription = "Avatar $style",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
-        }
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = imageRes),
+            contentDescription = "Avatar $style",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
         
         // Premium inner glow matching profile color
         Canvas(modifier = Modifier.fillMaxSize()) {
