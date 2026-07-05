@@ -10,6 +10,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
 
+import com.example.data.util.ApiConfig
+
 class MdbListSearchService(private val context: Context) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
@@ -39,7 +41,8 @@ class MdbListSearchService(private val context: Context) {
         MdbListSearchResult("scifi", "Sci-Fi Essentials", "Must watch Science Fiction.", 200, "https://mdblist.com/lists/garycrawfordgc/sci-fi/json")
     )
 
-    suspend fun searchCatalogs(query: String, apiKey: String): List<MdbListSearchResult> = withContext(Dispatchers.IO) {
+    suspend fun searchCatalogs(query: String, rawApiKey: String? = null): List<MdbListSearchResult> = withContext(Dispatchers.IO) {
+        val apiKey = rawApiKey?.trim()?.ifEmpty { ApiConfig.MDBLIST_API_KEY } ?: ApiConfig.MDBLIST_API_KEY
         val results = mutableListOf<MdbListSearchResult>()
         val queryLower = query.lowercase().trim()
         

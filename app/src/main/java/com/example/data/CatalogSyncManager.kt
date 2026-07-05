@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import com.example.data.util.ApiConfig
+
 data class DiagnosticInfo(
     val tmdbStatus: String = "🔴 Desconectado",
     val mdblistStatus: String = "🔴 Desconectado",
@@ -60,16 +62,11 @@ class CatalogSyncManager private constructor(private val context: Context) {
     }
 
     suspend fun runDiagnosticCheck() {
-        val prefs = context.getSharedPreferences("lumina_prefs", Context.MODE_PRIVATE)
-        val tmdbKey = prefs.getString("tmdb_api_key", "") ?: ""
-        val mdblistKey = prefs.getString("mdblist_api_key", "") ?: ""
-        val traktKey = prefs.getString("trakt_api_key", "") ?: ""
-
         addLog("Iniciando autodiagnóstico de APIs...")
 
-        val tmdbRes = tmdbService.testConnection(tmdbKey)
-        val mdbRes = mdbListService.testConnection(mdblistKey)
-        val traktRes = traktService.testConnection(traktKey)
+        val tmdbRes = tmdbService.testConnection()
+        val mdbRes = mdbListService.testConnection()
+        val traktRes = traktService.testConnection()
 
         _diagnostics.value = _diagnostics.value.copy(
             tmdbStatus = if (tmdbRes.first) "🟢 Conectado" else "🔴 Desconectado (${tmdbRes.second})",

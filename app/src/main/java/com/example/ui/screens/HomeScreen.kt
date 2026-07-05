@@ -64,6 +64,7 @@ import com.example.ui.MediaViewModel
 import com.example.ui.components.tvFocusEffect
 import com.example.ui.components.responsive
 import com.example.ui.components.getResponsiveScale
+import com.example.data.util.ApiConfig
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 
@@ -231,9 +232,7 @@ fun HomeScreen(
 
         if (currentMovie == null) return@LaunchedEffect
         
-        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val rawApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
-        val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
+        val apiKey = ApiConfig.TMDB_API_KEY
         
         // 1. Try reading straight from Lumina Catalog Engine cache fields
         if (!currentMovie.logoUrl.isNullOrEmpty() && !currentMovie.castJson.isNullOrEmpty()) {
@@ -1705,9 +1704,7 @@ fun CatalogItemDetailsDialog_Original(
     var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
 
     LaunchedEffect(item) {
-        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val rawApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
-        val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
+        val apiKey = ApiConfig.TMDB_API_KEY
         
         // 1. Try reading straight from Lumina Catalog Engine cache fields
         val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
@@ -2720,8 +2717,7 @@ fun TrailerYoutubePlayerDialog(
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-                    val rawApiKey = prefs.getString("tmdb_api_key", "") ?: ""
-                    val apiKey = if (rawApiKey.isEmpty() || rawApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey
+                    val apiKey = ApiConfig.TMDB_API_KEY
                     
                     val tmdbId = item.tmdbId ?: item.id.replace(Regex("[^0-9]"), "")
                     val isTv = item.isTvShow

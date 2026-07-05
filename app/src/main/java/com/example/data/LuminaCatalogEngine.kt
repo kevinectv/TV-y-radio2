@@ -17,6 +17,8 @@ import java.io.File
 import java.net.URLEncoder
 import java.util.UUID
 
+import com.example.data.util.ApiConfig
+
 data class EngineActorInfo(val name: String, val role: String, val photoUrl: String)
 
 class LuminaCatalogEngine(private val context: Context, private val repository: CatalogRepository) {
@@ -52,8 +54,8 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
      * Enriches a single Catalog Item with all TMDB Metadata (Logo, Backdrop, Trailer, Cast, Director, etc.)
      * and returns the enriched item.
      */
-    suspend fun enrichCatalogItem(item: CatalogItem, rawApiKey: String): CatalogItem = withContext(Dispatchers.IO) {
-        val apiKey = if (rawApiKey.trim().isEmpty() || rawApiKey.trim() == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey.trim()
+    suspend fun enrichCatalogItem(item: CatalogItem, rawApiKey: String? = null): CatalogItem = withContext(Dispatchers.IO) {
+        val apiKey = rawApiKey?.trim()?.ifEmpty { ApiConfig.TMDB_API_KEY } ?: ApiConfig.TMDB_API_KEY
         if (apiKey.isEmpty()) return@withContext item
         
         // If it's already enriched completely, we don't need to re-query
@@ -391,9 +393,7 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
         _isEnriching.value = true
 
         try {
-            val prefs = context.getSharedPreferences("lumina_prefs", Context.MODE_PRIVATE)
-            val userApiKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
-            val apiKey = if (userApiKey.isEmpty() || userApiKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else userApiKey
+            val apiKey = ApiConfig.TMDB_API_KEY
             if (apiKey.isEmpty()) {
                 _isEnriching.value = false
                 return@withContext false

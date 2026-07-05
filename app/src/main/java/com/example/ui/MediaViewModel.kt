@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.example.data.database.ProfileEntity
+import com.example.data.util.ApiConfig
 import java.util.UUID
 
 enum class AppTab(val label: String) {
@@ -136,11 +137,10 @@ class MediaViewModel(
 
     fun searchMdbLists(query: String) {
         mdbListSearchQuery = query
-        val apiKey = sharedPreferences?.getString("mdblist_api_key", "") ?: ""
         viewModelScope.launch {
             isMdbListSearching = true
             try {
-                mdbListSearchResults = mdbListSearchService?.searchCatalogs(query, apiKey) ?: emptyList()
+                mdbListSearchResults = mdbListSearchService?.searchCatalogs(query) ?: emptyList()
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

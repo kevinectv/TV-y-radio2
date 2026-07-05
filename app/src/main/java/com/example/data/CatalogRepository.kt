@@ -17,6 +17,8 @@ import java.util.UUID
 import com.example.data.database.toDomain
 import com.example.data.database.toEntity
 
+import com.example.data.util.ApiConfig
+
 class CatalogRepository(private val context: Context) {
 
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
@@ -407,11 +409,9 @@ data class SyncResult(
         val lastUpdated = "Recién Recargado"
 
         val rawUrl = catalog.url.trim()
-        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        val rawTmdbKey = prefs.getString("tmdb_api_key", "")?.trim() ?: ""
-        val tmdbKey = if (rawTmdbKey.isEmpty() || rawTmdbKey == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawTmdbKey
-        val traktKey = prefs.getString("trakt_api_key", "")?.trim() ?: ""
-        val mdblistKey = prefs.getString("mdblist_api_key", "")?.trim() ?: ""
+        val tmdbKey = ApiConfig.TMDB_API_KEY
+        val traktKey = ApiConfig.TRAKT_CLIENT_ID
+        val mdblistKey = ApiConfig.MDBLIST_API_KEY
         
         var cleanUrl = rawUrl
         if (cleanUrl.contains("INSERT_KEY_HERE")) {

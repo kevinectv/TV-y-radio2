@@ -3099,8 +3099,8 @@ fun CatalogsPaneContent(
                     .tvFocusEffect(shape = RoundedCornerShape(12.dp))
                     .clickable { onOpenApiSettings() },
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFED1C24).copy(alpha = 0.08f)),
-                border = BorderStroke(1.dp, Color(0xFFED1C24).copy(alpha = 0.25f))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.25f))
             ) {
                 Row(
                     modifier = Modifier
@@ -3110,15 +3110,15 @@ fun CatalogsPaneContent(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.VpnKey,
-                        contentDescription = "API Keys",
-                        tint = Color(0xFFED1C24),
+                        imageVector = Icons.Default.CloudDone,
+                        contentDescription = "Estado APIs",
+                        tint = Color(0xFF00E5FF),
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Configurar API Keys",
-                        color = Color(0xFFED1C24),
+                        text = "Estado de Servicios",
+                        color = Color(0xFF00E5FF),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )

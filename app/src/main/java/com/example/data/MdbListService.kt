@@ -11,12 +11,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
+import com.example.data.util.ApiConfig
+
 class MdbListService(private val context: Context) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
         .build()
 
-    suspend fun testConnection(apiKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+    suspend fun testConnection(rawApiKey: String? = null): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val apiKey = rawApiKey?.trim()?.ifEmpty { ApiConfig.MDBLIST_API_KEY } ?: ApiConfig.MDBLIST_API_KEY
         if (apiKey.isEmpty()) return@withContext Pair(false, "API Key vacía")
         try {
             val url = "https://api.mdblist.com/?apikey=$apiKey&s=matrix"
@@ -44,7 +47,8 @@ class MdbListService(private val context: Context) {
         }
     }
 
-    suspend fun fetchListItems(listUrl: String, apiKey: String): List<CatalogItem> = withContext(Dispatchers.IO) {
+    suspend fun fetchListItems(listUrl: String, rawApiKey: String? = null): List<CatalogItem> = withContext(Dispatchers.IO) {
+        val apiKey = rawApiKey?.trim()?.ifEmpty { ApiConfig.MDBLIST_API_KEY } ?: ApiConfig.MDBLIST_API_KEY
         val list = mutableListOf<CatalogItem>()
         try {
             var cleanUrl = listUrl.trim()

@@ -7,13 +7,15 @@ import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+import com.example.data.util.ApiConfig
+
 class TmdbService(private val context: Context) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
         .build()
 
-    suspend fun testConnection(rawApiKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
-        val apiKey = if (rawApiKey.trim().isEmpty() || rawApiKey.trim() == "INSERT_KEY_HERE") "ca8c2c77f0a9bfd68cbca8b99009139d" else rawApiKey.trim()
+    suspend fun testConnection(rawApiKey: String? = null): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val apiKey = rawApiKey?.trim()?.ifEmpty { ApiConfig.TMDB_API_KEY } ?: ApiConfig.TMDB_API_KEY
         if (apiKey.isEmpty()) return@withContext Pair(false, "API Key vacía")
         try {
             // Test connection using configuration or popular movie list
