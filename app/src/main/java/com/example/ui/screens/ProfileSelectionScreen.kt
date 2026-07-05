@@ -399,12 +399,11 @@ fun ProfileSelectionScreen(
                         BoxWithConstraints(
                             modifier = Modifier
                                 .fillMaxWidth(if (isTv) 0.85f else 0.95f)
-                                .then(if (isMobile) Modifier.fillMaxHeight(0.92f) else Modifier.wrapContentHeight())
+                                .wrapContentHeight()
                                 .clip(RoundedCornerShape(if (isMobile) 16.dp else 24.dp))
                                 .background(Color.Black.copy(alpha = 0.92f))
                                 .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(if (isMobile) 16.dp else 24.dp))
                         ) {
-                            val editorScrollState = rememberScrollState()
                             val editorWidth = maxWidth
                             val localIsMobile = editorWidth < 600.dp
                             
@@ -426,7 +425,6 @@ fun ProfileSelectionScreen(
                                     modifier = Modifier
                                         .padding(if (isTv) 36.dp else if (isTablet) 24.dp else 20.dp)
                                         .fillMaxWidth()
-                                        .then(if (localIsMobile) Modifier.verticalScroll(editorScrollState) else Modifier)
                                 ) {
                                     Text(
                                         text = if (screenMode == ProfileScreenMode.CREATE) "Crear perfil" else "Editar perfil",
