@@ -31,6 +31,7 @@ import com.example.data.model.Catalog
 import com.example.ui.MediaViewModel
 import com.example.ui.components.responsive
 import com.example.ui.components.tvFocusEffect
+import com.example.data.util.ApiConfig
 
 data class DiscoverableCatalog(
     val id: String,
@@ -54,8 +55,7 @@ fun PremiumCatalogSearchScreen(
     val installedCatalogs by viewModel.catalogsStateFlow.collectAsState()
 
     val hasTmdbKey = remember {
-        val prefs = context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.getString("tmdb_api_key", "")?.trim()?.isNotEmpty() == true
+        ApiConfig.TMDB_API_KEY.isNotEmpty()
     }
 
     
@@ -375,12 +375,14 @@ fun PremiumCatalogSearchScreen(
                         isInstalled = isAlreadyInstalled,
                         onAdd = {
                             if (premium.url.contains("INSERT_KEY_HERE") && !hasTmdbKey) {
-                                Toast.makeText(context, "⚠️ Requiere TMDB API Key. Configúrala en Ajustes -> Configuración API.", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "⚠️ El servicio TMDB no está configurado internamente.", Toast.LENGTH_LONG).show()
                                 return@PremiumCatalogGridCard
                             }
                             if (premium.url.contains("mdblist.com") && !premium.url.contains("/garycrawfordgc/")) {
-                                Toast.makeText(context, "⚠️ Este catálogo MDBList público requiere una API Key configurada o URL válida.", Toast.LENGTH_LONG).show()
-                                return@PremiumCatalogGridCard
+                                if (ApiConfig.MDBLIST_API_KEY.isEmpty()) {
+                                    Toast.makeText(context, "⚠️ El servicio MDBList no está configurado internamente.", Toast.LENGTH_LONG).show()
+                                    return@PremiumCatalogGridCard
+                                }
                             }
                             val catalog = Catalog(
                                 id = "premium_${premium.id}",

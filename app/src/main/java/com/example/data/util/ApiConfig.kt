@@ -35,10 +35,10 @@ object ApiConfig {
 
     /**
      * Checks if all mandatory API keys are configured.
+     * TMDB and MDBList are considered mandatory for the core catalog experience.
      */
     fun isConfigured(): Boolean {
         return TMDB_API_KEY.isNotEmpty() && 
-               MDBLIST_API_KEY.isNotEmpty() && 
-               TRAKT_CLIENT_ID.isNotEmpty()
+               MDBLIST_API_KEY.isNotEmpty()
     }
 }
