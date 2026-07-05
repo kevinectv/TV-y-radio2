@@ -66,10 +66,10 @@ fun ProfileSelectionScreen(
     val manageButtonFocusRequester = remember { FocusRequester() }
 
     val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val isMobile = screenWidth < 600
-    val isTablet = screenWidth in 600..959
-    val isTv = screenWidth >= 960
+    val screenWidthDp = configuration.screenWidthDp
+    val isMobile = screenWidthDp < 600
+    val isTablet = screenWidthDp in 600..959
+    val isTv = screenWidthDp >= 960
 
     // Custom Profile Creator/Editor Temporary States
     var tempName by remember { mutableStateOf("") }
@@ -396,24 +396,25 @@ fun ProfileSelectionScreen(
 
                     ProfileScreenMode.CREATE, ProfileScreenMode.EDIT -> {
                         // --- EDIT / CREATE PROFILE FORM SCREEN ---
-                        Surface(
+                        BoxWithConstraints(
                             modifier = Modifier
-                                .fillMaxWidth(if (isTv) 0.82f else if (isTablet) 0.9f else 0.95f)
-                                .then(if (isMobile) Modifier.fillMaxHeight(0.9f) else Modifier.wrapContentHeight())
+                                .fillMaxWidth(if (isTv) 0.85f else 0.95f)
+                                .then(if (isMobile) Modifier.fillMaxHeight(0.92f) else Modifier.wrapContentHeight())
                                 .clip(RoundedCornerShape(if (isMobile) 16.dp else 24.dp))
-                                .background(Color.Black.copy(alpha = 0.88f))
-                                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(if (isMobile) 16.dp else 24.dp)),
-                            color = Color.Transparent,
-                            shape = RoundedCornerShape(if (isMobile) 16.dp else 24.dp)
+                                .background(Color.Black.copy(alpha = 0.92f))
+                                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(if (isMobile) 16.dp else 24.dp))
                         ) {
                             val editorScrollState = rememberScrollState()
+                            val editorWidth = maxWidth
+                            val localIsMobile = editorWidth < 600.dp
+                            
                             Box(modifier = Modifier.fillMaxWidth()) {
                                 // Close button
                                 IconButton(
                                     onClick = { screenMode = ProfileScreenMode.SELECT },
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
-                                        .padding(if (isMobile) 12.dp else 20.dp)
+                                        .padding(if (localIsMobile) 12.dp else 20.dp)
                                         .size(36.dp)
                                         .background(Color.White.copy(alpha = 0.08f), CircleShape)
                                         .tvFocusEffect(shape = CircleShape)
@@ -425,17 +426,17 @@ fun ProfileSelectionScreen(
                                     modifier = Modifier
                                         .padding(if (isTv) 36.dp else if (isTablet) 24.dp else 20.dp)
                                         .fillMaxWidth()
-                                        .then(if (isMobile) Modifier.verticalScroll(editorScrollState) else Modifier)
+                                        .then(if (localIsMobile) Modifier.verticalScroll(editorScrollState) else Modifier)
                                 ) {
                                     Text(
                                         text = if (screenMode == ProfileScreenMode.CREATE) "Crear perfil" else "Editar perfil",
-                                        fontSize = if (isMobile) 22.sp else 26.sp,
+                                        fontSize = if (localIsMobile) 22.sp else 26.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White,
-                                        modifier = Modifier.padding(bottom = if (isMobile) 20.dp else 28.dp)
+                                        modifier = Modifier.padding(bottom = if (localIsMobile) 20.dp else 28.dp)
                                     )
 
-                                    if (isMobile) {
+                                    if (localIsMobile) {
                                         Column(
                                             modifier = Modifier.fillMaxWidth(),
                                             verticalArrangement = Arrangement.spacedBy(24.dp),
@@ -443,7 +444,7 @@ fun ProfileSelectionScreen(
                                         ) {
                                             LeftPanel(
                                                 isTv = isTv,
-                                                isMobile = isMobile,
+                                                isMobile = localIsMobile,
                                                 isTablet = isTablet,
                                                 tempProfileColor = tempProfileColor,
                                                 tempStyle = tempStyle,
@@ -458,7 +459,7 @@ fun ProfileSelectionScreen(
                                             )
                                             RightPanel(
                                                 isTv = isTv,
-                                                isMobile = isMobile,
+                                                isMobile = localIsMobile,
                                                 isTablet = isTablet,
                                                 tempProfileColor = tempProfileColor,
                                                 onProfileColorChange = { tempProfileColor = it },
@@ -484,7 +485,7 @@ fun ProfileSelectionScreen(
                                         ) {
                                             LeftPanel(
                                                 isTv = isTv,
-                                                isMobile = isMobile,
+                                                isMobile = localIsMobile,
                                                 isTablet = isTablet,
                                                 tempProfileColor = tempProfileColor,
                                                 tempStyle = tempStyle,
@@ -500,7 +501,7 @@ fun ProfileSelectionScreen(
                                             Box(modifier = Modifier.weight(1f)) {
                                                 RightPanel(
                                                     isTv = isTv,
-                                                    isMobile = isMobile,
+                                                    isMobile = localIsMobile,
                                                     isTablet = isTablet,
                                                     tempProfileColor = tempProfileColor,
                                                     onProfileColorChange = { tempProfileColor = it },
@@ -521,36 +522,95 @@ fun ProfileSelectionScreen(
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(if (isMobile) 24.dp else 40.dp))
+                                    Spacer(modifier = Modifier.height(if (localIsMobile) 28.dp else 40.dp))
 
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = if (isMobile) Arrangement.Center else Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        val actionsLayout = if (isMobile) {
-                                            @Composable { content: @Composable () -> Unit ->
-                                                Column(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    if (localIsMobile) {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            // Delete profile (Only in EDIT mode)
+                                            if (screenMode == ProfileScreenMode.EDIT && selectedProfileForEdit != null) {
+                                                TextButton(
+                                                    onClick = {
+                                                        viewModel.deleteProfile(selectedProfileForEdit!!.id)
+                                                        screenMode = ProfileScreenMode.SELECT
+                                                    },
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF5350)),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .tvFocusEffect(shape = RoundedCornerShape(14.dp))
                                                 ) {
-                                                    content()
+                                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(20.dp))
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                    Text("Eliminar perfil", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                                 }
                                             }
-                                        } else {
-                                            @Composable { content: @Composable () -> Unit ->
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    content()
-                                                }
+
+                                            // Save Button
+                                            val buttonColor = Color(tempProfileColor.toColorIntOrFallback(0xFF6200EE.toInt()))
+                                            Button(
+                                                onClick = {
+                                                    if (tempName.trim().isNotEmpty()) {
+                                                        if (screenMode == ProfileScreenMode.CREATE) {
+                                                            viewModel.createProfile(
+                                                                name = tempName,
+                                                                avatarStyle = tempStyle,
+                                                                skinColor = tempSkinColor,
+                                                                hairColor = tempHairColor,
+                                                                accessory = tempAccessory,
+                                                                expression = tempExpression,
+                                                                profileColor = tempProfileColor,
+                                                                isKids = tempIsKids,
+                                                                photoUri = tempPhotoUri
+                                                            )
+                                                        } else if (screenMode == ProfileScreenMode.EDIT && selectedProfileForEdit != null) {
+                                                            viewModel.updateProfile(
+                                                                id = selectedProfileForEdit!!.id,
+                                                                name = tempName,
+                                                                avatarStyle = tempStyle,
+                                                                skinColor = tempSkinColor,
+                                                                hairColor = tempHairColor,
+                                                                accessory = tempAccessory,
+                                                                expression = tempExpression,
+                                                                profileColor = tempProfileColor,
+                                                                isKids = tempIsKids,
+                                                                photoUri = tempPhotoUri
+                                                            )
+                                                        }
+                                                        screenMode = ProfileScreenMode.SELECT
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+                                                shape = RoundedCornerShape(14.dp),
+                                                modifier = Modifier
+                                                    .height(52.dp)
+                                                    .fillMaxWidth()
+                                                    .tvFocusEffect(shape = RoundedCornerShape(14.dp), scaleAmount = 1.05f)
+                                                    .semantics { testTag = "save_profile_button" }
+                                            ) {
+                                                Text("Guardar perfil", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                            }
+
+                                            // Cancel button
+                                            TextButton(
+                                                onClick = { screenMode = ProfileScreenMode.SELECT },
+                                                shape = RoundedCornerShape(14.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .tvFocusEffect(shape = RoundedCornerShape(14.dp))
+                                            ) {
+                                                Text("Cancelar", color = Color.White.copy(alpha = 0.8f), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                                             }
                                         }
-
-                                        actionsLayout {
+                                    } else {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             // Delete profile (Only in EDIT mode)
                                             if (screenMode == ProfileScreenMode.EDIT && selectedProfileForEdit != null) {
                                                 TextButton(
@@ -564,40 +624,22 @@ fun ProfileSelectionScreen(
                                                 ) {
                                                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(20.dp))
                                                     Spacer(modifier = Modifier.width(10.dp))
-                                                    Text("Eliminar perfil", fontSize = if (isMobile) 14.sp else 15.sp, fontWeight = FontWeight.Bold)
+                                                    Text("Eliminar perfil", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                                                 }
-                                            } else if (!isMobile) {
+                                            } else {
                                                 Spacer(modifier = Modifier.width(1.dp))
                                             }
 
-                                            val secondaryActionsLayout = if (isMobile) {
-                                                @Composable { content: @Composable () -> Unit ->
-                                                    Column(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                                                    ) {
-                                                        content()
-                                                    }
-                                                }
-                                            } else {
-                                                @Composable { content: @Composable () -> Unit ->
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        content()
-                                                    }
-                                                }
-                                            }
-
-                                            secondaryActionsLayout {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
                                                 // Cancel button
                                                 TextButton(
                                                     onClick = { screenMode = ProfileScreenMode.SELECT },
                                                     shape = RoundedCornerShape(14.dp),
                                                     modifier = Modifier
-                                                        .then(if (isMobile) Modifier.fillMaxWidth() else Modifier.padding(end = 20.dp))
+                                                        .padding(end = 20.dp)
                                                         .tvFocusEffect(shape = RoundedCornerShape(14.dp))
                                                 ) {
-                                                    Text("Cancelar", color = Color.White.copy(alpha = 0.8f), fontSize = if (isMobile) 15.sp else 16.sp, fontWeight = FontWeight.Medium)
+                                                    Text("Cancelar", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                                                 }
 
                                                 // Save Button
@@ -637,12 +679,12 @@ fun ProfileSelectionScreen(
                                                     colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
                                                     shape = RoundedCornerShape(14.dp),
                                                     modifier = Modifier
-                                                        .height(if (isMobile) 52.dp else 56.dp)
-                                                        .then(if (isMobile) Modifier.fillMaxWidth() else Modifier.widthIn(min = 200.dp))
+                                                        .height(56.dp)
+                                                        .widthIn(min = 200.dp)
                                                         .tvFocusEffect(shape = RoundedCornerShape(14.dp), scaleAmount = 1.05f)
                                                         .semantics { testTag = "save_profile_button" }
                                                 ) {
-                                                    Text("Guardar perfil", color = Color.White, fontSize = if (isMobile) 15.sp else 16.sp, fontWeight = FontWeight.Bold)
+                                                    Text("Guardar perfil", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                                 }
                                             }
                                         }
