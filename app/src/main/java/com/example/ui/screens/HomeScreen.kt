@@ -1102,31 +1102,35 @@ fun CatalogItemFullScreenDetails(
 
     LaunchedEffect(item) {
         // Fetch enriched data from Lumina Backend
-        coroutineScope.launch {
+        try {
             val enriched = viewModel.getDetailsForMedia(item.id, if (item.isTvShow) "tv" else "movie")
             if (enriched != null) {
-                dynamicDescription = enriched.description
-                dynamicRating = enriched.rating
-                dynamicYear = enriched.year
-                dynamicLogoUrl = enriched.getFullLogoUrl()
-                dynamicBackdrop = enriched.getFullBackdropUrl()
+                dynamicDescription = enriched.description.ifEmpty { item.description }
+                dynamicRating = enriched.rating.ifEmpty { item.rating }
+                dynamicYear = enriched.year.ifEmpty { item.year }
+                dynamicLogoUrl = enriched.logoUrl ?: item.getFullLogoUrl()
+                dynamicBackdrop = enriched.backdropUrl ?: item.getFullBackdropUrl()
                 
-                val backendCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
-                    ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
-                }
-                if (backendCast.isNotEmpty()) {
-                    dynamicCast = backendCast
-                }
+                try {
+                    val backendCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
+                        ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+                    }
+                    if (backendCast.isNotEmpty()) {
+                        dynamicCast = backendCast
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
             } else {
                 // Fallback to local data
-                val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
-                    ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
-                }
-                if (cachedCast.isNotEmpty()) {
-                    dynamicCast = cachedCast
-                }
+                try {
+                    val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
+                        ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+                    }
+                    if (cachedCast.isNotEmpty()) {
+                        dynamicCast = cachedCast
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
             }
-        }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     androidx.activity.compose.BackHandler {
