@@ -285,6 +285,30 @@ class CatalogRepository(private val context: Context) {
     }
 
     suspend fun refreshLocalCatalogs(force: Boolean = false) = withContext(Dispatchers.IO) {
+        try {
+            // Priority 1: Sync from Lumina Home Backend
+            val homeCatalogs = LuminaApi.service.getHome()
+            if (homeCatalogs.isNotEmpty()) {
+                val current = _catalogs.value.toMutableList()
+                
+                homeCatalogs.forEach { remoteCat ->
+                    val existingIdx = current.indexOfFirst { it.name == remoteCat.name || it.id == remoteCat.id }
+                    if (existingIdx != -1) {
+                        current[existingIdx] = current[existingIdx].copy(
+                            items = remoteCat.items,
+                            status = "Sincronizado",
+                            lastUpdated = "Ahora"
+                        )
+                    } else {
+                        current.add(remoteCat.copy(orderIndex = current.size))
+                    }
+                }
+                saveCatalogsToDbSync(current)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         val current = _catalogs.value
         if (current.isEmpty()) return@withContext
 
@@ -352,22 +376,10 @@ class CatalogRepository(private val context: Context) {
         val baseUrl = "https://lumina-api-coral.vercel.app/api"
         return categories.mapIndexed { idx, (name, src) ->
             Catalog(
-                id = "default_${idx + 1}",
+                id = "lumina_home_${idx + 1}",
                 name = name,
                 sourceType = src,
-                url = when (name) {
-                    "Películas en Tendencia" -> "$baseUrl/home"
-                    "Series en Tendencia" -> "$baseUrl/trending"
-                    "Películas Populares" -> "$baseUrl/catalogs"
-                    "Series Populares" -> "$baseUrl/catalogs"
-                    "Estrenos" -> "$baseUrl/home"
-                    "Anime" -> "$baseUrl/catalogs"
-                    "Acción" -> "$baseUrl/catalogs"
-                    "Comedia" -> "$baseUrl/catalogs"
-                    "Terror" -> "$baseUrl/catalogs"
-                    "Ciencia Ficción" -> "$baseUrl/catalogs"
-                    else -> "$baseUrl/home"
-                },
+                url = "$baseUrl/home",
                 isVisible = true,
                 showInHome = true,
                 showInRecommendations = idx % 3 == 0,

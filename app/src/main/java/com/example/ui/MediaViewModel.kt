@@ -150,11 +150,29 @@ class MediaViewModel(
         }
     }
 
-    // Global Media Search (Backend)
+    // Global Media Search & Trending (Backend)
     var mediaSearchResults by mutableStateOf<List<CatalogItem>>(emptyList())
         private set
     var isMediaSearching by mutableStateOf(false)
         private set
+    
+    var trendingMedia by mutableStateOf<List<CatalogItem>>(emptyList())
+        private set
+    var isTrendingLoading by mutableStateOf(false)
+        private set
+
+    fun fetchTrending() {
+        viewModelScope.launch {
+            isTrendingLoading = true
+            try {
+                trendingMedia = LuminaApi.service.getTrending()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isTrendingLoading = false
+            }
+        }
+    }
 
     fun searchMedia(query: String) {
         viewModelScope.launch {

@@ -184,6 +184,7 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         viewModel.refreshCatalogs()
+        viewModel.fetchTrending()
     }
 
     // Base flows
@@ -197,9 +198,16 @@ fun HomeScreen(
     var activeTrailerItem by remember { mutableStateOf<CatalogItem?>(null) }
 
     val allChannels by viewModel.allChannels.collectAsState()
-    // Showcase/Banner movies (Curated highlights from either the active catalogs or premium curated cinema highlights)
-    val featuredMovies = remember(catalogs) {
-        catalogs.filter { it.isVisible && it.showInHome }.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() && !it.posterUrl.contains("unsplash.com") && !it.posterUrl.contains("images.unsplash") }.distinctBy { it.id }.shuffled().take(12)
+    val trendingMedia = viewModel.trendingMedia
+    val selectedDetailsItem by viewModel.selectedDetailsItem.collectAsState()
+    
+    // Showcase/Banner movies (Curated highlights from trending or catalogs)
+    val featuredMovies = remember(catalogs, viewModel.trendingMedia) {
+        if (viewModel.trendingMedia.isNotEmpty()) {
+            viewModel.trendingMedia.take(12)
+        } else {
+            catalogs.filter { it.isVisible && it.showInHome }.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() && !it.posterUrl.contains("unsplash.com") && !it.posterUrl.contains("images.unsplash") }.distinctBy { it.id }.shuffled().take(12)
+        }
     }
 
     val favoriteCatalogItems by viewModel.favoriteCatalogItems.collectAsState()
@@ -232,11 +240,22 @@ fun HomeScreen(
 
         if (currentMovie == null) return@LaunchedEffect
         
-        val apiKey = ApiConfig.TMDB_API_KEY
+        // Use Lumina Backend for details instead of direct TMDB
+        val enriched = viewModel.getDetailsForMedia(currentMovie.id, if (currentMovie.isTvShow) "tv" else "movie")
         
-        // 1. Try reading straight from Lumina Catalog Engine cache fields
-        if (!currentMovie.logoUrl.isNullOrEmpty() && !currentMovie.castJson.isNullOrEmpty()) {
-            activeHeroLogoUrl = currentMovie.logoUrl
+        if (enriched != null) {
+            activeHeroLogoUrl = enriched.logoUrl
+            activeHeroLoadedDetails = LoadedTmdbDetails(
+                description = enriched.description,
+                rating = enriched.rating,
+                year = enriched.year,
+                logoUrl = enriched.logoUrl,
+                backdropUrl = enriched.backdropUrl ?: enriched.posterUrl,
+                duration = enriched.duration,
+                genre = enriched.genre
+            )
+        } else {
+            // Minimal fallback from current item
             activeHeroLoadedDetails = LoadedTmdbDetails(
                 description = currentMovie.description,
                 rating = currentMovie.rating,
@@ -246,77 +265,6 @@ fun HomeScreen(
                 duration = currentMovie.duration,
                 genre = currentMovie.genre
             )
-            return@LaunchedEffect
-        }
-
-        // 2. Fallback to Catalog Engine lookup
-        val engine = viewModel.catalogRepository?.engine
-        if (engine != null && apiKey.isNotEmpty()) {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                try {
-                    val enriched = engine.enrichCatalogItem(currentMovie, apiKey)
-                    
-                    var pName: String? = null
-                    var pLogo: String? = null
-                    // TMDB Watch Providers
-                    val tmdbId = enriched.tmdbId ?: currentMovie.tmdbId
-                    if (!tmdbId.isNullOrEmpty()) {
-                        val mediaType = if (currentMovie.isTvShow) "tv" else "movie"
-                        val provUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId/watch/providers?api_key=$apiKey"
-                        try {
-                            val client = okhttp3.OkHttpClient()
-                            val req = okhttp3.Request.Builder().url(provUrl).build()
-                            client.newCall(req).execute().use { resp ->
-                                if (resp.isSuccessful) {
-                                    val body = resp.body?.string() ?: ""
-                                    val results = org.json.JSONObject(body).optJSONObject("results")
-                                    if (results != null) {
-                                        val country = results.optJSONObject("ES") ?: results.optJSONObject("US") ?: results.optJSONObject("MX") ?: results.optJSONObject("AR") ?: if (results.keys().hasNext()) results.optJSONObject(results.keys().next()) else null
-                                        if (country != null) {
-                                            val flatrate = country.optJSONArray("flatrate")
-                                            if (flatrate != null && flatrate.length() > 0) {
-                                                val firstProvider = flatrate.getJSONObject(0)
-                                                pName = firstProvider.optString("provider_name")
-                                                val logoPath = firstProvider.optString("logo_path")
-                                                if (logoPath.isNotEmpty()) {
-                                                    pLogo = "https://image.tmdb.org/t/p/w154$logoPath"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) { e.printStackTrace() }
-                    }
-                    
-                    activeHeroLogoUrl = enriched.logoUrl
-                    activeHeroLoadedDetails = LoadedTmdbDetails(
-                        description = enriched.description,
-                        rating = enriched.rating,
-                        year = enriched.year,
-                        logoUrl = enriched.logoUrl,
-                        backdropUrl = enriched.backdropUrl ?: enriched.posterUrl,
-                        duration = enriched.duration,
-                        genre = enriched.genre,
-                        platformName = pName,
-                        platformLogoUrl = pLogo
-                    )
-
-                    // Persist enriched hero item back to catalogs list asynchronously
-                    viewModel.catalogRepository?.let { repo ->
-                        val currentList = repo.catalogs.value.map { cat ->
-                            val hasItem = cat.items.any { it.id == currentMovie.id }
-                            if (hasItem) {
-                                val newItems = cat.items.map { if (it.id == currentMovie.id) enriched else it }
-                                cat.copy(items = newItems)
-                            } else cat
-                        }
-                        repo.saveCatalogsList(currentList)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
         }
     }
 
@@ -449,6 +397,29 @@ fun HomeScreen(
                             }
 
                             val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
+
+                            if (trendingMedia.isNotEmpty()) {
+                                item {
+                                    DrawCatalogRow(
+                                        catalog = Catalog(
+                                            id = "trending_global",
+                                            name = "🔥 Tendencias",
+                                            sourceType = "Backend",
+                                            items = trendingMedia,
+                                            isVisible = true,
+                                            showInHome = true,
+                                            layoutType = "Horizontal Poster Row"
+                                        ),
+                                        favoriteCatalogItems = favoriteCatalogItems,
+                                        seenProgress = seenProgress,
+                                        onFocus = { activeHeroMovie = it },
+                                        onClick = { clickedItem ->
+                                            activeHeroMovie = clickedItem
+                                            viewModel.selectedDetailsItem.value = clickedItem
+                                        }
+                                    )
+                                }
+                            }
 
                             if (homeCatalogs.isEmpty()) {
                                 if (progressItems.isNotEmpty()) {
@@ -1128,13 +1099,31 @@ fun CatalogItemFullScreenDetails(
     }
 
     LaunchedEffect(item) {
-        val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
-            ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
-        }
-        if (cachedCast.isNotEmpty()) {
-            dynamicCast = cachedCast
-        } else {
-            dynamicCast = emptyList()
+        // Fetch enriched data from Lumina Backend
+        coroutineScope.launch {
+            val enriched = viewModel.getDetailsForMedia(item.id, if (item.isTvShow) "tv" else "movie")
+            if (enriched != null) {
+                dynamicDescription = enriched.description
+                dynamicRating = enriched.rating
+                dynamicYear = enriched.year
+                dynamicLogoUrl = enriched.logoUrl
+                dynamicBackdrop = enriched.backdropUrl ?: enriched.posterUrl
+                
+                val backendCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
+                    ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+                }
+                if (backendCast.isNotEmpty()) {
+                    dynamicCast = backendCast
+                }
+            } else {
+                // Fallback to local data
+                val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
+                    ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+                }
+                if (cachedCast.isNotEmpty()) {
+                    dynamicCast = cachedCast
+                }
+            }
         }
     }
 
