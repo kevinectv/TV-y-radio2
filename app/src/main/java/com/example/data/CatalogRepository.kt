@@ -413,28 +413,45 @@ data class SyncResult(
                 val items = when {
                     rawUrl.contains("/home") -> {
                         val homeCatalogs = LuminaApi.service.getHome()
-                        // Fuzzy search: try exact match, then contains, then simplified names
-                        homeCatalogs.find { 
+                        android.util.Log.d("CatalogRepository", "Fetching /home, found ${homeCatalogs.size} catalogs")
+                        
+                        val foundCatalog = homeCatalogs.find { 
                             it.name.equals(catalog.name, ignoreCase = true) || it.id == catalog.id 
-                        }?.items ?: homeCatalogs.find {
+                        } ?: homeCatalogs.maxByOrNull {
                             val n1 = it.name.lowercase().trim()
                             val n2 = catalog.name.lowercase().trim()
-                            n1.contains(n2) || n2.contains(n1)
-                        }?.items ?: emptyList()
+                            if (n1 == n2) 100
+                            else if (n1.contains(n2) || n2.contains(n1)) 50
+                            else 0
+                        }
+                        
+                        // Ensure we didn't match a very weak match (score 0)
+                        val finalCatalog = if (foundCatalog != null) {
+                             val n1 = foundCatalog.name.lowercase().trim()
+                             val n2 = catalog.name.lowercase().trim()
+                             if (n1 == n2 || n1.contains(n2) || n2.contains(n1)) foundCatalog else null
+                        } else null
+                        
+                        android.util.Log.d("CatalogRepository", "Catalog ${catalog.name} matched with ${finalCatalog?.name ?: "null"}, items size: ${finalCatalog?.items?.size ?: 0}")
+                        finalCatalog?.items?.toList() ?: emptyList()
                     }
                     rawUrl.contains("/trending") -> {
                         val trending = LuminaApi.service.getTrending()
-                        if (catalog.name.lowercase().contains("serie") || catalog.name.lowercase().contains("tv")) {
+                        val result = if (catalog.name.lowercase().contains("serie") || catalog.name.lowercase().contains("tv")) {
                             trending.filter { it.isTvShow }
                         } else if (catalog.name.lowercase().contains("película") || catalog.name.lowercase().contains("pelicula") || catalog.name.lowercase().contains("movie")) {
                             trending.filter { !it.isTvShow }
                         } else {
                             trending
                         }
+                        android.util.Log.d("CatalogRepository", "Fetched ${result.size} items for ${catalog.name} from /trending")
+                        result.toList()
                     }
                     rawUrl.contains("/catalogs") -> {
                         val allCatalogs = LuminaApi.service.getCatalogs()
-                        allCatalogs.find { it.name == catalog.name || it.id == catalog.id }?.items ?: emptyList()
+                        val found = allCatalogs.find { it.name == catalog.name || it.id == catalog.id }
+                        android.util.Log.d("CatalogRepository", "Fetched ${found?.items?.size ?: 0} items for ${catalog.name} from /catalogs")
+                        found?.items?.toList() ?: emptyList()
                     }
                     rawUrl.contains("/mdblist") -> {
                         val mdbId = rawUrl.substringAfter("id=").substringBefore("&").substringBefore("?")
@@ -825,6 +842,7 @@ data class SyncResult(
                 }
                 
                 // Smart TMDB Identification to fetch rich visual assets
+                var logoPath = obj.optString("logo_path").ifEmpty { obj.optString("logo_url", "") }
                 var tmdbId = ""
                 if (obj.has("tmdb_id") && obj.optString("tmdb_id").isNotEmpty() && obj.optString("tmdb_id") != "null") {
                     tmdbId = obj.optString("tmdb_id")
@@ -956,7 +974,8 @@ data class SyncResult(
                         description = desc,
                         streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null,
                         tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
-                        isTvShow = isTvShow
+                        isTvShow = isTvShow,
+                        logo_path = logoPath.ifEmpty { null }
                     )
                 )
             } catch (e: Exception) {
