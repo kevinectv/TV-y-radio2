@@ -338,61 +338,45 @@ class CatalogRepository(private val context: Context) {
 
     private fun createDefaultCatalogs(): List<Catalog> {
         val categories = listOf(
-            "Trending Movies" to "TMDB",
-            "Trending TV Shows" to "TMDB",
-            "Popular Movies" to "TMDB",
-            "Popular Series" to "TMDB",
-            "Top Rated Movies" to "TMDB",
-            "Top Rated Series" to "TMDB",
-            "Anime Trending" to "Local",
-            "Anime Popular" to "Local",
-            "Acción" to "Local",
-            "Comedia" to "Local",
-            "Terror" to "Local",
-            "Ciencia Ficción" to "Local",
-            "Documentales" to "Local",
-            "Familiar" to "Local"
+            "Películas en Tendencia" to "Lumina",
+            "Series en Tendencia" to "Lumina",
+            "Películas Populares" to "Lumina",
+            "Series Populares" to "Lumina",
+            "Estrenos" to "Lumina",
+            "Anime" to "Lumina",
+            "Acción" to "Lumina",
+            "Comedia" to "Lumina",
+            "Terror" to "Lumina",
+            "Ciencia Ficción" to "Lumina"
         )
+        val baseUrl = "https://lumina-api-coral.vercel.app/api"
         return categories.mapIndexed { idx, (name, src) ->
             Catalog(
                 id = "default_${idx + 1}",
                 name = name,
                 sourceType = src,
                 url = when (name) {
-                    "Trending Movies" -> "https://api.themoviedb.org/3/trending/movie/week?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Trending TV Shows" -> "https://api.themoviedb.org/3/trending/tv/week?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Popular Movies" -> "https://api.themoviedb.org/3/movie/popular?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Popular Series" -> "https://api.themoviedb.org/3/tv/popular?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Top Rated Movies" -> "https://api.themoviedb.org/3/movie/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Top Rated Series" -> "https://api.themoviedb.org/3/tv/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Anime Trending" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=es-MX"
-                    "Anime Popular" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=100&language=es-MX"
-                    "Acción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=28&language=es-MX"
-                    "Comedia" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=35&language=es-MX"
-                    "Terror" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=27&language=es-MX"
-                    "Ciencia Ficción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=878&language=es-MX"
-                    "Documentales" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=99&language=es-MX"
-                    "Familiar" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=10751&language=es-MX"
-                    else -> "https://api.themoviedb.org/3/trending/all/day?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Películas en Tendencia" -> "$baseUrl/home"
+                    "Series en Tendencia" -> "$baseUrl/trending"
+                    "Películas Populares" -> "$baseUrl/catalogs"
+                    "Series Populares" -> "$baseUrl/catalogs"
+                    "Estrenos" -> "$baseUrl/home"
+                    "Anime" -> "$baseUrl/catalogs"
+                    "Acción" -> "$baseUrl/catalogs"
+                    "Comedia" -> "$baseUrl/catalogs"
+                    "Terror" -> "$baseUrl/catalogs"
+                    "Ciencia Ficción" -> "$baseUrl/catalogs"
+                    else -> "$baseUrl/home"
                 },
                 isVisible = true,
                 showInHome = true,
                 showInRecommendations = idx % 3 == 0,
                 showInSearch = true,
-                numItems = 15,
+                numItems = 20,
                 status = "Sincronizado",
                 lastUpdated = "Hoy",
                 orderIndex = idx,
-                layoutType = when {
-                    name.contains("Trending Movies", ignoreCase = true) -> "Horizontal Poster Row"
-                    name.contains("Trending TV Shows", ignoreCase = true) || name.contains("Trending Series", ignoreCase = true) || name.contains("Popular Series", ignoreCase = true) -> "Landscape Row"
-                    name.contains("Anime Trending", ignoreCase = true) -> "Vertical Poster Row"
-                    name.contains("Top Rated", ignoreCase = true) -> "Large Featured Row"
-                    name.contains("New Releases", ignoreCase = true) || name.contains("Popular Movies", ignoreCase = true) -> "Banner Row"
-                    name.contains("Familiar", ignoreCase = true) || name.contains("Documentales", ignoreCase = true) -> "Compact Row"
-                    else -> "Horizontal Poster Row"
-                },
-                items = getDeepFallbacksForCategory(name)
+                layoutType = "Horizontal Poster Row"
             )
         }
     }
@@ -409,6 +393,30 @@ data class SyncResult(
         val lastUpdated = "Recién Recargado"
 
         val rawUrl = catalog.url.trim()
+        
+        // --- REDIRECTION TO LUMINA BACKEND ---
+        if (catalog.sourceType == "Lumina" || rawUrl.contains("lumina-api-coral.vercel.app")) {
+            try {
+                val items = when {
+                    rawUrl.contains("/home") -> {
+                        val homeCatalogs = LuminaApi.service.getHome()
+                        homeCatalogs.find { it.name == catalog.name || it.id == catalog.id }?.items ?: emptyList()
+                    }
+                    rawUrl.contains("/trending") -> LuminaApi.service.getTrending()
+                    rawUrl.contains("/catalogs") -> {
+                        val allCatalogs = LuminaApi.service.getCatalogs()
+                        allCatalogs.find { it.name == catalog.name || it.id == catalog.id }?.items ?: emptyList()
+                    }
+                    else -> emptyList()
+                }
+                if (items.isNotEmpty()) {
+                    return@withContext SyncResult(items, "Sincronizado", "Ahora")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         val tmdbKey = ApiConfig.TMDB_API_KEY
         val traktKey = ApiConfig.TRAKT_CLIENT_ID
         val mdblistKey = ApiConfig.MDBLIST_API_KEY

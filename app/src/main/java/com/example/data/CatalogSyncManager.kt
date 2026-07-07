@@ -1,6 +1,7 @@
 package com.example.data
 
 import android.content.Context
+import com.example.data.LuminaApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.text.SimpleDateFormat
@@ -10,9 +11,7 @@ import java.util.Locale
 import com.example.data.util.ApiConfig
 
 data class DiagnosticInfo(
-    val tmdbStatus: String = "🔴 Desconectado",
-    val mdblistStatus: String = "🔴 Desconectado",
-    val traktStatus: String = "🔴 Desconectado",
+    val backendStatus: String = "🔴 Desconectado",
     val lastSyncTime: String = "Nunca",
     val errorsDetected: List<String> = emptyList(),
     val logs: List<String> = emptyList()
@@ -22,10 +21,6 @@ class CatalogSyncManager private constructor(private val context: Context) {
 
     private val _diagnostics = MutableStateFlow(DiagnosticInfo())
     val diagnostics: StateFlow<DiagnosticInfo> = _diagnostics
-
-    private val mdbListService = MdbListService(context)
-    private val tmdbService = TmdbService(context)
-    private val traktService = TraktService(context)
 
     companion object {
         @Volatile
@@ -62,21 +57,21 @@ class CatalogSyncManager private constructor(private val context: Context) {
     }
 
     suspend fun runDiagnosticCheck() {
-        addLog("Iniciando autodiagnóstico de APIs...")
+        addLog("Iniciando autodiagnóstico de Lumina Backend...")
 
-        val tmdbRes = tmdbService.testConnection()
-        val mdbRes = mdbListService.testConnection()
-        val traktRes = traktService.testConnection()
+        val isConnected = try {
+            LuminaApi.service.getHome()
+            true
+        } catch (e: Exception) {
+            addError("Error de conexión al backend: ${e.message}")
+            false
+        }
 
         _diagnostics.value = _diagnostics.value.copy(
-            tmdbStatus = if (tmdbRes.first) "🟢 Conectado" else "🔴 Desconectado (${tmdbRes.second})",
-            mdblistStatus = if (mdbRes.first) "🟢 Conectado" else "🔴 Desconectado (${mdbRes.second})",
-            traktStatus = if (traktRes.first) "🟢 Conectado" else "🔴 Desconectado (${traktRes.second})"
+            backendStatus = if (isConnected) "🟢 Conectado" else "🔴 Desconectado"
         )
 
-        addLog("TMDB conectado: ${tmdbRes.first}")
-        addLog("MDBList conectado: ${mdbRes.first}")
-        addLog("Trakt conectado: ${traktRes.first}")
+        addLog("Backend conectado: $isConnected")
     }
 
     suspend fun performFullSync(repository: CatalogRepository) {

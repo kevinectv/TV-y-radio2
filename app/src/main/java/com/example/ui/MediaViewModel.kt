@@ -24,7 +24,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.example.data.database.ProfileEntity
-import com.example.data.util.ApiConfig
+import com.example.data.LuminaApi
+import com.example.data.model.CatalogItem
 import java.util.UUID
 
 enum class AppTab(val label: String) {
@@ -149,28 +150,37 @@ class MediaViewModel(
         }
     }
 
-    fun SearchCatalogs(query: String) {
-        catalogSearchQuery = query
-        val allStored = catalogsStateFlow.value
-        val q = query.trim()
-        if (q.isBlank()) {
-            catalogSearchResults = allStored
-            catalogSearchLogs = "Texto buscado: (Ninguno/Todos) | Catálogos disponibles: ${allStored.size} | Coincidencias encontradas: ${allStored.size} | Resultado final enviado a la UI: ${allStored.size} catálogos"
-            android.util.Log.d("LuminaCatalogEngine", catalogSearchLogs)
-            return
+    // Global Media Search (Backend)
+    var mediaSearchResults by mutableStateOf<List<CatalogItem>>(emptyList())
+        private set
+    var isMediaSearching by mutableStateOf(false)
+        private set
+
+    fun searchMedia(query: String) {
+        viewModelScope.launch {
+            if (query.isBlank()) {
+                mediaSearchResults = emptyList()
+                return@launch
+            }
+            isMediaSearching = true
+            try {
+                mediaSearchResults = LuminaApi.service.search(query)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                mediaSearchResults = emptyList()
+            } finally {
+                isMediaSearching = false
+            }
         }
-        val matches = allStored.filter {
-            it.name.contains(q, ignoreCase = true) ||
-            it.sourceType.contains(q, ignoreCase = true) ||
-            it.layoutType.contains(q, ignoreCase = true) ||
-            (q.equals("Action", ignoreCase = true) && it.name.contains("Acción", ignoreCase = true)) ||
-            (q.equals("Accion", ignoreCase = true) && it.name.contains("Acción", ignoreCase = true)) ||
-            (q.equals("Top Rated", ignoreCase = true) && it.name.contains("Top Rated", ignoreCase = true)) ||
-            (q.equals("Sci-Fi", ignoreCase = true) && it.name.contains("Ciencia Ficción", ignoreCase = true))
+    }
+
+    suspend fun getDetailsForMedia(id: String, type: String): CatalogItem? {
+        return try {
+            LuminaApi.service.getDetails(id, type)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        catalogSearchResults = matches
-        catalogSearchLogs = "Texto buscado: '$q' | Catálogos disponibles: ${allStored.size} | Coincidencias encontradas: ${matches.size} | Resultado final enviado a la UI: ${matches.size} catálogos"
-        android.util.Log.i("LuminaCatalogEngine", catalogSearchLogs)
     }
 
     // Selected App Tab
