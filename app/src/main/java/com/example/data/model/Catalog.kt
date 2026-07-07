@@ -43,6 +43,7 @@ data class CatalogItem(
     val languages: String? = null,
     val subtitles: String? = null,
     val extraImagesJson: String? = null,
+    val credits: Credits? = null,
     
     // TMDB raw paths from backend
     val poster_path: String? = null,
@@ -82,13 +83,15 @@ data class CatalogItem(
      * Returns the full URL for the logo.
      * Prioritizes logo_path if available.
      */
-    fun getFullLogoUrl(size: String = "w500"): String {
+    fun getFullLogoUrl(size: String = "w500"): String? {
         return if (!logo_path.isNullOrEmpty()) {
             "https://image.tmdb.org/t/p/$size$logo_path"
         } else if (logoUrl != null && logoUrl.startsWith("/")) {
             "https://image.tmdb.org/t/p/$size$logoUrl"
+        } else if (!logoUrl.isNullOrEmpty()) {
+            logoUrl
         } else {
-            logoUrl ?: ""
+            null
         }
     }
 
@@ -104,3 +107,16 @@ data class CatalogItem(
         }
     }
 }
+
+@JsonClass(generateAdapter = true)
+data class Credits(
+    val cast: List<CastMember> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class CastMember(
+    val name: String,
+    val character: String? = null,
+    val profile_path: String? = null,
+    val order: Int = 0
+)

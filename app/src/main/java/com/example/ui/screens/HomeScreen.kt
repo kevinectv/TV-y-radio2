@@ -1704,12 +1704,21 @@ fun CatalogItemDetailsDialog_Original(
         // 1. Try reading straight from Lumina Catalog Engine cache fields
         val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
             ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+        }.ifEmpty { 
+            item.credits?.cast?.map { castMember ->
+                ActorInfo(
+                    name = castMember.name, 
+                    role = castMember.character ?: "", 
+                    photoUrl = if (!castMember.profile_path.isNullOrEmpty()) "https://image.tmdb.org/t/p/w185${castMember.profile_path}" else ""
+                )
+            } ?: emptyList()
         }
-        if (!item.logoUrl.isNullOrEmpty() && cachedCast.isNotEmpty()) {
+        
+        if (!item.getFullLogoUrl().isNullOrEmpty() && cachedCast.isNotEmpty()) {
             if (!item.backdropUrl.isNullOrEmpty() || !item.backdrop_path.isNullOrEmpty()) {
                 dynamicBackdrop = item.getFullBackdropUrl()
             }
-            if (!item.logoUrl.isNullOrEmpty() || !item.logo_path.isNullOrEmpty()) {
+            if (!item.getFullLogoUrl().isNullOrEmpty()) {
                 dynamicLogoUrl = item.getFullLogoUrl()
             }
             if (cachedCast.isNotEmpty()) {
@@ -1737,11 +1746,19 @@ fun CatalogItemDetailsDialog_Original(
                     if (!enriched.backdropUrl.isNullOrEmpty()) {
                         dynamicBackdrop = if (enriched.backdropUrl!!.startsWith("/")) "https://image.tmdb.org/t/p/original${enriched.backdropUrl}" else enriched.backdropUrl
                     }
-                    if (!enriched.logoUrl.isNullOrEmpty()) {
-                        dynamicLogoUrl = if (enriched.logoUrl!!.startsWith("/")) "https://image.tmdb.org/t/p/w500${enriched.logoUrl}" else enriched.logoUrl
+                    if (!enriched.getFullLogoUrl().isNullOrEmpty()) {
+                        dynamicLogoUrl = enriched.getFullLogoUrl()
                     }
                     val parsedCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
                         ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+                    }.ifEmpty {
+                        enriched.credits?.cast?.map { castMember ->
+                            ActorInfo(
+                                name = castMember.name,
+                                role = castMember.character ?: "",
+                                photoUrl = if (!castMember.profile_path.isNullOrEmpty()) "https://image.tmdb.org/t/p/w185${castMember.profile_path}" else ""
+                            )
+                        } ?: emptyList()
                     }
                     if (parsedCast.isNotEmpty()) {
                         dynamicCast = parsedCast
@@ -1924,7 +1941,10 @@ fun CatalogItemDetailsDialog_Original(
                                             .heightIn(max = 65.dp)
                                             .widthIn(max = 160.dp),
                                         contentScale = ContentScale.Fit,
-                                        alignment = Alignment.BottomStart
+                                        alignment = Alignment.BottomStart,
+                                        onError = {
+                                            dynamicLogoUrl = null // Fallback to text on error
+                                        }
                                     )
                                 } else {
                                     Text(

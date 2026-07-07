@@ -92,7 +92,8 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
                 extraImagesJson = enriched.extraImagesJson?.ifEmpty { item.extraImagesJson } ?: item.extraImagesJson,
                 description = enriched.description.ifEmpty { item.description },
                 rating = enriched.rating.ifEmpty { item.rating },
-                genre = enriched.genre.ifEmpty { item.genre }
+                genre = enriched.genre.ifEmpty { item.genre },
+                credits = enriched.credits ?: item.credits
             )
         } catch (e: Exception) {
             e.printStackTrace()

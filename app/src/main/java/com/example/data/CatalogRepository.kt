@@ -362,10 +362,10 @@ class CatalogRepository(private val context: Context) {
 
     private fun createDefaultCatalogs(): List<Catalog> {
         val categories = listOf(
-            "Películas en Tendencia" to "Lumina",
-            "Series en Tendencia" to "Lumina",
-            "Películas Populares" to "Lumina",
-            "Series Populares" to "Lumina",
+            "Trending Movies" to "Lumina",
+            "Trending Series" to "Lumina",
+            "Popular Movies" to "Lumina",
+            "Popular Series" to "Lumina",
             "Estrenos" to "Lumina",
             "Anime" to "Lumina",
             "Acción" to "Lumina",
@@ -412,7 +412,14 @@ data class SyncResult(
                 val items = when {
                     rawUrl.contains("/home") -> {
                         val homeCatalogs = LuminaApi.service.getHome()
-                        homeCatalogs.find { it.name == catalog.name || it.id == catalog.id }?.items ?: emptyList()
+                        // Fuzzy search: try exact match, then contains, then simplified names
+                        homeCatalogs.find { 
+                            it.name.equals(catalog.name, ignoreCase = true) || it.id == catalog.id 
+                        }?.items ?: homeCatalogs.find {
+                            val n1 = it.name.lowercase().trim()
+                            val n2 = catalog.name.lowercase().trim()
+                            n1.contains(n2) || n2.contains(n1)
+                        }?.items ?: emptyList()
                     }
                     rawUrl.contains("/trending") -> LuminaApi.service.getTrending()
                     rawUrl.contains("/catalogs") -> {
@@ -998,7 +1005,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("trending movies") -> {
+            nameL.contains("trending movies") || (nameL.contains("tendencia") && nameL.contains("película")) || (nameL.contains("tendencia") && nameL.contains("pelicula")) -> {
                 listOf(
                     CatalogItem(
                         id = "f_dune2", title = "Dune: Parte Dos",
@@ -1026,7 +1033,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("trending tv") || nameL.contains("trending series") -> {
+            nameL.contains("trending tv") || nameL.contains("trending series") || (nameL.contains("tendencia") && nameL.contains("serie")) -> {
                 listOf(
                     CatalogItem(
                         id = "f_shogun", title = "Shōgun",
@@ -1054,7 +1061,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("popular movies") -> {
+            nameL.contains("popular movies") || (nameL.contains("popular") && nameL.contains("película")) || (nameL.contains("popular") && nameL.contains("pelicula")) -> {
                 listOf(
                     CatalogItem(
                         id = "f_inside2", title = "Intensamente 2",
@@ -1076,7 +1083,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("popular series") || nameL.contains("popular tv") -> {
+            nameL.contains("popular series") || nameL.contains("popular tv") || (nameL.contains("popular") && nameL.contains("serie")) -> {
                 listOf(
                     CatalogItem(
                         id = "f_house", title = "House of the Dragon",
