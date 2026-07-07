@@ -362,24 +362,24 @@ class CatalogRepository(private val context: Context) {
 
     private fun createDefaultCatalogs(): List<Catalog> {
         val categories = listOf(
-            "Trending Movies" to "Lumina",
-            "Trending Series" to "Lumina",
-            "Popular Movies" to "Lumina",
-            "Popular Series" to "Lumina",
-            "Estrenos" to "Lumina",
-            "Anime" to "Lumina",
-            "Acción" to "Lumina",
-            "Comedia" to "Lumina",
-            "Terror" to "Lumina",
-            "Ciencia Ficción" to "Lumina"
+            Triple("Películas en Tendencia", "Lumina", "/api/trending"),
+            Triple("Series en Tendencia", "Lumina", "/api/trending"),
+            Triple("Populares", "Lumina", "/api/home"),
+            Triple("Estrenos", "Lumina", "/api/home"),
+            Triple("Anime", "Lumina", "/api/home"),
+            Triple("Acción", "Lumina", "/api/home"),
+            Triple("Comedia", "Lumina", "/api/home"),
+            Triple("Terror", "Lumina", "/api/home"),
+            Triple("Ciencia Ficción", "Lumina", "/api/home")
         )
         val baseUrl = "https://lumina-api-coral.vercel.app/api"
-        return categories.mapIndexed { idx, (name, src) ->
+        return categories.mapIndexed { idx, triple ->
+            val (name, src, path) = triple
             Catalog(
                 id = "lumina_home_${idx + 1}",
                 name = name,
                 sourceType = src,
-                url = "$baseUrl/home",
+                url = if (path.startsWith("http")) path else "$baseUrl${path.removePrefix("/")}",
                 isVisible = true,
                 showInHome = true,
                 showInRecommendations = idx % 3 == 0,
@@ -400,6 +400,7 @@ data class SyncResult(
 )
 
     private suspend fun fetchItemsForCatalog(catalog: Catalog): SyncResult = withContext(Dispatchers.IO) {
+        android.util.Log.d("CatalogRepository", "Fetching for catalog: ${catalog.name}, URL: ${catalog.url}")
         val list = mutableListOf<CatalogItem>()
         var status = "Sincronizado"
         val lastUpdated = "Recién Recargado"
@@ -421,18 +422,37 @@ data class SyncResult(
                             n1.contains(n2) || n2.contains(n1)
                         }?.items ?: emptyList()
                     }
-                    rawUrl.contains("/trending") -> LuminaApi.service.getTrending()
+                    rawUrl.contains("/trending") -> {
+                        val trending = LuminaApi.service.getTrending()
+                        if (catalog.name.lowercase().contains("serie") || catalog.name.lowercase().contains("tv")) {
+                            trending.filter { it.isTvShow }
+                        } else if (catalog.name.lowercase().contains("película") || catalog.name.lowercase().contains("pelicula") || catalog.name.lowercase().contains("movie")) {
+                            trending.filter { !it.isTvShow }
+                        } else {
+                            trending
+                        }
+                    }
                     rawUrl.contains("/catalogs") -> {
                         val allCatalogs = LuminaApi.service.getCatalogs()
                         allCatalogs.find { it.name == catalog.name || it.id == catalog.id }?.items ?: emptyList()
                     }
+                    rawUrl.contains("/mdblist") -> {
+                        val mdbId = rawUrl.substringAfter("id=").substringBefore("&").substringBefore("?")
+                        if (mdbId.isNotEmpty() && mdbId != rawUrl) {
+                            LuminaApi.service.getMdbList(mdbId)
+                        } else {
+                            emptyList()
+                        }
+                    }
                     else -> emptyList()
                 }
+                android.util.Log.d("CatalogRepository", "Fetched ${items.size} items for ${catalog.name}")
                 if (items.isNotEmpty()) {
                     return@withContext SyncResult(items, "Sincronizado", "Ahora")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                android.util.Log.e("CatalogRepository", "Error fetching for ${catalog.name}: ${e.message}")
             }
         }
 

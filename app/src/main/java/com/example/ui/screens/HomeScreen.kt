@@ -244,26 +244,27 @@ fun HomeScreen(
         val enriched = viewModel.getDetailsForMedia(currentMovie.id, if (currentMovie.isTvShow) "tv" else "movie")
         
         if (enriched != null) {
-            activeHeroLogoUrl = enriched.logoUrl
+            activeHeroLogoUrl = enriched.getFullLogoUrl() ?: enriched.logoUrl
             activeHeroLoadedDetails = LoadedTmdbDetails(
-                description = enriched.description,
-                rating = enriched.rating,
-                year = enriched.year,
-                logoUrl = enriched.logoUrl,
-                backdropUrl = enriched.backdropUrl ?: enriched.posterUrl,
-                duration = enriched.duration,
-                genre = enriched.genre
+                description = enriched.overview ?: enriched.description,
+                rating = if ((enriched.vote_average ?: 0.0) > 0.0) String.format("%.1f", enriched.vote_average) else enriched.rating,
+                year = enriched.release_date?.take(4) ?: enriched.year,
+                logoUrl = enriched.getFullLogoUrl() ?: enriched.logoUrl,
+                backdropUrl = enriched.getFullBackdropUrl() ?: enriched.backdropUrl ?: enriched.posterUrl,
+                duration = if ((enriched.runtime ?: 0) > 0) "${enriched.runtime} min" else enriched.duration,
+                genre = enriched.genres?.joinToString(", ") { it.name } ?: enriched.genre
             )
         } else {
             // Minimal fallback from current item
+            activeHeroLogoUrl = currentMovie.getFullLogoUrl() ?: currentMovie.logoUrl
             activeHeroLoadedDetails = LoadedTmdbDetails(
-                description = currentMovie.description,
-                rating = currentMovie.rating,
-                year = currentMovie.year,
-                logoUrl = currentMovie.logoUrl,
-                backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl,
-                duration = currentMovie.duration,
-                genre = currentMovie.genre
+                description = currentMovie.overview ?: currentMovie.description,
+                rating = if ((currentMovie.vote_average ?: 0.0) > 0.0) String.format("%.1f", currentMovie.vote_average) else currentMovie.rating,
+                year = currentMovie.release_date?.take(4) ?: currentMovie.year,
+                logoUrl = currentMovie.getFullLogoUrl() ?: currentMovie.logoUrl,
+                backdropUrl = currentMovie.getFullBackdropUrl() ?: currentMovie.backdropUrl ?: currentMovie.posterUrl,
+                duration = if ((currentMovie.runtime ?: 0) > 0) "${currentMovie.runtime} min" else currentMovie.duration,
+                genre = currentMovie.genres?.joinToString(", ") { it.name } ?: currentMovie.genre
             )
         }
     }
@@ -983,6 +984,32 @@ fun CatalogItemHomeCard(
                     contentScale = ContentScale.Crop
                 )
 
+                // Logo/Title Overlay
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val logoUrl = item.getFullLogoUrl()
+                    if (!logoUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = logoUrl,
+                            contentDescription = item.title,
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 60.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text(
+                            text = item.title,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
                 // Gold Rating Overlay Tag
                 Row(
                     modifier = Modifier
@@ -1693,50 +1720,55 @@ fun CatalogItemDetailsDialog_Original(
     val offlineDescription = item.description
     var dynamicDescription by remember(item) { mutableStateOf(offlineDescription.ifEmpty { item.description }) }
     var dynamicRating by remember(item) { mutableStateOf(item.rating) }
-    var dynamicYear by remember(item) { mutableStateOf(item.year) }
+    var dynamicYear by remember(item) { mutableStateOf(item.release_date?.take(4) ?: item.year) }
     var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(null) }
     var dynamicBackdrop by remember(item) { mutableStateOf("") }
     var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
+    var dynamicGenres by remember(item) { mutableStateOf(item.genres?.joinToString(", ") { it.name } ?: item.genre) }
+    var dynamicRuntime by remember(item) { 
+        val text = if ((item.runtime ?: 0) > 0) {
+            val h = item.runtime!! / 60
+            val m = item.runtime!! % 60
+            if (h > 0) "${h}h ${m}m" else "${m}m"
+        } else item.duration ?: ""
+        mutableStateOf(text)
+    }
+    var dynamicDirector by remember(item) { 
+        mutableStateOf(item.credits?.crew?.find { it.job == "Director" }?.name ?: item.director ?: "")
+    }
 
     LaunchedEffect(item) {
         val apiKey = ApiConfig.TMDB_API_KEY
         
-        // 1. Try reading straight from Lumina Catalog Engine cache fields
-        val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
-            ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
-        }.ifEmpty { 
-            item.credits?.cast?.map { castMember ->
-                ActorInfo(
-                    name = castMember.name, 
-                    role = castMember.character ?: "", 
-                    photoUrl = if (!castMember.profile_path.isNullOrEmpty()) "https://image.tmdb.org/t/p/w185${castMember.profile_path}" else ""
-                )
-            } ?: emptyList()
-        }
-        
-        if (!item.getFullLogoUrl().isNullOrEmpty() && cachedCast.isNotEmpty()) {
-            if (!item.backdropUrl.isNullOrEmpty() || !item.backdrop_path.isNullOrEmpty()) {
-                dynamicBackdrop = item.getFullBackdropUrl()
+        // 1. Try reading straight from backend mapped fields
+        val backendCast = item.credits?.cast?.map { castMember ->
+            ActorInfo(
+                name = castMember.name, 
+                role = castMember.character ?: "", 
+                photoUrl = if (!castMember.profile_path.isNullOrEmpty()) "https://image.tmdb.org/t/p/w185${castMember.profile_path}" else ""
+            )
+        } ?: emptyList()
+
+        if (backendCast.isNotEmpty() || !item.overview.isNullOrEmpty() || (item.vote_average ?: 0.0) > 0.0) {
+            if (!item.backdrop_path.isNullOrEmpty()) dynamicBackdrop = item.getFullBackdropUrl()
+            if (!item.logo_path.isNullOrEmpty()) dynamicLogoUrl = item.getFullLogoUrl()
+            if (backendCast.isNotEmpty()) dynamicCast = backendCast
+            if (!item.overview.isNullOrEmpty()) dynamicDescription = item.overview ?: item.description
+            if ((item.vote_average ?: 0.0) > 0.0) dynamicRating = String.format("%.1f", item.vote_average)
+            if (!item.release_date.isNullOrEmpty()) dynamicYear = item.release_date!!.take(4)
+            if (!item.genres.isNullOrEmpty()) dynamicGenres = item.genres!!.joinToString(", ") { it.name }
+            if ((item.runtime ?: 0) > 0) {
+                val h = item.runtime!! / 60
+                val m = item.runtime!! % 60
+                dynamicRuntime = if (h > 0) "${h}h ${m}m" else "${m}m"
             }
-            if (!item.getFullLogoUrl().isNullOrEmpty()) {
-                dynamicLogoUrl = item.getFullLogoUrl()
-            }
-            if (cachedCast.isNotEmpty()) {
-                dynamicCast = cachedCast
-            }
-            if (!item.description.isNullOrEmpty()) {
-                dynamicDescription = item.description
-            }
-            if (!item.rating.isNullOrEmpty()) {
-                dynamicRating = item.rating
-            }
-            if (!item.year.isNullOrEmpty()) {
-                dynamicYear = item.year
-            }
+            val directorFound = item.credits?.crew?.find { it.job == "Director" }?.name
+            if (directorFound != null) dynamicDirector = directorFound
+            
             return@LaunchedEffect
         }
 
-        // 2. Fallback to Catalog Engine lookup
+        // 2. Fallback to Catalog Engine lookup if fields are empty
         val engine = viewModel.catalogRepository?.engine
         if (engine != null && apiKey.isNotEmpty()) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -1802,28 +1834,10 @@ fun CatalogItemDetailsDialog_Original(
         genreLower.contains("anime") || genreLower.contains("animación") || titleLower.contains("serie") || titleLower.contains("temporada") || item.isTvShow
     }
 
-    val director = remember(item) {
-        val titleLower = item.title.lowercase()
-        when {
-            titleLower.contains("dune") -> "Denis Villeneuve"
-            titleLower.contains("oppenheimer") -> "Christopher Nolan"
-            titleLower.contains("interstellar") || titleLower.contains("interestelar") -> "Christopher Nolan"
-            titleLower.contains("spider") -> "Kemp Powers"
-            item.genre.contains("Acción", true) -> "Chad Stahelski"
-            item.genre.contains("Terror", true) -> "James Wan"
-            else -> "Jon Favreau"
-        }
-    }
+    val director = dynamicDirector.ifEmpty { "No disponible" }
 
     val productora = remember(item) {
-        val titleLower = item.title.lowercase()
-        when {
-            titleLower.contains("dune") -> "Warner Bros. / Legendary Entertainment"
-            titleLower.contains("oppenheimer") -> "Universal Pictures / Syncopy"
-            titleLower.contains("spider") -> "Columbia Pictures / Marvel Arts"
-            item.genre.contains("Anime", true) -> "Toei Animation"
-            else -> "Paramount Pictures / Universal"
-        }
+        item.producer ?: "Paramount Pictures / Universal"
     }
 
     val pais = remember(item) {
@@ -1831,7 +1845,7 @@ fun CatalogItemDetailsDialog_Original(
     }
 
     val idioma = remember(item) {
-        "Español Latino / Inglés"
+        item.languages ?: "Español Latino / Inglés"
     }
 
     val clasificacion = remember(item) {
@@ -1839,16 +1853,14 @@ fun CatalogItemDetailsDialog_Original(
     }
 
     val temporadasInfo = remember(item) {
-        if (isSeriesOrAnime) "3 Temporadas" else "Película Completa"
+        if (isSeriesOrAnime) "Serie / TV" else "Película Completa"
     }
 
     val emisionStatus = remember(item) {
         if (isSeriesOrAnime) "En Emisión Semanal" else "Emitido"
     }
 
-    val duracionText = remember(item) {
-        if (isSeriesOrAnime) "24m por ep." else "1h 56m"
-    }
+    val duracionText = dynamicRuntime.ifEmpty { "N/D" }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1968,7 +1980,7 @@ fun CatalogItemDetailsDialog_Original(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = item.genre,
+                                        text = dynamicGenres,
                                         color = Color(0xFF00E5FF),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp,

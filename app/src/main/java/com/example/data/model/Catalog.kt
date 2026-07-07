@@ -45,6 +45,14 @@ data class CatalogItem(
     val extraImagesJson: String? = null,
     val credits: Credits? = null,
     
+    // TMDB raw and extra fields
+    val original_title: String? = null,
+    val overview: String? = null,
+    val release_date: String? = null,
+    val vote_average: Double? = null,
+    val runtime: Int? = null,
+    val genres: List<Genre>? = null,
+    
     // TMDB raw paths from backend
     val poster_path: String? = null,
     val backdrop_path: String? = null,
@@ -110,7 +118,8 @@ data class CatalogItem(
 
 @JsonClass(generateAdapter = true)
 data class Credits(
-    val cast: List<CastMember> = emptyList()
+    val cast: List<CastMember> = emptyList(),
+    val crew: List<CrewMember> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
@@ -119,4 +128,18 @@ data class CastMember(
     val character: String? = null,
     val profile_path: String? = null,
     val order: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class CrewMember(
+    val name: String,
+    val job: String? = null,
+    val department: String? = null,
+    val profile_path: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class Genre(
+    val id: Int,
+    val name: String
 )

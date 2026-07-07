@@ -34,7 +34,7 @@ interface LuminaApiService {
     suspend fun getMovie(@Query("id") id: String): CatalogItem
 
     @GET("api/mdblist")
-    suspend fun getMdbList(@Query("id") id: String): CatalogItem
+    suspend fun getMdbList(@Query("id") id: String): List<CatalogItem>
 }
 
 object LuminaApi {
