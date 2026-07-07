@@ -71,7 +71,9 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
             val mediaType = if (item.isTvShow) "tv" else "movie"
             
             // Call the new centralized backend
+            android.util.Log.d("CatalogEngine", "Fetching details for $tmdbId, type: $mediaType")
             val enriched = LuminaApi.service.getDetails(tmdbId, mediaType)
+            android.util.Log.d("CatalogEngine", "Details received: logo=${enriched.logo_path}, castSize=${enriched.credits?.cast?.size ?: 0}, director=${enriched.credits?.crew?.find { it.job == "Director" }?.name}, runtime=${enriched.runtime}, genresSize=${enriched.genres?.size ?: 0}")
             
             // Merge with existing item to keep stream URLs or other local data
             return@withContext item.copy(

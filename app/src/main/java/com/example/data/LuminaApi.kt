@@ -13,7 +13,7 @@ import retrofit2.http.Query
 
 interface LuminaApiService {
     @GET("api/home")
-    suspend fun getHome(): List<Catalog>
+    suspend fun getHome(): Map<String, List<CatalogItem>>
 
     @GET("api/catalogs")
     suspend fun getCatalogs(): List<Catalog>

@@ -285,28 +285,42 @@ class CatalogRepository(private val context: Context) {
     }
 
     suspend fun refreshLocalCatalogs(force: Boolean = false) = withContext(Dispatchers.IO) {
+        android.util.Log.d("CatalogRepository", "Starting refreshLocalCatalogs, force: $force")
         try {
             // Priority 1: Sync from Lumina Home Backend
-            val homeCatalogs = LuminaApi.service.getHome()
-            if (homeCatalogs.isNotEmpty()) {
+            android.util.Log.d("CatalogRepository", "Calling LuminaApi.service.getHome()")
+            val homeCatalogsMap = LuminaApi.service.getHome()
+            android.util.Log.d("CatalogRepository", "Received homeCatalogsMap, size: ${homeCatalogsMap.size}")
+            
+            if (homeCatalogsMap.isNotEmpty()) {
                 val current = _catalogs.value.toMutableList()
                 
-                homeCatalogs.forEach { remoteCat ->
-                    val existingIdx = current.indexOfFirst { it.name == remoteCat.name || it.id == remoteCat.id }
+                homeCatalogsMap.forEach { (key, items) ->
+                    android.util.Log.d("CatalogRepository", "Processing category: $key, items: ${items.size}")
+                    val existingIdx = current.indexOfFirst { it.name == key || it.id == key }
                     if (existingIdx != -1) {
                         current[existingIdx] = current[existingIdx].copy(
-                            items = remoteCat.items,
+                            items = items.toList(), // Ensure a copy
                             status = "Sincronizado",
                             lastUpdated = "Ahora"
                         )
                     } else {
-                        current.add(remoteCat.copy(orderIndex = current.size))
+                        current.add(Catalog(
+                            id = key,
+                            name = key,
+                            sourceType = "Lumina",
+                            items = items.toList(),
+                            orderIndex = current.size
+                        ))
                     }
                 }
+                android.util.Log.d("CatalogRepository", "Saving ${current.size} catalogs to DB")
                 saveCatalogsToDbSync(current)
+            } else {
+                android.util.Log.w("CatalogRepository", "homeCatalogsMap is empty")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("CatalogRepository", "Error in refreshLocalCatalogs", e)
         }
 
         val current = _catalogs.value
@@ -372,14 +386,14 @@ class CatalogRepository(private val context: Context) {
             Triple("Terror", "Lumina", "/api/home"),
             Triple("Ciencia Ficción", "Lumina", "/api/home")
         )
-        val baseUrl = "https://lumina-api-coral.vercel.app/api"
+        val baseUrl = "https://lumina-api-coral.vercel.app"
         return categories.mapIndexed { idx, triple ->
             val (name, src, path) = triple
             Catalog(
                 id = "lumina_home_${idx + 1}",
                 name = name,
                 sourceType = src,
-                url = if (path.startsWith("http")) path else "$baseUrl${path.removePrefix("/")}",
+                url = if (path.startsWith("http")) path else "$baseUrl/${path.removePrefix("/")}",
                 isVisible = true,
                 showInHome = true,
                 showInRecommendations = idx % 3 == 0,
@@ -412,7 +426,18 @@ data class SyncResult(
             try {
                 val items = when {
                     rawUrl.contains("/home") -> {
-                        val homeCatalogs = LuminaApi.service.getHome()
+                        val homeCatalogsMap = LuminaApi.service.getHome()
+                        
+                        // Convert Map<String, List<CatalogItem>> to Catalog objects
+                        val homeCatalogs = homeCatalogsMap.map { (key, items) ->
+                            Catalog(
+                                id = key,
+                                name = key,
+                                sourceType = "Lumina",
+                                items = items
+                            )
+                        }
+                        
                         android.util.Log.d("CatalogRepository", "Fetching /home, found ${homeCatalogs.size} catalogs")
                         
                         val foundCatalog = homeCatalogs.find { 
@@ -425,7 +450,6 @@ data class SyncResult(
                             else 0
                         }
                         
-                        // Ensure we didn't match a very weak match (score 0)
                         val finalCatalog = if (foundCatalog != null) {
                              val n1 = foundCatalog.name.lowercase().trim()
                              val n2 = catalog.name.lowercase().trim()
