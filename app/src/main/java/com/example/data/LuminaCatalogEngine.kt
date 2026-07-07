@@ -44,7 +44,10 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
                 if (parts.size >= 2) {
                     val name = parts[0]
                     val role = parts[1]
-                    val photo = parts.getOrNull(2) ?: ""
+                    var photo = parts.getOrNull(2) ?: ""
+                    if (photo.startsWith("/")) {
+                        photo = "https://image.tmdb.org/t/p/w185$photo"
+                    }
                     EngineActorInfo(name, role, photo)
                 } else null
             }
@@ -72,6 +75,10 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
             
             // Merge with existing item to keep stream URLs or other local data
             return@withContext item.copy(
+                poster_path = enriched.poster_path?.ifEmpty { item.poster_path } ?: item.poster_path,
+                backdrop_path = enriched.backdrop_path?.ifEmpty { item.backdrop_path } ?: item.backdrop_path,
+                logo_path = enriched.logo_path?.ifEmpty { item.logo_path } ?: item.logo_path,
+                profile_path = enriched.profile_path?.ifEmpty { item.profile_path } ?: item.profile_path,
                 logoUrl = enriched.logoUrl?.ifEmpty { item.logoUrl } ?: item.logoUrl,
                 backdropUrl = enriched.backdropUrl?.ifEmpty { item.backdropUrl } ?: item.backdropUrl,
                 trailerUrl = enriched.trailerUrl?.ifEmpty { item.trailerUrl } ?: item.trailerUrl,

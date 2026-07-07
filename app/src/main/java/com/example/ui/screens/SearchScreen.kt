@@ -221,7 +221,7 @@ fun CatalogSearchCard(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
             border = if (isFocused) BorderStroke(2.dp, Color(0xFF00E5FF)) else null
         ) {
             AsyncImage(
-                model = item.posterUrl,
+                model = item.getFullPosterUrl(),
                 contentDescription = item.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -258,7 +258,7 @@ fun SearchListRow(item: CatalogItem, onClick: (CatalogItem) -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = item.posterUrl,
+            model = item.getFullPosterUrl(),
             contentDescription = item.title,
             modifier = Modifier
                 .width(60.dp)

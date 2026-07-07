@@ -295,7 +295,9 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize()
                         ) { movie ->
                             movie?.let { currentSafeMovie ->
-                                val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: currentSafeMovie.posterUrl
+                                val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl?.let { 
+                                    if (it.startsWith("/")) "https://image.tmdb.org/t/p/original$it" else it 
+                                } ?: currentSafeMovie.getFullBackdropUrl()
 
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     AsyncImage(
@@ -975,7 +977,7 @@ fun CatalogItemHomeCard(
             ) {
                 // Movie/Show Poster
                 AsyncImage(
-                    model = item.posterUrl,
+                    model = item.getFullPosterUrl(),
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -1086,8 +1088,8 @@ fun CatalogItemFullScreenDetails(
     var dynamicDescription by remember(item) { mutableStateOf(offlineDescription.ifEmpty { item.description }) }
     var dynamicRating by remember(item) { mutableStateOf(item.rating) }
     var dynamicYear by remember(item) { mutableStateOf(item.year) }
-    var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(item.logoUrl) }
-    var dynamicBackdrop by remember(item) { mutableStateOf(item.backdropUrl ?: item.backdropUrl ?: item.posterUrl) }
+    var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(item.getFullLogoUrl()) }
+    var dynamicBackdrop by remember(item) { mutableStateOf(item.getFullBackdropUrl()) }
     var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
 
     val catalogsState = viewModel.catalogsStateFlow.collectAsState()
@@ -1106,8 +1108,8 @@ fun CatalogItemFullScreenDetails(
                 dynamicDescription = enriched.description
                 dynamicRating = enriched.rating
                 dynamicYear = enriched.year
-                dynamicLogoUrl = enriched.logoUrl
-                dynamicBackdrop = enriched.backdropUrl ?: enriched.posterUrl
+                dynamicLogoUrl = enriched.getFullLogoUrl()
+                dynamicBackdrop = enriched.getFullBackdropUrl()
                 
                 val backendCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
                     ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
@@ -1139,7 +1141,7 @@ fun CatalogItemFullScreenDetails(
         // Full screen blurred backdrop
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = dynamicBackdrop.ifEmpty { item.backdropUrl ?: item.posterUrl },
+                model = dynamicBackdrop.ifEmpty { item.getFullBackdropUrl() },
                 contentDescription = item.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -1223,7 +1225,7 @@ fun CatalogItemFullScreenDetails(
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                     ) {
                         AsyncImage(
-                            model = item.posterUrl,
+                            model = item.getFullPosterUrl(),
                             contentDescription = item.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -1342,7 +1344,7 @@ fun CatalogItemFullScreenDetails(
                                         id = "catalog_${item.id}",
                                         name = item.title,
                                         streamUrl = item.streamUrl ?: "",
-                                        logoUrl = item.posterUrl,
+                                        logoUrl = item.getFullPosterUrl(),
                                         category = "Cine Premium",
                                         description = item.description,
                                         number = 999
@@ -1549,7 +1551,7 @@ fun CatalogItemFullScreenDetails(
                                         .clickable(interactionSource = interactionSource, indication = null) { }
                                 ) {
                                     AsyncImage(
-                                        model = imageUrl,
+                                        model = if (imageUrl.startsWith("/")) "https://image.tmdb.org/t/p/w780$imageUrl" else imageUrl,
                                         contentDescription = "Captura",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -1583,7 +1585,7 @@ fun CatalogItemFullScreenDetails(
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             AsyncImage(
-                                model = dynamicBackdrop.ifEmpty { item.backdropUrl ?: item.posterUrl },
+                                model = dynamicBackdrop.ifEmpty { item.getFullBackdropUrl() },
                                 contentDescription = "Trailer Backdrop",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
@@ -1642,7 +1644,7 @@ fun CatalogItemFullScreenDetails(
                                         }
                                 ) {
                                     AsyncImage(
-                                        model = similar.posterUrl,
+                                        model = similar.getFullPosterUrl(),
                                         contentDescription = similar.title,
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -1700,11 +1702,11 @@ fun CatalogItemDetailsDialog_Original(
             ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
         }
         if (!item.logoUrl.isNullOrEmpty() && cachedCast.isNotEmpty()) {
-            if (!item.backdropUrl.isNullOrEmpty()) {
-                dynamicBackdrop = item.backdropUrl
+            if (!item.backdropUrl.isNullOrEmpty() || !item.backdrop_path.isNullOrEmpty()) {
+                dynamicBackdrop = item.getFullBackdropUrl()
             }
-            if (!item.logoUrl.isNullOrEmpty()) {
-                dynamicLogoUrl = item.logoUrl
+            if (!item.logoUrl.isNullOrEmpty() || !item.logo_path.isNullOrEmpty()) {
+                dynamicLogoUrl = item.getFullLogoUrl()
             }
             if (cachedCast.isNotEmpty()) {
                 dynamicCast = cachedCast
@@ -1729,10 +1731,10 @@ fun CatalogItemDetailsDialog_Original(
                     val enriched = engine.enrichCatalogItem(item, apiKey)
                     
                     if (!enriched.backdropUrl.isNullOrEmpty()) {
-                        dynamicBackdrop = enriched.backdropUrl
+                        dynamicBackdrop = if (enriched.backdropUrl!!.startsWith("/")) "https://image.tmdb.org/t/p/original${enriched.backdropUrl}" else enriched.backdropUrl
                     }
                     if (!enriched.logoUrl.isNullOrEmpty()) {
-                        dynamicLogoUrl = enriched.logoUrl
+                        dynamicLogoUrl = if (enriched.logoUrl!!.startsWith("/")) "https://image.tmdb.org/t/p/w500${enriched.logoUrl}" else enriched.logoUrl
                     }
                     val parsedCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
                         ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
@@ -1864,7 +1866,7 @@ fun CatalogItemDetailsDialog_Original(
                                 .height(220.dp)
                         ) {
                             AsyncImage(
-                                model = dynamicBackdrop.ifEmpty { item.backdropUrl ?: item.posterUrl },
+                                model = dynamicBackdrop.ifEmpty { item.getFullBackdropUrl() },
                                 contentDescription = item.title,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
@@ -2087,7 +2089,7 @@ fun CatalogItemDetailsDialog_Original(
                                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                                     ) {
                                         AsyncImage(
-                                            model = item.posterUrl,
+                                            model = item.getFullPosterUrl(),
                                             contentDescription = item.title,
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
@@ -2585,7 +2587,7 @@ fun CatalogItemNumberedCard(
             Box(modifier = Modifier.fillMaxSize()) {
                 // Movie/Show Poster
                 AsyncImage(
-                    model = item.posterUrl,
+                    model = item.getFullPosterUrl(),
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

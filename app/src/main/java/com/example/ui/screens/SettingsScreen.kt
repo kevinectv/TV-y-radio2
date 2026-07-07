@@ -1556,7 +1556,7 @@ fun RadioPaneContent(
                                 id = "custom_${System.currentTimeMillis()}",
                                 name = name.trim(),
                                 streamUrl = streamUrl.trim(),
-                                logoUrl = logoUrl.trim().ifEmpty { "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300" },
+                                logoUrl = logoUrl.trim().ifEmpty { "" },
                                 genre = genre.trim().ifEmpty { "General" },
                                 frequency = frequency.trim().ifEmpty { "99.9 FM" },
                                 themeColorHex = selectedColorHex,

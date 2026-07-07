@@ -73,7 +73,7 @@ fun PremiumCatalogSearchScreen(
                     name = catalog.name,
                     sourceType = catalog.sourceType,
                     url = catalog.url,
-                    posterUrl = if (catalog.items.isNotEmpty()) catalog.items.first().posterUrl ?: "" else "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=600",
+                    posterUrl = if (catalog.items.isNotEmpty()) catalog.items.first().posterUrl ?: "" else "",
                     numItems = catalog.numItems,
                     description = "Catálogo de ${catalog.name} sincronizado desde Lumina Backend.",
                     category = catalog.name
@@ -88,7 +88,7 @@ fun PremiumCatalogSearchScreen(
                     name = "Lumina Home Feed",
                     sourceType = "Lumina",
                     url = "https://lumina-api-coral.vercel.app/api/home",
-                    posterUrl = "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=600",
+                    posterUrl = "",
                     numItems = 50,
                     description = "Feed principal de películas y series recomendadas.",
                     category = "Tendencias"

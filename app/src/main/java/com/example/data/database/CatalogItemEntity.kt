@@ -29,7 +29,11 @@ data class CatalogItemEntity(
     val imdbRating: String?,
     val languages: String?,
     val subtitles: String?,
-    val extraImagesJson: String?
+    val extraImagesJson: String?,
+    val poster_path: String?,
+    val backdrop_path: String?,
+    val logo_path: String?,
+    val profile_path: String?
 )
 
 fun CatalogItemEntity.toDomain(): CatalogItem {
@@ -54,7 +58,11 @@ fun CatalogItemEntity.toDomain(): CatalogItem {
         imdbRating = imdbRating,
         languages = languages,
         subtitles = subtitles,
-        extraImagesJson = extraImagesJson
+        extraImagesJson = extraImagesJson,
+        poster_path = poster_path,
+        backdrop_path = backdrop_path,
+        logo_path = logo_path,
+        profile_path = profile_path
     )
 }
 
@@ -81,6 +89,10 @@ fun CatalogItem.toEntity(catalogId: String): CatalogItemEntity {
         imdbRating = imdbRating,
         languages = languages,
         subtitles = subtitles,
-        extraImagesJson = extraImagesJson
+        extraImagesJson = extraImagesJson,
+        poster_path = poster_path,
+        backdrop_path = backdrop_path,
+        logo_path = logo_path,
+        profile_path = profile_path
     )
 }

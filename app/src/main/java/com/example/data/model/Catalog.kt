@@ -24,7 +24,7 @@ data class Catalog(
 data class CatalogItem(
     val id: String,
     val title: String,
-    val posterUrl: String,
+    val posterUrl: String = "",
     val year: String = "2024",
     val rating: String = "8.2",
     val genre: String = "Acción",
@@ -42,5 +42,65 @@ data class CatalogItem(
     val imdbRating: String? = null,
     val languages: String? = null,
     val subtitles: String? = null,
-    val extraImagesJson: String? = null
-)
+    val extraImagesJson: String? = null,
+    
+    // TMDB raw paths from backend
+    val poster_path: String? = null,
+    val backdrop_path: String? = null,
+    val logo_path: String? = null,
+    val profile_path: String? = null
+) {
+    /**
+     * Returns the full URL for the poster. 
+     * Prioritizes poster_path if available.
+     */
+    fun getFullPosterUrl(size: String = "w500"): String {
+        return if (!poster_path.isNullOrEmpty()) {
+            "https://image.tmdb.org/t/p/$size$poster_path"
+        } else if (posterUrl.startsWith("/")) {
+             "https://image.tmdb.org/t/p/$size$posterUrl"
+        } else {
+            posterUrl
+        }
+    }
+
+    /**
+     * Returns the full URL for the backdrop.
+     * Prioritizes backdrop_path if available.
+     */
+    fun getFullBackdropUrl(size: String = "original"): String {
+        return if (!backdrop_path.isNullOrEmpty()) {
+            "https://image.tmdb.org/t/p/$size$backdrop_path"
+        } else if (backdropUrl != null && backdropUrl.startsWith("/")) {
+            "https://image.tmdb.org/t/p/$size$backdropUrl"
+        } else {
+            backdropUrl ?: ""
+        }
+    }
+
+    /**
+     * Returns the full URL for the logo.
+     * Prioritizes logo_path if available.
+     */
+    fun getFullLogoUrl(size: String = "w500"): String {
+        return if (!logo_path.isNullOrEmpty()) {
+            "https://image.tmdb.org/t/p/$size$logo_path"
+        } else if (logoUrl != null && logoUrl.startsWith("/")) {
+            "https://image.tmdb.org/t/p/$size$logoUrl"
+        } else {
+            logoUrl ?: ""
+        }
+    }
+
+    /**
+     * Returns the full URL for a profile image (actor photo).
+     * Prioritizes profile_path if available.
+     */
+    fun getFullProfileUrl(size: String = "w185"): String {
+        return if (!profile_path.isNullOrEmpty()) {
+            "https://image.tmdb.org/t/p/$size$profile_path"
+        } else {
+            ""
+        }
+    }
+}

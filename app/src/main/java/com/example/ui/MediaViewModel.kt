@@ -407,7 +407,7 @@ class MediaViewModel(
             id = "no_channel",
             name = "Ningún canal cargado",
             streamUrl = "",
-            logoUrl = "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=200",
+            logoUrl = "",
             category = "Sin Categoría",
             description = "Añade una fuente de IPTV desde Ajustes o el menú de lista para comenzar a reproducir.",
             number = 0
@@ -421,7 +421,7 @@ class MediaViewModel(
             endTime = "24:00",
             startHourDecimal = 0.0f,
             durationHours = 24.0f,
-            thumbnailUrl = "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=200",
+            thumbnailUrl = "",
             category = "General"
         )
     }
