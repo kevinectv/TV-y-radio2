@@ -407,7 +407,20 @@ data class SyncResult(
         val list = mutableListOf<CatalogItem>()
         var status = "Sincronizado"
         val lastUpdated = "Recién Recargado"
-
+        
+        // If it is a Lumina API URL, use BackendApi
+        if (catalog.url.contains("lumina-api-coral.vercel.app")) {
+            try {
+                val category = catalog.url.substringAfterLast("/")
+                val jsonBody = BackendApi.getInstance().getCatalog(category)
+                val jsonItems = parseJsonCatalog(jsonBody, catalog)
+                list.addAll(jsonItems)
+            } catch (e: Exception) {
+                status = "Error: ${e.localizedMessage ?: "Fallo"}"
+            }
+            return@withContext SyncResult(list, status, lastUpdated)
+        }
+        
         val rawUrl = catalog.url.trim()
         val tmdbKey = ApiConfig.TMDB_API_KEY
         val traktKey = ApiConfig.TRAKT_CLIENT_ID
@@ -514,7 +527,7 @@ data class SyncResult(
                 e.printStackTrace()
             }
         }
-
+        
         // 2. Query matching local channels (Disabled as requested to keep local IPTV streams separated from general Movie/VOD Home Screen catalogs)
         val dbItems = emptyList<CatalogItem>()
 
