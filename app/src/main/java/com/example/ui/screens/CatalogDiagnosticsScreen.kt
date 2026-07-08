@@ -94,11 +94,37 @@ fun CatalogDiagnosticsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Lumina Backend:", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        Text("TMDB API:", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
                         Text(
-                            text = diagnosticsState.backendStatus,
+                            text = diagnosticsState.tmdbStatus,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (diagnosticsState.backendStatus.contains("🟢")) Color(0xFF00E676) else Color(0xFFFF5252),
+                            color = if (diagnosticsState.tmdbStatus.contains("🟢")) Color(0xFF00E676) else Color(0xFFFF5252),
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("MDBList API:", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        Text(
+                            text = diagnosticsState.mdblistStatus,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (diagnosticsState.mdblistStatus.contains("🟢")) Color(0xFF00E676) else Color(0xFFFF5252),
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Trakt API:", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        Text(
+                            text = diagnosticsState.traktStatus,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (diagnosticsState.traktStatus.contains("🟢")) Color(0xFF00E676) else Color(0xFFFF5252),
                             fontSize = 13.sp
                         )
                     }

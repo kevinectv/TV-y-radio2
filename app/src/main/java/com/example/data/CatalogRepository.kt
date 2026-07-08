@@ -285,44 +285,6 @@ class CatalogRepository(private val context: Context) {
     }
 
     suspend fun refreshLocalCatalogs(force: Boolean = false) = withContext(Dispatchers.IO) {
-        android.util.Log.d("CatalogRepository", "Starting refreshLocalCatalogs, force: $force")
-        try {
-            // Priority 1: Sync from Lumina Home Backend
-            android.util.Log.d("CatalogRepository", "Calling LuminaApi.service.getHome()")
-            val homeCatalogsMap = LuminaApi.service.getHome()
-            android.util.Log.d("CatalogRepository", "Received homeCatalogsMap, size: ${homeCatalogsMap.size}")
-            
-            if (homeCatalogsMap.isNotEmpty()) {
-                val current = _catalogs.value.toMutableList()
-                
-                homeCatalogsMap.forEach { (key, items) ->
-                    android.util.Log.d("CatalogRepository", "Processing category: $key, items: ${items.size}")
-                    val existingIdx = current.indexOfFirst { it.name == key || it.id == key }
-                    if (existingIdx != -1) {
-                        current[existingIdx] = current[existingIdx].copy(
-                            items = items.toList(), // Ensure a copy
-                            status = "Sincronizado",
-                            lastUpdated = "Ahora"
-                        )
-                    } else {
-                        current.add(Catalog(
-                            id = key,
-                            name = key,
-                            sourceType = "Lumina",
-                            items = items.toList(),
-                            orderIndex = current.size
-                        ))
-                    }
-                }
-                android.util.Log.d("CatalogRepository", "Saving ${current.size} catalogs to DB")
-                saveCatalogsToDbSync(current)
-            } else {
-                android.util.Log.w("CatalogRepository", "homeCatalogsMap is empty")
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("CatalogRepository", "Error in refreshLocalCatalogs", e)
-        }
-
         val current = _catalogs.value
         if (current.isEmpty()) return@withContext
 
@@ -376,33 +338,61 @@ class CatalogRepository(private val context: Context) {
 
     private fun createDefaultCatalogs(): List<Catalog> {
         val categories = listOf(
-            Triple("Películas en Tendencia", "Lumina", "/api/trending"),
-            Triple("Series en Tendencia", "Lumina", "/api/trending"),
-            Triple("Populares", "Lumina", "/api/home"),
-            Triple("Estrenos", "Lumina", "/api/home"),
-            Triple("Anime", "Lumina", "/api/home"),
-            Triple("Acción", "Lumina", "/api/home"),
-            Triple("Comedia", "Lumina", "/api/home"),
-            Triple("Terror", "Lumina", "/api/home"),
-            Triple("Ciencia Ficción", "Lumina", "/api/home")
+            "Trending Movies" to "TMDB",
+            "Trending TV Shows" to "TMDB",
+            "Popular Movies" to "TMDB",
+            "Popular Series" to "TMDB",
+            "Top Rated Movies" to "TMDB",
+            "Top Rated Series" to "TMDB",
+            "Anime Trending" to "Local",
+            "Anime Popular" to "Local",
+            "Acción" to "Local",
+            "Comedia" to "Local",
+            "Terror" to "Local",
+            "Ciencia Ficción" to "Local",
+            "Documentales" to "Local",
+            "Familiar" to "Local"
         )
-        val baseUrl = "https://lumina-api-coral.vercel.app"
-        return categories.mapIndexed { idx, triple ->
-            val (name, src, path) = triple
+        return categories.mapIndexed { idx, (name, src) ->
             Catalog(
-                id = "lumina_home_${idx + 1}",
+                id = "default_${idx + 1}",
                 name = name,
                 sourceType = src,
-                url = if (path.startsWith("http")) path else "$baseUrl/${path.removePrefix("/")}",
+                url = when (name) {
+                    "Trending Movies" -> "https://api.themoviedb.org/3/trending/movie/week?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Trending TV Shows" -> "https://api.themoviedb.org/3/trending/tv/week?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Popular Movies" -> "https://api.themoviedb.org/3/movie/popular?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Popular Series" -> "https://api.themoviedb.org/3/tv/popular?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Top Rated Movies" -> "https://api.themoviedb.org/3/movie/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Top Rated Series" -> "https://api.themoviedb.org/3/tv/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Anime Trending" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=es-MX"
+                    "Anime Popular" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=100&language=es-MX"
+                    "Acción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=28&language=es-MX"
+                    "Comedia" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=35&language=es-MX"
+                    "Terror" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=27&language=es-MX"
+                    "Ciencia Ficción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=878&language=es-MX"
+                    "Documentales" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=99&language=es-MX"
+                    "Familiar" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=10751&language=es-MX"
+                    else -> "https://api.themoviedb.org/3/trending/all/day?api_key=INSERT_KEY_HERE&language=es-MX"
+                },
                 isVisible = true,
                 showInHome = true,
                 showInRecommendations = idx % 3 == 0,
                 showInSearch = true,
-                numItems = 20,
+                numItems = 15,
                 status = "Sincronizado",
                 lastUpdated = "Hoy",
                 orderIndex = idx,
-                layoutType = "Horizontal Poster Row"
+                layoutType = when {
+                    name.contains("Trending Movies", ignoreCase = true) -> "Horizontal Poster Row"
+                    name.contains("Trending TV Shows", ignoreCase = true) || name.contains("Trending Series", ignoreCase = true) || name.contains("Popular Series", ignoreCase = true) -> "Landscape Row"
+                    name.contains("Anime Trending", ignoreCase = true) -> "Vertical Poster Row"
+                    name.contains("Top Rated", ignoreCase = true) -> "Large Featured Row"
+                    name.contains("New Releases", ignoreCase = true) || name.contains("Popular Movies", ignoreCase = true) -> "Banner Row"
+                    name.contains("Familiar", ignoreCase = true) || name.contains("Documentales", ignoreCase = true) -> "Compact Row"
+                    else -> "Horizontal Poster Row"
+                },
+                items = getDeepFallbacksForCategory(name)
             )
         }
     }
@@ -414,89 +404,11 @@ data class SyncResult(
 )
 
     private suspend fun fetchItemsForCatalog(catalog: Catalog): SyncResult = withContext(Dispatchers.IO) {
-        android.util.Log.d("CatalogRepository", "Fetching for catalog: ${catalog.name}, URL: ${catalog.url}")
         val list = mutableListOf<CatalogItem>()
         var status = "Sincronizado"
         val lastUpdated = "Recién Recargado"
 
         val rawUrl = catalog.url.trim()
-        
-        // --- REDIRECTION TO LUMINA BACKEND ---
-        if (catalog.sourceType == "Lumina" || rawUrl.contains("lumina-api-coral.vercel.app")) {
-            try {
-                val items = when {
-                    rawUrl.contains("/home") -> {
-                        val homeCatalogsMap = LuminaApi.service.getHome()
-                        
-                        // Convert Map<String, List<CatalogItem>> to Catalog objects
-                        val homeCatalogs = homeCatalogsMap.map { (key, items) ->
-                            Catalog(
-                                id = key,
-                                name = key,
-                                sourceType = "Lumina",
-                                items = items
-                            )
-                        }
-                        
-                        android.util.Log.d("CatalogRepository", "Fetching /home, found ${homeCatalogs.size} catalogs")
-                        
-                        val foundCatalog = homeCatalogs.find { 
-                            it.name.equals(catalog.name, ignoreCase = true) || it.id == catalog.id 
-                        } ?: homeCatalogs.maxByOrNull {
-                            val n1 = it.name.lowercase().trim()
-                            val n2 = catalog.name.lowercase().trim()
-                            if (n1 == n2) 100
-                            else if (n1.contains(n2) || n2.contains(n1)) 50
-                            else 0
-                        }
-                        
-                        val finalCatalog = if (foundCatalog != null) {
-                             val n1 = foundCatalog.name.lowercase().trim()
-                             val n2 = catalog.name.lowercase().trim()
-                             if (n1 == n2 || n1.contains(n2) || n2.contains(n1)) foundCatalog else null
-                        } else null
-                        
-                        android.util.Log.d("CatalogRepository", "Catalog ${catalog.name} matched with ${finalCatalog?.name ?: "null"}, items size: ${finalCatalog?.items?.size ?: 0}")
-                        finalCatalog?.items?.toList() ?: emptyList()
-                    }
-                    rawUrl.contains("/trending") -> {
-                        val trending = LuminaApi.service.getTrending()
-                        val result = if (catalog.name.lowercase().contains("serie") || catalog.name.lowercase().contains("tv")) {
-                            trending.filter { it.isTvShow }
-                        } else if (catalog.name.lowercase().contains("película") || catalog.name.lowercase().contains("pelicula") || catalog.name.lowercase().contains("movie")) {
-                            trending.filter { !it.isTvShow }
-                        } else {
-                            trending
-                        }
-                        android.util.Log.d("CatalogRepository", "Fetched ${result.size} items for ${catalog.name} from /trending")
-                        result.toList()
-                    }
-                    rawUrl.contains("/catalogs") -> {
-                        val allCatalogs = LuminaApi.service.getCatalogs()
-                        val found = allCatalogs.find { it.name == catalog.name || it.id == catalog.id }
-                        android.util.Log.d("CatalogRepository", "Fetched ${found?.items?.size ?: 0} items for ${catalog.name} from /catalogs")
-                        found?.items?.toList() ?: emptyList()
-                    }
-                    rawUrl.contains("/mdblist") -> {
-                        val mdbId = rawUrl.substringAfter("id=").substringBefore("&").substringBefore("?")
-                        if (mdbId.isNotEmpty() && mdbId != rawUrl) {
-                            LuminaApi.service.getMdbList(mdbId)
-                        } else {
-                            emptyList()
-                        }
-                    }
-                    else -> emptyList()
-                }
-                android.util.Log.d("CatalogRepository", "Fetched ${items.size} items for ${catalog.name}")
-                if (items.isNotEmpty()) {
-                    return@withContext SyncResult(items, "Sincronizado", "Ahora")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                android.util.Log.e("CatalogRepository", "Error fetching for ${catalog.name}: ${e.message}")
-            }
-        }
-
         val tmdbKey = ApiConfig.TMDB_API_KEY
         val traktKey = ApiConfig.TRAKT_CLIENT_ID
         val mdblistKey = ApiConfig.MDBLIST_API_KEY
@@ -866,7 +778,6 @@ data class SyncResult(
                 }
                 
                 // Smart TMDB Identification to fetch rich visual assets
-                var logoPath = obj.optString("logo_path").ifEmpty { obj.optString("logo_url", "") }
                 var tmdbId = ""
                 if (obj.has("tmdb_id") && obj.optString("tmdb_id").isNotEmpty() && obj.optString("tmdb_id") != "null") {
                     tmdbId = obj.optString("tmdb_id")
@@ -998,8 +909,7 @@ data class SyncResult(
                         description = desc,
                         streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null,
                         tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
-                        isTvShow = isTvShow,
-                        logo_path = logoPath.ifEmpty { null }
+                        isTvShow = isTvShow
                     )
                 )
             } catch (e: Exception) {
@@ -1068,7 +978,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("trending movies") || (nameL.contains("tendencia") && nameL.contains("película")) || (nameL.contains("tendencia") && nameL.contains("pelicula")) -> {
+            nameL.contains("trending movies") -> {
                 listOf(
                     CatalogItem(
                         id = "f_dune2", title = "Dune: Parte Dos",
@@ -1096,7 +1006,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("trending tv") || nameL.contains("trending series") || (nameL.contains("tendencia") && nameL.contains("serie")) -> {
+            nameL.contains("trending tv") || nameL.contains("trending series") -> {
                 listOf(
                     CatalogItem(
                         id = "f_shogun", title = "Shōgun",
@@ -1124,7 +1034,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("popular movies") || (nameL.contains("popular") && nameL.contains("película")) || (nameL.contains("popular") && nameL.contains("pelicula")) -> {
+            nameL.contains("popular movies") -> {
                 listOf(
                     CatalogItem(
                         id = "f_inside2", title = "Intensamente 2",
@@ -1146,7 +1056,7 @@ data class SyncResult(
                     )
                 )
             }
-            nameL.contains("popular series") || nameL.contains("popular tv") || (nameL.contains("popular") && nameL.contains("serie")) -> {
+            nameL.contains("popular series") || nameL.contains("popular tv") -> {
                 listOf(
                     CatalogItem(
                         id = "f_house", title = "House of the Dragon",

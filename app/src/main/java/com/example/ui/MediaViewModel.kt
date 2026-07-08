@@ -24,8 +24,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.example.data.database.ProfileEntity
-import com.example.data.LuminaApi
-import com.example.data.model.CatalogItem
+import com.example.data.util.ApiConfig
 import java.util.UUID
 
 enum class AppTab(val label: String) {
@@ -150,55 +149,28 @@ class MediaViewModel(
         }
     }
 
-    // Global Media Search & Trending (Backend)
-    var mediaSearchResults by mutableStateOf<List<CatalogItem>>(emptyList())
-        private set
-    var isMediaSearching by mutableStateOf(false)
-        private set
-    
-    var trendingMedia by mutableStateOf<List<CatalogItem>>(emptyList())
-        private set
-    var isTrendingLoading by mutableStateOf(false)
-        private set
-
-    fun fetchTrending() {
-        viewModelScope.launch {
-            isTrendingLoading = true
-            try {
-                trendingMedia = LuminaApi.service.getTrending()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                isTrendingLoading = false
-            }
+    fun SearchCatalogs(query: String) {
+        catalogSearchQuery = query
+        val allStored = catalogsStateFlow.value
+        val q = query.trim()
+        if (q.isBlank()) {
+            catalogSearchResults = allStored
+            catalogSearchLogs = "Texto buscado: (Ninguno/Todos) | Catálogos disponibles: ${allStored.size} | Coincidencias encontradas: ${allStored.size} | Resultado final enviado a la UI: ${allStored.size} catálogos"
+            android.util.Log.d("LuminaCatalogEngine", catalogSearchLogs)
+            return
         }
-    }
-
-    fun searchMedia(query: String) {
-        viewModelScope.launch {
-            if (query.isBlank()) {
-                mediaSearchResults = emptyList()
-                return@launch
-            }
-            isMediaSearching = true
-            try {
-                mediaSearchResults = LuminaApi.service.search(query)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                mediaSearchResults = emptyList()
-            } finally {
-                isMediaSearching = false
-            }
+        val matches = allStored.filter {
+            it.name.contains(q, ignoreCase = true) ||
+            it.sourceType.contains(q, ignoreCase = true) ||
+            it.layoutType.contains(q, ignoreCase = true) ||
+            (q.equals("Action", ignoreCase = true) && it.name.contains("Acción", ignoreCase = true)) ||
+            (q.equals("Accion", ignoreCase = true) && it.name.contains("Acción", ignoreCase = true)) ||
+            (q.equals("Top Rated", ignoreCase = true) && it.name.contains("Top Rated", ignoreCase = true)) ||
+            (q.equals("Sci-Fi", ignoreCase = true) && it.name.contains("Ciencia Ficción", ignoreCase = true))
         }
-    }
-
-    suspend fun getDetailsForMedia(id: String, type: String): CatalogItem? {
-        return try {
-            LuminaApi.service.getDetails(id, type)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+        catalogSearchResults = matches
+        catalogSearchLogs = "Texto buscado: '$q' | Catálogos disponibles: ${allStored.size} | Coincidencias encontradas: ${matches.size} | Resultado final enviado a la UI: ${matches.size} catálogos"
+        android.util.Log.i("LuminaCatalogEngine", catalogSearchLogs)
     }
 
     // Selected App Tab
@@ -407,7 +379,7 @@ class MediaViewModel(
             id = "no_channel",
             name = "Ningún canal cargado",
             streamUrl = "",
-            logoUrl = "",
+            logoUrl = "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=200",
             category = "Sin Categoría",
             description = "Añade una fuente de IPTV desde Ajustes o el menú de lista para comenzar a reproducir.",
             number = 0
@@ -421,7 +393,7 @@ class MediaViewModel(
             endTime = "24:00",
             startHourDecimal = 0.0f,
             durationHours = 24.0f,
-            thumbnailUrl = "",
+            thumbnailUrl = "https://images.unsplash.com/photo-1542204172-e7052809a8a7?q=80&w=200",
             category = "General"
         )
     }

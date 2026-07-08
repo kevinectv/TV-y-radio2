@@ -169,17 +169,8 @@ fun resolveHeroMetadata(
         techIndicators.add("Subtítulos")
     }
 
-    val logoUrl = if (!loaded?.logoUrl.isNullOrEmpty()) {
-        if (loaded?.logoUrl!!.startsWith("/")) "https://image.tmdb.org/t/p/w500${loaded.logoUrl}" else loaded.logoUrl
-    } else {
-        item.getFullLogoUrl()
-    }
-    
-    val backdropUrl = if (!loaded?.backdropUrl.isNullOrEmpty()) {
-        if (loaded?.backdropUrl!!.startsWith("/")) "https://image.tmdb.org/t/p/original${loaded.backdropUrl}" else loaded.backdropUrl
-    } else {
-        item.getFullBackdropUrl()
-    }
+    val logoUrl = loaded?.logoUrl ?: item.logoUrl
+    val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: item.posterUrl
 
     val platformNames = listOf("Netflix", "Max", "Prime Video", "Disney+", "Apple TV+")
     val platformName = loaded?.platformName ?: platformNames[absHash % platformNames.size]
@@ -471,7 +462,7 @@ fun HomeHeroBannerMobile(
             label = "hero_mobile_fade"
         ) { targetMovie ->
             val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
-            val backdropUrlToUse = richMeta.backdropUrl
+            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: targetMovie.backdropUrl ?: targetMovie.posterUrl
 
             Box(modifier = Modifier.fillMaxSize()) {
                 // 1. Imagen de fondo vertical estilo móvil

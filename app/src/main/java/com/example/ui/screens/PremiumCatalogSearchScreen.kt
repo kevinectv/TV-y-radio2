@@ -2,7 +2,6 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import com.example.data.LuminaApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,42 +60,158 @@ fun PremiumCatalogSearchScreen(
 
     
     var searchQuery by remember { mutableStateOf("") }
-    var premiumCatalogs by remember { mutableStateOf<List<DiscoverableCatalog>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    
+    // Dataset of premium curated catalogs ready for instant discovery
+    val premiumCatalogs = remember {
+        listOf(
+            // Marvel Catalogs
+            DiscoverableCatalog(
+                id = "premium_mcu",
+                name = "Marvel Cinematic Universe (Saga Completa)",
+                sourceType = "TMDB Collections",
+                url = "https://api.themoviedb.org/3/list/8254719?api_key=INSERT_KEY_HERE&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=600",
+                numItems = 45,
+                description = "Todas las películas y series canon de Marvel Studios ordenadas cronológicamente por fases.",
+                category = "Marvel"
+            ),
+            DiscoverableCatalog(
+                id = "premium_marvel_timeline",
+                name = "Marvel Timeline & Story Order",
+                sourceType = "Trakt Lists",
+                url = "https://api.trakt.tv/users/movist-app/lists/marvel-cinematic-universe-chronological",
+                posterUrl = "https://images.unsplash.com/photo-1608889175123-8ec330b86f84?q=80&w=600",
+                numItems = 38,
+                description = "Orden definitivo de la narrativa de Marvel incluyendo agentes de S.H.I.E.L.D, Daredevil y Disney+.",
+                category = "Marvel"
+            ),
+            DiscoverableCatalog(
+                id = "premium_marvel_anim",
+                name = "Marvel Animation Essentials",
+                sourceType = "MDBList",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_companies=420&with_genres=16",
+                posterUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+                numItems = 20,
+                description = "Series icónicas de los 90s, X-Men '97, Spider-Man: TAS, What If...? y películas animadas clásicas.",
+                category = "Marvel"
+            ),
+            DiscoverableCatalog(
+                id = "premium_marvel_top",
+                name = "Top Marvel Movies & Specials",
+                sourceType = "Lumina",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_companies=420&sort_by=vote_average.desc&vote_count.gte=1000",
+                posterUrl = "https://images.unsplash.com/photo-1569003339405-ea396a5a8a90?q=80&w=600",
+                numItems = 15,
+                description = "Las obras del universo Marvel mejor puntuadas por la crítica global de IMDb y Rotten Tomatoes.",
+                category = "Marvel"
+            ),
+            
+            // Anime Catalogs
+            DiscoverableCatalog(
+                id = "premium_anime_trending",
+                name = "Anime Trending Worldwide",
+                sourceType = "Trakt",
+                url = "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
+                numItems = 30,
+                description = "Las series y películas de anime de las que todo el mundo está hablando esta temporada.",
+                category = "Anime"
+            ),
+            DiscoverableCatalog(
+                id = "premium_anime_popular",
+                name = "Top Rated Anime Masterpieces",
+                sourceType = "TMDB Lists",
+                url = "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=100&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600",
+                numItems = 40,
+                description = "Colección legendaria de los mejores animes calificados históricamente (MyAnimeList & TMDB).",
+                category = "Anime"
+            ),
+            DiscoverableCatalog(
+                id = "premium_anime_new",
+                name = "Nuevos Estrenos Anime",
+                sourceType = "MDBList",
+                url = "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=first_air_date.desc",
+                posterUrl = "https://images.unsplash.com/photo-1528360983277-13d401ccd795?q=80&w=600",
+                numItems = 25,
+                description = "Las series más recientes que acaban de ser transmitidas y estrenadas en Japón.",
+                category = "Anime"
+            ),
+            DiscoverableCatalog(
+                id = "premium_anime_movies",
+                name = "Grandes Películas de Anime",
+                sourceType = "Lumina",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=popularity.desc",
+                posterUrl = "https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600",
+                numItems = 20,
+                description = "Una selección premium de películas icónicas de Studio Ghibli, Makoto Shinkai y Mamoru Hosoda.",
+                category = "Anime"
+            ),
 
-    LaunchedEffect(Unit) {
-        try {
-            val backendCatalogs = LuminaApi.service.getCatalogs()
-            premiumCatalogs = backendCatalogs.map { catalog ->
-                DiscoverableCatalog(
-                    id = catalog.id,
-                    name = catalog.name,
-                    sourceType = catalog.sourceType,
-                    url = catalog.url,
-                    posterUrl = if (catalog.items.isNotEmpty()) catalog.items.first().posterUrl ?: "" else "",
-                    numItems = catalog.numItems,
-                    description = "Catálogo de ${catalog.name} sincronizado desde Lumina Backend.",
-                    category = catalog.name
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback to minimal set if backend fails
-            premiumCatalogs = listOf(
-                DiscoverableCatalog(
-                    id = "backend_home",
-                    name = "Lumina Home Feed",
-                    sourceType = "Lumina",
-                    url = "https://lumina-api-coral.vercel.app/api/home",
-                    posterUrl = "",
-                    numItems = 50,
-                    description = "Feed principal de películas y series recomendadas.",
-                    category = "Tendencias"
-                )
+            // Star Wars & Sci-Fi
+            DiscoverableCatalog(
+                id = "premium_starwars",
+                name = "Star Wars: Saga Skywalker & Series",
+                sourceType = "TMDB Lists",
+                url = "https://api.themoviedb.org/3/list/8254720?api_key=INSERT_KEY_HERE&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=600",
+                numItems = 28,
+                description = "Que la fuerza te acompañe. Películas de la saga principal, spin-offs y series oficiales de Disney+.",
+                category = "Ciencia Ficción"
+            ),
+            DiscoverableCatalog(
+                id = "premium_cyberpunk",
+                name = "Sci-Fi & Cyberpunk Classics",
+                sourceType = "Lumina",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=878&sort_by=vote_average.desc&vote_count.gte=1500&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600",
+                numItems = 25,
+                description = "Películas distópicas, futuristas, robótica avanzada y mundos neones de culto.",
+                category = "Ciencia Ficción"
+            ),
+
+            // Classics & Awards
+            DiscoverableCatalog(
+                id = "premium_disney",
+                name = "Clásicos Animados Disney & Pixar",
+                sourceType = "TMDB Collections",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_companies=2|3|34&with_genres=16&sort_by=popularity.desc&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600",
+                numItems = 35,
+                description = "La magia de tu infancia. Desde Blancanieves hasta los últimos éxitos tridimensionales de Pixar.",
+                category = "Familiar"
+            ),
+            DiscoverableCatalog(
+                id = "premium_oscar",
+                name = "Películas Ganadoras del Óscar",
+                sourceType = "MDBList",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&sort_by=vote_average.desc&vote_count.gte=10000",
+                posterUrl = "https://images.unsplash.com/photo-1598257006458-087169a1f08d?q=80&w=600",
+                numItems = 45,
+                description = "Todas las cintas memorables coronadas con el premio de la Academia de Cine a Mejor Película.",
+                category = "Clásicos"
+            ),
+            DiscoverableCatalog(
+                id = "premium_imdb_top250",
+                name = "IMDb Top 250 de la Historia",
+                sourceType = "MDBList",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&sort_by=vote_average.desc&vote_count.gte=15000",
+                posterUrl = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600",
+                numItems = 50,
+                description = "El estándar de oro del cine mundial. Las 250 mejores películas de todos los tiempos.",
+                category = "Clásicos"
+            ),
+            DiscoverableCatalog(
+                id = "premium_horror_trends",
+                name = "Terror & Thriller Spooktacular",
+                sourceType = "Trakt",
+                url = "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=27&sort_by=popularity.desc&language=es-MX",
+                posterUrl = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600",
+                numItems = 25,
+                description = "Cine de horror, suspenso psicológico y monstruos espeluznantes seleccionados para mentes valientes.",
+                category = "Terror"
             )
-        } finally {
-            isLoading = false
-        }
+        )
     }
     
     // Filtered catalogs based on search query

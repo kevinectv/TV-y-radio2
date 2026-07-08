@@ -120,19 +120,11 @@ fun LuminaAppShell(
                     ) {
                         // User Profile Circle (Clicking switches/selects profile)
                         val activeColorHex = viewModel.activeProfile?.profileColor ?: "#00E5FF"
-                        val parsedColor = remember(activeColorHex) {
-                            try {
-                                Color(android.graphics.Color.parseColor(activeColorHex))
-                            } catch (e: Exception) {
-                                Color(0xFF00E5FF)
-                            }
-                        }
-                        
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .border(1.5.dp, parsedColor, RoundedCornerShape(8.dp))
+                                .border(1.5.dp, Color(android.graphics.Color.parseColor(activeColorHex)), RoundedCornerShape(8.dp))
                                 .clickable { viewModel.logoutProfile() }
                                 .tvFocusEffect(shape = RoundedCornerShape(8.dp))
                         ) {
@@ -391,13 +383,9 @@ fun LuminaAppShell(
             exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.95f),
             modifier = Modifier
                 .fillMaxSize()
-                .zIndex(99f)
+                .zIndex(98f)
         ) {
-            // Usamos un remember del item para que durante la animación de salida
-            // el contenido no desaparezca abruptamente si selectedDetailsItem pasa a ser null
-            val itemToDisplay = remember(selectedDetailsItem) { selectedDetailsItem }
-            
-            itemToDisplay?.let { item ->
+            selectedDetailsItem?.let { item ->
                 CatalogItemFullScreenDetails(
                     item = item,
                     viewModel = viewModel,
