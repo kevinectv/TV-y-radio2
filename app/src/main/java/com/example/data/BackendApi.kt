@@ -38,7 +38,7 @@ class BackendApi {
     suspend fun getWatchProviders(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType/$id/watch/providers")
     suspend fun getVideos(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType/$id/videos")
 
-    suspend fun getCatalog(category: String): String = fetch("$BASE_URL/catalog/$category")
+    suspend fun getCatalog(category: String): String = fetch("$BASE_URL/catalogs/$category")
 
     suspend fun getMovieImages(id: String): String = fetch("$BASE_URL/movie/$id/images")
     suspend fun getTvImages(id: String): String = fetch("$BASE_URL/tv/$id/images")

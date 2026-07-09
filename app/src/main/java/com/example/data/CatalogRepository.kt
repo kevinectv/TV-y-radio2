@@ -48,33 +48,37 @@ class CatalogRepository(private val context: Context) {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             loadCatalogs()
             
-            var needsSave = false
-            val current = _catalogs.value.map { cat ->
-                val hasNoDefaultMock = cat.url.isNotEmpty() && 
-                    !cat.url.contains("lumina-api-coral.vercel.app") &&
-                    !cat.url.contains("tmdb/catalog/") &&
-                    !cat.url.contains("mdblist/public/") &&
-                    !cat.url.contains("trakt/lists/")
-                
-                if (cat.items.isEmpty() && cat.url.startsWith("http") && hasNoDefaultMock) {
-                    needsSave = true
-                    val result = fetchItemsForCatalog(cat)
-                    cat.copy(items = result.items, status = result.status, lastUpdated = "Al iniciar")
-                } else cat
-            }
-            if (needsSave) {
-                saveCatalogsToDbSync(current)
-            }
-            
-            val totalItems = catalogDao.getStoredItemsCount()
-            if (totalItems <= 140) {
-                refreshLocalCatalogs()
-            }
-            
-            try {
-                engine.autoSyncAndEnrichAll()
+            // Try loading curated lists from backend getHome() first
+            val loadedBackendHome = try {
+                loadHomeFromBackend()
             } catch (e: Exception) {
                 e.printStackTrace()
+                false
+            }
+
+            if (!loadedBackendHome) {
+                var needsSave = false
+                val current = _catalogs.value.map { cat ->
+                    val hasNoDefaultMock = cat.url.isNotEmpty() && 
+                        !cat.url.contains("lumina-api-coral.vercel.app") &&
+                        !cat.url.contains("tmdb/catalog/") &&
+                        !cat.url.contains("mdblist/public/") &&
+                        !cat.url.contains("trakt/lists/")
+                    
+                    if (cat.items.isEmpty() && cat.url.startsWith("http") && hasNoDefaultMock) {
+                        needsSave = true
+                        val result = fetchItemsForCatalog(cat)
+                        cat.copy(items = result.items, status = result.status, lastUpdated = "Al iniciar")
+                    } else cat
+                }
+                if (needsSave) {
+                    saveCatalogsToDbSync(current)
+                }
+                
+                val totalItems = catalogDao.getStoredItemsCount()
+                if (totalItems <= 140) {
+                    refreshLocalCatalogs()
+                }
             }
             updateStats()
         }
@@ -285,6 +289,16 @@ class CatalogRepository(private val context: Context) {
     }
 
     suspend fun refreshLocalCatalogs(force: Boolean = false) = withContext(Dispatchers.IO) {
+        // Try loading from the backend getHome() first to fetch the curated lists instantly
+        try {
+            val loadedBackendHome = loadHomeFromBackend()
+            if (loadedBackendHome) {
+                return@withContext
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         val current = _catalogs.value
         if (current.isEmpty()) return@withContext
 
@@ -333,6 +347,161 @@ class CatalogRepository(private val context: Context) {
         // If any catalogs were updated synchronously (e.g. empty ones or forced ones), save them
         if (updated != current) {
             saveCatalogsToDbSync(updated)
+        }
+    }
+
+    suspend fun loadHomeFromBackend(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val api = BackendApi.getInstance()
+            val jsonStr = api.getHome().trim()
+            if (jsonStr.isEmpty()) return@withContext false
+            
+            val parsedCatalogs = parseHomeJson(jsonStr)
+            if (parsedCatalogs.isNotEmpty()) {
+                saveCatalogsToDbSync(parsedCatalogs)
+                saveLastSyncTime()
+                return@withContext true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        false
+    }
+
+    private fun parseHomeJson(jsonStr: String): List<Catalog> {
+        val list = mutableListOf<Catalog>()
+        try {
+            if (jsonStr.startsWith("[")) {
+                val arr = org.json.JSONArray(jsonStr)
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    val name = obj.optString("name", obj.optString("title", "Categoría ${i + 1}"))
+                    val id = obj.optString("id", "home_cat_${i + 1}")
+                    
+                    val itemsArr = obj.optJSONArray("items") ?: obj.optJSONArray("results") ?: obj.optJSONArray("movies") ?: obj.optJSONArray("series")
+                    val items = if (itemsArr != null) {
+                        val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = i, layoutType = "Horizontal Poster Row", items = emptyList())
+                        parseGenericJsonArray(itemsArr, dummyCatalog)
+                    } else emptyList()
+                    
+                    if (items.isNotEmpty()) {
+                        list.add(
+                            Catalog(
+                                id = id,
+                                name = name,
+                                sourceType = "Backend",
+                                url = "",
+                                isVisible = true,
+                                showInHome = true,
+                                showInRecommendations = i % 3 == 0,
+                                showInSearch = true,
+                                numItems = items.size,
+                                status = "Sincronizado",
+                                lastUpdated = "Recién Recargado",
+                                orderIndex = i,
+                                layoutType = determineLayoutType(name, i),
+                                items = items
+                            )
+                        )
+                    }
+                }
+            } else if (jsonStr.startsWith("{")) {
+                val root = org.json.JSONObject(jsonStr)
+                
+                val catalogsArr = root.optJSONArray("catalogs") ?: root.optJSONArray("sections") ?: root.optJSONArray("rows")
+                if (catalogsArr != null) {
+                    for (i in 0 until catalogsArr.length()) {
+                        val obj = catalogsArr.getJSONObject(i)
+                        val name = obj.optString("name", obj.optString("title", "Categoría ${i + 1}"))
+                        val id = obj.optString("id", "home_cat_${i + 1}")
+                        
+                        val itemsArr = obj.optJSONArray("items") ?: obj.optJSONArray("results") ?: obj.optJSONArray("movies") ?: obj.optJSONArray("series")
+                        val items = if (itemsArr != null) {
+                            val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = i, layoutType = "Horizontal Poster Row", items = emptyList())
+                            parseGenericJsonArray(itemsArr, dummyCatalog)
+                        } else emptyList()
+                        
+                        if (items.isNotEmpty()) {
+                            list.add(
+                                Catalog(
+                                    id = id,
+                                    name = name,
+                                    sourceType = "Backend",
+                                    url = "",
+                                    isVisible = true,
+                                    showInHome = true,
+                                    showInRecommendations = i % 3 == 0,
+                                    showInSearch = true,
+                                    numItems = items.size,
+                                    status = "Sincronizado",
+                                    lastUpdated = "Recién Recargado",
+                                    orderIndex = i,
+                                    layoutType = determineLayoutType(name, i),
+                                    items = items
+                                )
+                            )
+                        }
+                    }
+                } else {
+                    val keys = root.keys()
+                    var idx = 0
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        val value = root.opt(key)
+                        if (value is org.json.JSONArray) {
+                            val id = "home_cat_$key"
+                            val name = formatCategoryName(key)
+                            val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = idx, layoutType = "Horizontal Poster Row", items = emptyList())
+                            val items = parseGenericJsonArray(value, dummyCatalog)
+                            if (items.isNotEmpty()) {
+                                list.add(
+                                    Catalog(
+                                        id = id,
+                                        name = name,
+                                        sourceType = "Backend",
+                                        url = "",
+                                        isVisible = true,
+                                        showInHome = true,
+                                        showInRecommendations = idx % 3 == 0,
+                                        showInSearch = true,
+                                        numItems = items.size,
+                                        status = "Sincronizado",
+                                        lastUpdated = "Recién Recargado",
+                                        orderIndex = idx,
+                                        layoutType = determineLayoutType(name, idx),
+                                        items = items
+                                    )
+                                )
+                                idx++
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    private fun formatCategoryName(key: String): String {
+        return key.split("_", "-").joinToString(" ") { it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase() else char.toString() } }
+    }
+
+    private fun determineLayoutType(name: String, idx: Int): String {
+        return when {
+            name.contains("Trending Movies", ignoreCase = true) -> "Horizontal Poster Row"
+            name.contains("Trending TV Shows", ignoreCase = true) || name.contains("Trending Series", ignoreCase = true) || name.contains("Popular Series", ignoreCase = true) -> "Landscape Row"
+            name.contains("Anime Trending", ignoreCase = true) -> "Vertical Poster Row"
+            name.contains("Top Rated", ignoreCase = true) -> "Large Featured Row"
+            name.contains("New Releases", ignoreCase = true) || name.contains("Popular Movies", ignoreCase = true) -> "Banner Row"
+            name.contains("Familiar", ignoreCase = true) || name.contains("Documentales", ignoreCase = true) -> "Compact Row"
+            else -> when (idx % 4) {
+                0 -> "Horizontal Poster Row"
+                1 -> "Landscape Row"
+                2 -> "Vertical Poster Row"
+                else -> "Compact Row"
+            }
         }
     }
 

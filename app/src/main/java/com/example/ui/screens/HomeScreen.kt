@@ -233,86 +233,17 @@ fun HomeScreen(
 
         if (currentMovie == null) return@LaunchedEffect
         
-        val apiKey = ApiConfig.TMDB_API_KEY
-        
-        // 1. Try reading straight from Lumina Catalog Engine cache fields
-        if (!currentMovie.logoUrl.isNullOrEmpty() && !currentMovie.castJson.isNullOrEmpty()) {
-            activeHeroLogoUrl = currentMovie.logoUrl
-            activeHeroLoadedDetails = LoadedTmdbDetails(
-                description = currentMovie.description,
-                rating = currentMovie.rating,
-                year = currentMovie.year,
-                logoUrl = currentMovie.logoUrl,
-                backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl,
-                duration = currentMovie.duration,
-                genre = currentMovie.genre
-            )
-            return@LaunchedEffect
-        }
-
-        // 2. Fallback to Catalog Engine lookup
-        val engine = viewModel.catalogRepository?.engine
-        if (engine != null && apiKey.isNotEmpty()) {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                try {
-                    val enriched = engine.enrichCatalogItem(currentMovie, apiKey)
-                    
-                    var pName: String? = null
-                    var pLogo: String? = null
-                    // TMDB Watch Providers
-                    val tmdbId = enriched.tmdbId ?: currentMovie.tmdbId
-                    if (!tmdbId.isNullOrEmpty()) {
-                        val mediaType = if (currentMovie.isTvShow) "tv" else "movie"
-                        val provUrl = "https://lumina-api-coral.vercel.app/api/$mediaType/$tmdbId/watch/providers"
-                        try {
-                            val body = BackendApi.getInstance().getWatchProviders(mediaType, tmdbId)
-                            val results = org.json.JSONObject(body).optJSONObject("results")
-                            if (results != null) {
-                                val country = results.optJSONObject("ES") ?: results.optJSONObject("US") ?: results.optJSONObject("MX") ?: results.optJSONObject("AR") ?: if (results.keys().hasNext()) results.optJSONObject(results.keys().next()) else null
-                                if (country != null) {
-                                    val flatrate = country.optJSONArray("flatrate")
-                                    if (flatrate != null && flatrate.length() > 0) {
-                                        val firstProvider = flatrate.getJSONObject(0)
-                                        pName = firstProvider.optString("provider_name")
-                                        val logoPath = firstProvider.optString("logo_path")
-                                        if (logoPath.isNotEmpty()) {
-                                            pLogo = "https://image.tmdb.org/t/p/w154$logoPath"
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) { e.printStackTrace() }
-                    }
-                    
-                    activeHeroLogoUrl = enriched.logoUrl
-                    activeHeroLoadedDetails = LoadedTmdbDetails(
-                        description = enriched.description,
-                        rating = enriched.rating,
-                        year = enriched.year,
-                        logoUrl = enriched.logoUrl,
-                        backdropUrl = enriched.backdropUrl ?: enriched.posterUrl,
-                        duration = enriched.duration,
-                        genre = enriched.genre,
-                        platformName = pName,
-                        platformLogoUrl = pLogo
-                    )
-
-                    // Persist enriched hero item back to catalogs list asynchronously
-                    viewModel.catalogRepository?.let { repo ->
-                        val currentList = repo.catalogs.value.map { cat ->
-                            val hasItem = cat.items.any { it.id == currentMovie.id }
-                            if (hasItem) {
-                                val newItems = cat.items.map { if (it.id == currentMovie.id) enriched else it }
-                                cat.copy(items = newItems)
-                            } else cat
-                        }
-                        repo.saveCatalogsList(currentList)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
+        // Populate immediately using currentMovie's fields which are already enriched from Vercel backend
+        activeHeroLogoUrl = currentMovie.logoUrl
+        activeHeroLoadedDetails = LoadedTmdbDetails(
+            description = currentMovie.description,
+            rating = currentMovie.rating,
+            year = currentMovie.year,
+            logoUrl = currentMovie.logoUrl,
+            backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl,
+            duration = currentMovie.duration,
+            genre = currentMovie.genre
+        )
     }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
@@ -1699,80 +1630,31 @@ fun CatalogItemDetailsDialog_Original(
     var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
 
     LaunchedEffect(item) {
-        val apiKey = ApiConfig.TMDB_API_KEY
-        
-        // 1. Try reading straight from Lumina Catalog Engine cache fields
-        val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
-            ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+        if (!item.backdropUrl.isNullOrEmpty()) {
+            dynamicBackdrop = item.backdropUrl
         }
-        if (!item.logoUrl.isNullOrEmpty() && cachedCast.isNotEmpty()) {
-            if (!item.backdropUrl.isNullOrEmpty()) {
-                dynamicBackdrop = item.backdropUrl
-            }
-            if (!item.logoUrl.isNullOrEmpty()) {
-                dynamicLogoUrl = item.logoUrl
+        if (!item.logoUrl.isNullOrEmpty()) {
+            dynamicLogoUrl = item.logoUrl
+        }
+        if (!item.description.isNullOrEmpty()) {
+            dynamicDescription = item.description
+        }
+        if (!item.rating.isNullOrEmpty()) {
+            dynamicRating = item.rating
+        }
+        if (!item.year.isNullOrEmpty()) {
+            dynamicYear = item.year
+        }
+        
+        try {
+            val cachedCast = com.example.data.LuminaCatalogEngine.deserializeCast(item.castJson).map { engineActor ->
+                ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
             }
             if (cachedCast.isNotEmpty()) {
                 dynamicCast = cachedCast
             }
-            if (!item.description.isNullOrEmpty()) {
-                dynamicDescription = item.description
-            }
-            if (!item.rating.isNullOrEmpty()) {
-                dynamicRating = item.rating
-            }
-            if (!item.year.isNullOrEmpty()) {
-                dynamicYear = item.year
-            }
-            return@LaunchedEffect
-        }
-
-        // 2. Fallback to Catalog Engine lookup
-        val engine = viewModel.catalogRepository?.engine
-        if (engine != null && apiKey.isNotEmpty()) {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                try {
-                    val enriched = engine.enrichCatalogItem(item, apiKey)
-                    
-                    if (!enriched.backdropUrl.isNullOrEmpty()) {
-                        dynamicBackdrop = enriched.backdropUrl
-                    }
-                    if (!enriched.logoUrl.isNullOrEmpty()) {
-                        dynamicLogoUrl = enriched.logoUrl
-                    }
-                    val parsedCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
-                        ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
-                    }
-                    if (parsedCast.isNotEmpty()) {
-                        dynamicCast = parsedCast
-                    }
-                    if (!enriched.description.isNullOrEmpty()) {
-                        dynamicDescription = enriched.description
-                    }
-                    if (!enriched.rating.isNullOrEmpty()) {
-                        dynamicRating = enriched.rating
-                    }
-                    if (!enriched.year.isNullOrEmpty()) {
-                        dynamicYear = enriched.year
-                    }
-
-                    // Save enriched items into catalogs list asynchronously
-                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                        viewModel.catalogRepository?.let { repo ->
-                            val currentList = repo.catalogs.value.map { cat ->
-                                val hasItem = cat.items.any { it.id == item.id }
-                                if (hasItem) {
-                                    val newItems = cat.items.map { if (it.id == item.id) enriched else it }
-                                    cat.copy(items = newItems)
-                                } else cat
-                            }
-                            repo.saveCatalogsList(currentList)
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
