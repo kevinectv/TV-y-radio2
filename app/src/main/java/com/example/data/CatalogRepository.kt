@@ -51,10 +51,10 @@ class CatalogRepository(private val context: Context) {
             var needsSave = false
             val current = _catalogs.value.map { cat ->
                 val hasNoDefaultMock = cat.url.isNotEmpty() && 
-                    !cat.url.contains("lumina.app/catalogs") && 
-                    !cat.url.contains("api.themoviedb.org/3/catalog/") &&
-                    !cat.url.contains("mdblist.com/lists/public/") &&
-                    !cat.url.contains("api.trakt.tv/lists/")
+                    !cat.url.contains("lumina-api-coral.vercel.app") &&
+                    !cat.url.contains("tmdb/catalog/") &&
+                    !cat.url.contains("mdblist/public/") &&
+                    !cat.url.contains("trakt/lists/")
                 
                 if (cat.items.isEmpty() && cat.url.startsWith("http") && hasNoDefaultMock) {
                     needsSave = true
@@ -359,21 +359,21 @@ class CatalogRepository(private val context: Context) {
                 name = name,
                 sourceType = src,
                 url = when (name) {
-                    "Trending Movies" -> "https://api.themoviedb.org/3/trending/movie/week?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Trending TV Shows" -> "https://api.themoviedb.org/3/trending/tv/week?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Popular Movies" -> "https://api.themoviedb.org/3/movie/popular?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Popular Series" -> "https://api.themoviedb.org/3/tv/popular?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Top Rated Movies" -> "https://api.themoviedb.org/3/movie/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Top Rated Series" -> "https://api.themoviedb.org/3/tv/top_rated?api_key=INSERT_KEY_HERE&language=es-MX"
-                    "Anime Trending" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=es-MX"
-                    "Anime Popular" -> "https://api.themoviedb.org/3/discover/tv?api_key=INSERT_KEY_HERE&with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=100&language=es-MX"
-                    "Acción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=28&language=es-MX"
-                    "Comedia" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=35&language=es-MX"
-                    "Terror" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=27&language=es-MX"
-                    "Ciencia Ficción" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=878&language=es-MX"
-                    "Documentales" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=99&language=es-MX"
-                    "Familiar" -> "https://api.themoviedb.org/3/discover/movie?api_key=INSERT_KEY_HERE&with_genres=10751&language=es-MX"
-                    else -> "https://api.themoviedb.org/3/trending/all/day?api_key=INSERT_KEY_HERE&language=es-MX"
+                    "Trending Movies" -> "https://lumina-api-coral.vercel.app/api/trending/movie/week"
+                    "Trending TV Shows" -> "https://lumina-api-coral.vercel.app/api/trending/tv/week"
+                    "Popular Movies" -> "https://lumina-api-coral.vercel.app/api/movie/popular"
+                    "Popular Series" -> "https://lumina-api-coral.vercel.app/api/tv/popular"
+                    "Top Rated Movies" -> "https://lumina-api-coral.vercel.app/api/movie/top_rated"
+                    "Top Rated Series" -> "https://lumina-api-coral.vercel.app/api/tv/top_rated"
+                    "Anime Trending" -> "https://lumina-api-coral.vercel.app/api/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc"
+                    "Anime Popular" -> "https://lumina-api-coral.vercel.app/api/discover/tv?with_genres=16&with_original_language=ja&sort_by=vote_average.desc&vote_count.gte=100"
+                    "Acción" -> "https://lumina-api-coral.vercel.app/api/discover/movie?with_genres=28"
+                    "Comedia" -> "https://lumina-api-coral.vercel.app/api/discover/movie?with_genres=35"
+                    "Terror" -> "https://lumina-api-coral.vercel.app/api/discover/movie?with_genres=27"
+                    "Ciencia Ficción" -> "https://lumina-api-coral.vercel.app/api/discover/movie?with_genres=878"
+                    "Documentales" -> "https://lumina-api-coral.vercel.app/api/discover/movie?with_genres=99"
+                    "Familiar" -> "https://lumina-api-coral.vercel.app/api/discover/movie?with_genres=10751"
+                    else -> "https://lumina-api-coral.vercel.app/api/trending/all/day"
                 },
                 isVisible = true,
                 showInHome = true,
@@ -404,135 +404,32 @@ data class SyncResult(
 )
 
     private suspend fun fetchItemsForCatalog(catalog: Catalog): SyncResult = withContext(Dispatchers.IO) {
-        val list = mutableListOf<CatalogItem>()
+        val catalogItems = mutableListOf<CatalogItem>()
         var status = "Sincronizado"
         val lastUpdated = "Recién Recargado"
         
-        // If it is a Lumina API URL, use BackendApi
-        if (catalog.url.contains("lumina-api-coral.vercel.app")) {
-            try {
-                val category = catalog.url.substringAfterLast("/")
-                val jsonBody = BackendApi.getInstance().getCatalog(category)
-                val jsonItems = parseJsonCatalog(jsonBody, catalog)
-                list.addAll(jsonItems)
-            } catch (e: Exception) {
-                status = "Error: ${e.localizedMessage ?: "Fallo"}"
-            }
-            return@withContext SyncResult(list, status, lastUpdated)
-        }
-        
-        val rawUrl = catalog.url.trim()
-        val tmdbKey = ApiConfig.TMDB_API_KEY
-        val traktKey = ApiConfig.TRAKT_CLIENT_ID
-        val mdblistKey = ApiConfig.MDBLIST_API_KEY
-        
-        var cleanUrl = rawUrl
-        if (cleanUrl.contains("INSERT_KEY_HERE")) {
-            if (tmdbKey.isNotEmpty() && cleanUrl.contains("api.themoviedb.org")) {
-                if (tmdbKey.startsWith("ey")) {
-                    cleanUrl = cleanUrl.replace("api_key=INSERT_KEY_HERE", "").replace("&&", "&").replace("?&", "?").trimEnd('&', '?')
-                } else {
-                    cleanUrl = cleanUrl.replace("INSERT_KEY_HERE", tmdbKey)
-                }
-            }
-        }
-        
-        // Auto-inject MDBList API key if missing but they provided the base API endpoint
-        if (cleanUrl.contains("mdblist.com/api") && mdblistKey.isNotEmpty() && !cleanUrl.contains("apikey=")) {
-            cleanUrl = if (cleanUrl.contains("?")) "$cleanUrl&apikey=$mdblistKey" else "$cleanUrl/?apikey=$mdblistKey"
-        }
-        
-        // Auto-inject JSON endpoint for mdblist public lists
-        if (cleanUrl.startsWith("https://mdblist.com/lists/") && !cleanUrl.contains("/json") && !cleanUrl.contains("/api")) {
-            cleanUrl = cleanUrl.removeSuffix("/") + "/json"
-        }
-        
-        // 1. Try to fetch from HTTP URL if specified and non-default
-        if (cleanUrl.isNotEmpty() && 
-            cleanUrl.startsWith("http", ignoreCase = true) && 
-            !cleanUrl.contains("/default_") && 
-            !cleanUrl.contains("lumina.app/catalogs/genre_")) {
-            
-            // If the user hasn't provided a TMDB key, but we are querying TMDB using the placeholder,
-            // we should not execute the request to avoid 401 Unauthorized crashes, we just return empty.
-            if (cleanUrl.contains("INSERT_KEY_HERE")) {
-                return@withContext SyncResult(emptyList(), "Falta API Key", "Sin clave")
+        try {
+            val api = BackendApi.getInstance()
+            // Normalize URL to a backend path
+            val path = when {
+                catalog.url.contains("lumina-api-coral.vercel.app/api/") -> catalog.url.substringAfter("api/")
+                catalog.url.contains("mdblist/") -> catalog.url
+                catalog.url.contains("tmdb/") -> catalog.url
+                else -> catalog.url.substringAfterLast("/") // Fallback
             }
             
-            try {
-                val client = okhttp3.OkHttpClient.Builder()
-                    .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-                    .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-                    .build()
-                    
-                var reqBuilder = okhttp3.Request.Builder().url(cleanUrl)
-                reqBuilder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                
-                if (cleanUrl.contains("trakt.tv") && traktKey.isNotEmpty()) {
-                    reqBuilder.header("trakt-api-version", "2")
-                    reqBuilder.header("trakt-api-key", traktKey)
-                }
-                
-                if (cleanUrl.contains("api.themoviedb.org") && tmdbKey.startsWith("ey")) {
-                    reqBuilder.header("Authorization", "Bearer $tmdbKey")
-                }
-                
-                val request = reqBuilder.build()
-                
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        val bodyString = response.body?.string() ?: ""
-                        val cleanedBody = bodyString.replace("\uFEFF", "").trim()
-                        if (cleanedBody.startsWith("#EXTM3U") || cleanedBody.contains("#EXTINF:")) {
-                            // It's an M3U file
-                            val m3uItems = parseM3uCatalog(cleanedBody, catalog.id)
-                            if (m3uItems.isNotEmpty()) {
-                                list.addAll(m3uItems)
-                            }
-                        } else if (cleanedBody.startsWith("{") || cleanedBody.startsWith("[")) {
-                            // It's JSON (TMDB or Trakt or Custom API)
-                            val jsonItems = parseJsonCatalog(cleanedBody, catalog)
-                            if (jsonItems.isNotEmpty()) {
-                                list.addAll(jsonItems)
-                            }
-                        } else {
-                            if (cleanedBody.contains("#EXTINF:")) {
-                                val m3uItems = parseM3uCatalog(cleanedBody, catalog.id)
-                                if (m3uItems.isNotEmpty()) {
-                                    list.addAll(m3uItems)
-                                }
-                            } else if (cleanedBody.contains("{") || cleanedBody.contains("[")) {
-                                val jsonItems = parseJsonCatalog(cleanedBody, catalog)
-                                if (jsonItems.isNotEmpty()) {
-                                    list.addAll(jsonItems)
-                                }
-                            }
-                        }
-                        status = "Sincronizado"
-                    } else {
-                        status = when (response.code) {
-                            401 -> "Error 401: No autorizado (Verifica tu clave)"
-                            403 -> "Error 403: Prohibido / Sin acceso"
-                            404 -> "Error 404: No encontrado"
-                            else -> "Error HTTP: ${response.code}"
-                        }
-                    }
-                }
-            } catch (e: java.net.UnknownHostException) {
-                status = "Sin conexión (Host desconocido)"
-            } catch (e: java.net.SocketTimeoutException) {
-                status = "Tiempo de espera agotado"
-            } catch (e: Exception) {
-                status = "Error: ${e.localizedMessage ?: "Fallo"}"
-                e.printStackTrace()
-            }
+            val jsonBody = api.getCatalog(path)
+            val jsonItems = parseJsonCatalog(jsonBody, catalog)
+            catalogItems.addAll(jsonItems)
+        } catch (e: Exception) {
+            status = "Error: ${e.localizedMessage ?: "Fallo"}"
         }
-        
+
         // 2. Query matching local channels (Disabled as requested to keep local IPTV streams separated from general Movie/VOD Home Screen catalogs)
         val dbItems = emptyList<CatalogItem>()
-
+        
         // Merge results: URL results take priority
-        val rawMergedList = (list + dbItems).distinctBy { it.title.lowercase().trim() }
+        val rawMergedList = (catalogItems + dbItems).distinctBy { it.title.lowercase().trim() }
         
         // Smart Merge with existing items in DB to avoid losing enriched TMDB metadata
         val existingItemsMap = try {

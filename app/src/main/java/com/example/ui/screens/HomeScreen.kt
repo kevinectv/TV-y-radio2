@@ -65,6 +65,7 @@ import com.example.ui.components.tvFocusEffect
 import com.example.ui.components.responsive
 import com.example.ui.components.getResponsiveScale
 import com.example.data.util.ApiConfig
+import com.example.data.BackendApi
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.launch
 
@@ -262,26 +263,20 @@ fun HomeScreen(
                     val tmdbId = enriched.tmdbId ?: currentMovie.tmdbId
                     if (!tmdbId.isNullOrEmpty()) {
                         val mediaType = if (currentMovie.isTvShow) "tv" else "movie"
-                        val provUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId/watch/providers?api_key=$apiKey"
+                        val provUrl = "https://lumina-api-coral.vercel.app/api/$mediaType/$tmdbId/watch/providers"
                         try {
-                            val client = okhttp3.OkHttpClient()
-                            val req = okhttp3.Request.Builder().url(provUrl).build()
-                            client.newCall(req).execute().use { resp ->
-                                if (resp.isSuccessful) {
-                                    val body = resp.body?.string() ?: ""
-                                    val results = org.json.JSONObject(body).optJSONObject("results")
-                                    if (results != null) {
-                                        val country = results.optJSONObject("ES") ?: results.optJSONObject("US") ?: results.optJSONObject("MX") ?: results.optJSONObject("AR") ?: if (results.keys().hasNext()) results.optJSONObject(results.keys().next()) else null
-                                        if (country != null) {
-                                            val flatrate = country.optJSONArray("flatrate")
-                                            if (flatrate != null && flatrate.length() > 0) {
-                                                val firstProvider = flatrate.getJSONObject(0)
-                                                pName = firstProvider.optString("provider_name")
-                                                val logoPath = firstProvider.optString("logo_path")
-                                                if (logoPath.isNotEmpty()) {
-                                                    pLogo = "https://image.tmdb.org/t/p/w154$logoPath"
-                                                }
-                                            }
+                            val body = BackendApi.getInstance().getWatchProviders(mediaType, tmdbId)
+                            val results = org.json.JSONObject(body).optJSONObject("results")
+                            if (results != null) {
+                                val country = results.optJSONObject("ES") ?: results.optJSONObject("US") ?: results.optJSONObject("MX") ?: results.optJSONObject("AR") ?: if (results.keys().hasNext()) results.optJSONObject(results.keys().next()) else null
+                                if (country != null) {
+                                    val flatrate = country.optJSONArray("flatrate")
+                                    if (flatrate != null && flatrate.length() > 0) {
+                                        val firstProvider = flatrate.getJSONObject(0)
+                                        pName = firstProvider.optString("provider_name")
+                                        val logoPath = firstProvider.optString("logo_path")
+                                        if (logoPath.isNotEmpty()) {
+                                            pLogo = "https://image.tmdb.org/t/p/w154$logoPath"
                                         }
                                     }
                                 }
@@ -2723,7 +2718,7 @@ fun TrailerYoutubePlayerDialog(
                     val isTv = item.isTvShow
                     val mediaType = if (isTv) "tv" else "movie"
                     
-                    val videosUrl = "https://api.themoviedb.org/3/$mediaType/$tmdbId/videos?language=es-MX"
+                    val videosUrl = "https://lumina-api-coral.vercel.app/api/$mediaType/$tmdbId/videos"
                     val request = okhttp3.Request.Builder()
                     if (apiKey.startsWith("ey")) {
                         request.url(videosUrl).header("Authorization", "Bearer $apiKey")

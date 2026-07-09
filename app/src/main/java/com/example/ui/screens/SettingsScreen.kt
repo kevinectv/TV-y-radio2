@@ -3809,7 +3809,7 @@ fun AddCatalogDialog(
                     onValueChange = { url = it },
                     label = { Text("URL del Endpoint / API") },
                     isError = !isUrlValidByRegex,
-                    placeholder = { Text("https://api.themoviedb.org/...") },
+                    placeholder = { Text("URL de configuración...") },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,

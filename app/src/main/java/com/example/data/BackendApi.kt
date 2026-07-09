@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 class BackendApi {
@@ -16,13 +17,26 @@ class BackendApi {
 
     suspend fun getHome(): String = fetch("$BASE_URL/home")
 
-    suspend fun getTrending(): String = fetch("$BASE_URL/trending")
+    suspend fun getTrendingMoviesWeek(): String = fetch("$BASE_URL/trending/movie/week")
+    suspend fun getTrendingTvWeek(): String = fetch("$BASE_URL/trending/tv/week")
+    suspend fun getTrendingAllDay(): String = fetch("$BASE_URL/trending/all/day")
+    
+    suspend fun search(query: String): String = fetch("$BASE_URL/search?q=${URLEncoder.encode(query, "UTF-8")}")
+    
+    suspend fun getPopularMovies(): String = fetch("$BASE_URL/movie/popular")
+    suspend fun getPopularTv(): String = fetch("$BASE_URL/tv/popular")
+    
+    suspend fun getTopRatedMovies(): String = fetch("$BASE_URL/movie/top_rated")
+    suspend fun getTopRatedTv(): String = fetch("$BASE_URL/tv/top_rated")
 
-    suspend fun search(query: String): String = fetch("$BASE_URL/search?query=$query")
-
-    suspend fun getMovie(id: String): String = fetch("$BASE_URL/movie/$id")
+    suspend fun discoverTv(params: String): String = fetch("$BASE_URL/discover/tv?$params")
+    suspend fun discoverMovie(params: String): String = fetch("$BASE_URL/discover/movie?$params")
 
     suspend fun getTv(id: String): String = fetch("$BASE_URL/tv/$id")
+    suspend fun getMovie(id: String): String = fetch("$BASE_URL/movie/$id")
+    
+    suspend fun getWatchProviders(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType/$id/watch/providers")
+    suspend fun getVideos(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType/$id/videos")
 
     suspend fun getCatalog(category: String): String = fetch("$BASE_URL/catalog/$category")
 
