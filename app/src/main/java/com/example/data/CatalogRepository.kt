@@ -358,6 +358,8 @@ class CatalogRepository(private val context: Context) {
             
             val parsedCatalogs = parseHomeJson(jsonStr)
             if (parsedCatalogs.isNotEmpty()) {
+                catalogDao.clearAllCatalogs()
+                catalogDao.clearAllCatalogItems()
                 saveCatalogsToDbSync(parsedCatalogs)
                 saveLastSyncTime()
                 return@withContext true
@@ -408,47 +410,14 @@ class CatalogRepository(private val context: Context) {
             } else if (jsonStr.startsWith("{")) {
                 val root = org.json.JSONObject(jsonStr)
                 
-                val catalogsArr = root.optJSONArray("catalogs") ?: root.optJSONArray("sections") ?: root.optJSONArray("rows")
-                if (catalogsArr != null) {
-                    for (i in 0 until catalogsArr.length()) {
-                        val obj = catalogsArr.getJSONObject(i)
-                        val name = obj.optString("name", obj.optString("title", "Categoría ${i + 1}"))
-                        val id = obj.optString("id", "home_cat_${i + 1}")
-                        
-                        val itemsArr = obj.optJSONArray("items") ?: obj.optJSONArray("results") ?: obj.optJSONArray("movies") ?: obj.optJSONArray("series")
-                        val items = if (itemsArr != null) {
-                            val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = i, layoutType = "Horizontal Poster Row", items = emptyList())
-                            parseGenericJsonArray(itemsArr, dummyCatalog)
-                        } else emptyList()
-                        
-                        if (items.isNotEmpty()) {
-                            list.add(
-                                Catalog(
-                                    id = id,
-                                    name = name,
-                                    sourceType = "Backend",
-                                    url = "",
-                                    isVisible = true,
-                                    showInHome = true,
-                                    showInRecommendations = i % 3 == 0,
-                                    showInSearch = true,
-                                    numItems = items.size,
-                                    status = "Sincronizado",
-                                    lastUpdated = "Recién Recargado",
-                                    orderIndex = i,
-                                    layoutType = determineLayoutType(name, i),
-                                    items = items
-                                )
-                            )
-                        }
-                    }
-                } else {
-                    val keys = root.keys()
+                val sectionsObj = root.optJSONObject("sections")
+                if (sectionsObj != null) {
+                    val keys = sectionsObj.keys()
                     var idx = 0
                     while (keys.hasNext()) {
                         val key = keys.next()
-                        val value = root.opt(key)
-                        if (value is org.json.JSONArray) {
+                        val value = sectionsObj.optJSONArray(key)
+                        if (value != null) {
                             val id = "home_cat_$key"
                             val name = formatCategoryName(key)
                             val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = idx, layoutType = "Horizontal Poster Row", items = emptyList())
@@ -476,6 +445,76 @@ class CatalogRepository(private val context: Context) {
                             }
                         }
                     }
+                } else {
+                    val catalogsArr = root.optJSONArray("catalogs") ?: root.optJSONArray("rows")
+                    if (catalogsArr != null) {
+                        for (i in 0 until catalogsArr.length()) {
+                            val obj = catalogsArr.getJSONObject(i)
+                            val name = obj.optString("name", obj.optString("title", "Categoría ${i + 1}"))
+                            val id = obj.optString("id", "home_cat_${i + 1}")
+                            
+                            val itemsArr = obj.optJSONArray("items") ?: obj.optJSONArray("results") ?: obj.optJSONArray("movies") ?: obj.optJSONArray("series")
+                            val items = if (itemsArr != null) {
+                                val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = i, layoutType = "Horizontal Poster Row", items = emptyList())
+                                parseGenericJsonArray(itemsArr, dummyCatalog)
+                            } else emptyList()
+                            
+                            if (items.isNotEmpty()) {
+                                list.add(
+                                    Catalog(
+                                        id = id,
+                                        name = name,
+                                        sourceType = "Backend",
+                                        url = "",
+                                        isVisible = true,
+                                        showInHome = true,
+                                        showInRecommendations = i % 3 == 0,
+                                        showInSearch = true,
+                                        numItems = items.size,
+                                        status = "Sincronizado",
+                                        lastUpdated = "Recién Recargado",
+                                        orderIndex = i,
+                                        layoutType = determineLayoutType(name, i),
+                                        items = items
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                        val keys = root.keys()
+                        var idx = 0
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            val value = root.opt(key)
+                            if (value is org.json.JSONArray) {
+                                val id = "home_cat_$key"
+                                val name = formatCategoryName(key)
+                                val dummyCatalog = Catalog(id = id, name = name, sourceType = "Backend", url = "", isVisible = true, showInHome = true, showInRecommendations = false, showInSearch = true, numItems = 20, status = "Sincronizado", lastUpdated = "Hoy", orderIndex = idx, layoutType = "Horizontal Poster Row", items = emptyList())
+                                val items = parseGenericJsonArray(value, dummyCatalog)
+                                if (items.isNotEmpty()) {
+                                    list.add(
+                                        Catalog(
+                                            id = id,
+                                            name = name,
+                                            sourceType = "Backend",
+                                            url = "",
+                                            isVisible = true,
+                                            showInHome = true,
+                                            showInRecommendations = idx % 3 == 0,
+                                            showInSearch = true,
+                                            numItems = items.size,
+                                            status = "Sincronizado",
+                                            lastUpdated = "Recién Recargado",
+                                            orderIndex = idx,
+                                            layoutType = determineLayoutType(name, idx),
+                                            items = items
+                                        )
+                                    )
+                                    idx++
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -485,7 +524,18 @@ class CatalogRepository(private val context: Context) {
     }
 
     private fun formatCategoryName(key: String): String {
-        return key.split("_", "-").joinToString(" ") { it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase() else char.toString() } }
+        return when (key) {
+            "trending" -> "Tendencias de la Semana"
+            "popularMovies" -> "Películas Populares"
+            "popularTV" -> "Series Populares"
+            "topRatedMovies" -> "Películas Mejor Valoradas"
+            "topRatedTV" -> "Series Mejor Valoradas"
+            "nowPlaying" -> "En Cine Ahora"
+            "upcoming" -> "Próximos Estrenos"
+            "airingToday" -> "Emitido Hoy"
+            "onTheAir" -> "En el Aire"
+            else -> key.split("_", "-").joinToString(" ") { it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase() else char.toString() } }
+        }
     }
 
     private fun determineLayoutType(name: String, idx: Int): String {

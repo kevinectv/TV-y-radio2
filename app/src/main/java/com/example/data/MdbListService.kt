@@ -21,7 +21,7 @@ class MdbListService(private val context: Context) {
     suspend fun testConnection(rawApiKey: String? = null): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             // Backend handles API key, so we just check if it works through the proxy
-            val body = BackendApi.getInstance().getCatalog("test")
+            val body = BackendApi.getInstance().getMdbListStatus()
             Pair(true, "🟢 Conectado exitosamente")
         } catch (e: Exception) {
             Pair(false, "Fallo: ${e.localizedMessage}")

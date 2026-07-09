@@ -10,7 +10,7 @@ class TmdbService(private val context: Context) {
 
     suspend fun testConnection(rawApiKey: String? = null): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
-            val body = BackendApi.getInstance().getPopularMovies()
+            val body = BackendApi.getInstance().getTrending()
             Pair(true, "🟢 Conectado exitosamente")
         } catch (e: Exception) {
             Pair(false, "Fallo: ${e.localizedMessage}")

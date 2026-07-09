@@ -17,41 +17,45 @@ class BackendApi {
 
     suspend fun getHome(): String = fetch("$BASE_URL/home")
 
-    suspend fun getTrendingMoviesWeek(): String = fetch("$BASE_URL/trending/movie/week")
-    suspend fun getTrendingTvWeek(): String = fetch("$BASE_URL/trending/tv/week")
-    suspend fun getTrendingAllDay(): String = fetch("$BASE_URL/trending/all/day")
+    suspend fun getTrending(): String = fetch("$BASE_URL/trending")
+    suspend fun getCatalogs(): String = fetch("$BASE_URL/catalogs")
+    suspend fun getMdbListStatus(): String = fetch("$BASE_URL/mdblist")
+
+    suspend fun getTrendingMoviesWeek(): String = fetch("$BASE_URL/trending")
+    suspend fun getTrendingTvWeek(): String = fetch("$BASE_URL/trending")
+    suspend fun getTrendingAllDay(): String = fetch("$BASE_URL/trending")
     
-    suspend fun search(query: String): String = fetch("$BASE_URL/search?q=${URLEncoder.encode(query, "UTF-8")}")
+    suspend fun search(query: String): String = fetch("$BASE_URL/search?query=${URLEncoder.encode(query, "UTF-8")}")
     
-    suspend fun getPopularMovies(): String = fetch("$BASE_URL/movie/popular")
-    suspend fun getPopularTv(): String = fetch("$BASE_URL/tv/popular")
+    suspend fun getPopularMovies(): String = fetch("$BASE_URL/trending")
+    suspend fun getPopularTv(): String = fetch("$BASE_URL/trending")
     
-    suspend fun getTopRatedMovies(): String = fetch("$BASE_URL/movie/top_rated")
-    suspend fun getTopRatedTv(): String = fetch("$BASE_URL/tv/top_rated")
+    suspend fun getTopRatedMovies(): String = fetch("$BASE_URL/trending")
+    suspend fun getTopRatedTv(): String = fetch("$BASE_URL/trending")
 
-    suspend fun discoverTv(params: String): String = fetch("$BASE_URL/discover/tv?$params")
-    suspend fun discoverMovie(params: String): String = fetch("$BASE_URL/discover/movie?$params")
+    suspend fun discoverTv(params: String): String = fetch("$BASE_URL/trending")
+    suspend fun discoverMovie(params: String): String = fetch("$BASE_URL/trending")
 
-    suspend fun getTv(id: String): String = fetch("$BASE_URL/tv/$id")
-    suspend fun getMovie(id: String): String = fetch("$BASE_URL/movie/$id")
+    suspend fun getTv(id: String): String = fetch("$BASE_URL/tv?id=$id")
+    suspend fun getMovie(id: String): String = fetch("$BASE_URL/movie?id=$id")
     
-    suspend fun getWatchProviders(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType/$id/watch/providers")
-    suspend fun getVideos(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType/$id/videos")
+    suspend fun getWatchProviders(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType?id=$id")
+    suspend fun getVideos(mediaType: String, id: String): String = fetch("$BASE_URL/$mediaType?id=$id")
 
-    suspend fun getCatalog(category: String): String = fetch("$BASE_URL/catalogs/$category")
+    suspend fun getCatalog(category: String): String = fetch("$BASE_URL/catalogs")
 
-    suspend fun getMovieImages(id: String): String = fetch("$BASE_URL/movie/$id/images")
-    suspend fun getTvImages(id: String): String = fetch("$BASE_URL/tv/$id/images")
-    suspend fun getMovieVideos(id: String): String = fetch("$BASE_URL/movie/$id/videos")
-    suspend fun getTvVideos(id: String): String = fetch("$BASE_URL/tv/$id/videos")
-    suspend fun getMovieCredits(id: String): String = fetch("$BASE_URL/movie/$id/credits")
-    suspend fun getTvCredits(id: String): String = fetch("$BASE_URL/tv/$id/credits")
+    suspend fun getMovieImages(id: String): String = fetch("$BASE_URL/movie?id=$id")
+    suspend fun getTvImages(id: String): String = fetch("$BASE_URL/tv?id=$id")
+    suspend fun getMovieVideos(id: String): String = fetch("$BASE_URL/movie?id=$id")
+    suspend fun getTvVideos(id: String): String = fetch("$BASE_URL/tv?id=$id")
+    suspend fun getMovieCredits(id: String): String = fetch("$BASE_URL/movie?id=$id")
+    suspend fun getTvCredits(id: String): String = fetch("$BASE_URL/tv?id=$id")
 
-    private fun fetch(url: String): String {
+    private suspend fun fetch(url: String): String = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw Exception("Error: ${response.code}")
-            return response.body?.string() ?: ""
+            return@withContext response.body?.string() ?: ""
         }
     }
 
