@@ -29,7 +29,9 @@ data class CatalogItemEntity(
     val imdbRating: String?,
     val languages: String?,
     val subtitles: String?,
-    val extraImagesJson: String?
+    val extraImagesJson: String?,
+    val country: String? = null,
+    val classification: String? = null
 )
 
 fun CatalogItemEntity.toDomain(): CatalogItem {
@@ -54,7 +56,9 @@ fun CatalogItemEntity.toDomain(): CatalogItem {
         imdbRating = imdbRating,
         languages = languages,
         subtitles = subtitles,
-        extraImagesJson = extraImagesJson
+        extraImagesJson = extraImagesJson,
+        country = country,
+        classification = classification
     )
 }
 
@@ -81,6 +85,8 @@ fun CatalogItem.toEntity(catalogId: String): CatalogItemEntity {
         imdbRating = imdbRating,
         languages = languages,
         subtitles = subtitles,
-        extraImagesJson = extraImagesJson
+        extraImagesJson = extraImagesJson,
+        country = country,
+        classification = classification
     )
 }

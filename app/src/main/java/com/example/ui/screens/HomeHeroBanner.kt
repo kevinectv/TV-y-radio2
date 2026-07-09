@@ -170,7 +170,7 @@ fun resolveHeroMetadata(
     }
 
     val logoUrl = loaded?.logoUrl ?: item.logoUrl
-    val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: item.posterUrl
+    val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: ""
 
     val platformNames = listOf("Netflix", "Max", "Prime Video", "Disney+", "Apple TV+")
     val platformName = loaded?.platformName ?: platformNames[absHash % platformNames.size]
@@ -462,7 +462,7 @@ fun HomeHeroBannerMobile(
             label = "hero_mobile_fade"
         ) { targetMovie ->
             val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
-            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: targetMovie.backdropUrl ?: targetMovie.posterUrl
+            val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: targetMovie.backdropUrl ?: ""
 
             Box(modifier = Modifier.fillMaxSize()) {
                 // 1. Imagen de fondo vertical estilo móvil
@@ -720,7 +720,8 @@ class TrimTransparentPixelsTransformation : Transformation {
 
     override suspend fun transform(input: Bitmap, size: coil.size.Size): Bitmap {
         return try {
-            val softwareBitmap = if (input.config == Bitmap.Config.HARDWARE || !input.isMutable) {
+            val isHardware = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && input.config == Bitmap.Config.HARDWARE
+            val softwareBitmap = if (isHardware || !input.isMutable) {
                 input.copy(Bitmap.Config.ARGB_8888, true) ?: return input
             } else {
                 input

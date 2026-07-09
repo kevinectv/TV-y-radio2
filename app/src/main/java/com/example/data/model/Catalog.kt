@@ -42,5 +42,7 @@ data class CatalogItem(
     val imdbRating: String? = null,
     val languages: String? = null,
     val subtitles: String? = null,
-    val extraImagesJson: String? = null
+    val extraImagesJson: String? = null,
+    val country: String? = null,
+    val classification: String? = null
 )

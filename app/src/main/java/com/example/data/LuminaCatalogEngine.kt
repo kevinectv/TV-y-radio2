@@ -197,20 +197,27 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
             
             val logos = jsonResponse.optJSONArray("logos")
             if (logos != null && logos.length() > 0) {
-                var bestPath = ""
+                var esLogo: String? = null
+                var enLogo: String? = null
+                var anyLogo: String? = null
                 for (i in 0 until logos.length()) {
                     val logoObj = logos.getJSONObject(i)
                     val lang = logoObj.optString("iso_639_1", "")
                     val filePath = logoObj.optString("file_path", "")
-                    if (lang == "es" && filePath.isNotEmpty()) {
-                        bestPath = filePath
-                        break
-                    }
-                    if ((lang == "en" || bestPath.isEmpty()) && filePath.isNotEmpty()) {
-                        bestPath = filePath
+                    if (filePath.isNotEmpty()) {
+                        if (lang == "es" && esLogo == null) {
+                            esLogo = filePath
+                        }
+                        if (lang == "en" && enLogo == null) {
+                            enLogo = filePath
+                        }
+                        if (anyLogo == null) {
+                            anyLogo = filePath
+                        }
                     }
                 }
-                if (bestPath.isNotEmpty()) {
+                val bestPath = esLogo ?: enLogo ?: anyLogo
+                if (!bestPath.isNullOrEmpty()) {
                     logo = "https://image.tmdb.org/t/p/w500$bestPath"
                 }
             }
@@ -297,6 +304,83 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
                 }
             }
 
+            // Parse Country of Origin and Certification (Classification)
+            var countryStr = ""
+            val countriesArray = root.optJSONArray("production_countries")
+            if (countriesArray != null && countriesArray.length() > 0) {
+                val countriesList = mutableListOf<String>()
+                for (i in 0 until countriesArray.length()) {
+                    val countryObj = countriesArray.getJSONObject(i)
+                    var cName = countryObj.optString("name", "")
+                    if (cName.equals("United States of America", ignoreCase = true)) {
+                        cName = "Estados Unidos"
+                    }
+                    countriesList.add(cName)
+                }
+                countryStr = countriesList.filter { it.isNotEmpty() }.joinToString(", ")
+            }
+            if (countryStr.isEmpty()) {
+                val originArray = root.optJSONArray("origin_country")
+                if (originArray != null && originArray.length() > 0) {
+                    val list = mutableListOf<String>()
+                    for (i in 0 until originArray.length()) {
+                        val code = originArray.optString(i, "")
+                        val name = if (code == "US") "Estados Unidos" else if (code == "ES") "España" else if (code == "MX") "México" else code
+                        list.add(name)
+                    }
+                    countryStr = list.joinToString(", ")
+                }
+            }
+            if (countryStr.isEmpty()) {
+                countryStr = "Estados Unidos"
+            }
+
+            var certification = ""
+            if (isTv) {
+                val contentRatingsResults = root.optJSONArray("content_ratings")
+                if (contentRatingsResults != null) {
+                    for (i in 0 until contentRatingsResults.length()) {
+                        val resObj = contentRatingsResults.getJSONObject(i)
+                        val isoCountry = if (resObj.has("iso_3166_1")) resObj.optString("iso_3166_1") else resObj.optString("iso_639_1")
+                        val ratingVal = resObj.optString("rating", "")
+                        if (ratingVal.isNotEmpty()) {
+                            if (isoCountry.equals("US", ignoreCase = true) || isoCountry.equals("ES", ignoreCase = true)) {
+                                certification = ratingVal
+                                break
+                            }
+                            if (certification.isEmpty()) {
+                                certification = ratingVal
+                            }
+                        }
+                    }
+                }
+            } else {
+                val releaseDatesObj = root.optJSONObject("release_dates")
+                val releaseDatesResults = releaseDatesObj?.optJSONArray("results") ?: root.optJSONArray("release_dates")
+                if (releaseDatesResults != null) {
+                    for (i in 0 until releaseDatesResults.length()) {
+                        val resObj = releaseDatesResults.getJSONObject(i)
+                        val iso = resObj.optString("iso_3166_1", "")
+                        val datesArr = resObj.optJSONArray("release_dates")
+                        if (datesArr != null && datesArr.length() > 0) {
+                            val cert = datesArr.getJSONObject(0).optString("certification", "")
+                            if (cert.isNotEmpty()) {
+                                if (iso.equals("US", ignoreCase = true) || iso.equals("ES", ignoreCase = true)) {
+                                    certification = cert
+                                    break
+                                }
+                                if (certification.isEmpty()) {
+                                    certification = cert
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (certification.isEmpty()) {
+                certification = if (isTv) "TV-14" else "PG-13"
+            }
+
             return@withContext item.copy(
                 tmdbId = tmdbId,
                 isTvShow = isTv,
@@ -314,7 +398,9 @@ class LuminaCatalogEngine(private val context: Context, private val repository: 
                 imdbRating = imdbRating,
                 languages = languages,
                 subtitles = subtitles,
-                extraImagesJson = extraImagesJson
+                extraImagesJson = extraImagesJson,
+                country = countryStr.ifEmpty { null },
+                classification = certification.ifEmpty { null }
             )
 
         } catch (e: Exception) {

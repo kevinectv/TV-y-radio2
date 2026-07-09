@@ -240,7 +240,7 @@ fun HomeScreen(
             rating = currentMovie.rating,
             year = currentMovie.year,
             logoUrl = currentMovie.logoUrl,
-            backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl,
+            backdropUrl = currentMovie.backdropUrl ?: "",
             duration = currentMovie.duration,
             genre = currentMovie.genre
         )
@@ -273,7 +273,7 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize()
                         ) { movie ->
                             movie?.let { currentSafeMovie ->
-                                val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: currentSafeMovie.posterUrl
+                                val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: ""
 
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     AsyncImage(
@@ -1042,8 +1042,16 @@ fun CatalogItemFullScreenDetails(
     var dynamicRating by remember(item) { mutableStateOf(item.rating) }
     var dynamicYear by remember(item) { mutableStateOf(item.year) }
     var dynamicLogoUrl by remember(item) { mutableStateOf<String?>(item.logoUrl) }
-    var dynamicBackdrop by remember(item) { mutableStateOf(item.backdropUrl ?: item.backdropUrl ?: item.posterUrl) }
+    var dynamicBackdrop by remember(item) { mutableStateOf(item.backdropUrl ?: "") }
     var dynamicCast by remember(item) { mutableStateOf<List<ActorInfo>>(emptyList()) }
+    var dynamicDirector by remember(item) { mutableStateOf(item.director ?: "No especificado") }
+    var dynamicProducer by remember(item) { mutableStateOf(item.producer ?: "Estudio Independiente") }
+    var dynamicLanguages by remember(item) { mutableStateOf(item.languages ?: "Español Latino / Inglés") }
+    var dynamicSubtitles by remember(item) { mutableStateOf(item.subtitles ?: "Español Latino / Inglés") }
+    var dynamicDuration by remember(item) { mutableStateOf(item.duration ?: "2h 15m") }
+    var dynamicGenre by remember(item) { mutableStateOf(item.genre) }
+    var dynamicCountry by remember(item) { mutableStateOf(item.country ?: "Estados Unidos") }
+    var dynamicClassification by remember(item) { mutableStateOf(item.classification ?: "PG-13 / TV-14") }
 
     val catalogsState = viewModel.catalogsStateFlow.collectAsState()
     val similarItems = remember(item, catalogsState.value) {
@@ -1061,6 +1069,30 @@ fun CatalogItemFullScreenDetails(
             dynamicCast = cachedCast
         } else {
             dynamicCast = emptyList()
+        }
+
+        viewModel.catalogRepository?.engine?.enrichCatalogItem(item)?.let { enriched ->
+            viewModel.catalogRepository?.updateCatalogItem(enriched)
+            dynamicDescription = enriched.description
+            dynamicRating = enriched.rating
+            dynamicYear = enriched.year
+            dynamicLogoUrl = enriched.logoUrl
+            dynamicBackdrop = enriched.backdropUrl ?: ""
+            dynamicDirector = enriched.director ?: "No especificado"
+            dynamicProducer = enriched.producer ?: "Estudio Independiente"
+            dynamicLanguages = enriched.languages ?: "Español Latino / Inglés"
+            dynamicSubtitles = enriched.subtitles ?: "Español Latino / Inglés"
+            dynamicDuration = enriched.duration ?: "2h 15m"
+            dynamicGenre = enriched.genre
+            dynamicCountry = enriched.country ?: "Estados Unidos"
+            dynamicClassification = enriched.classification ?: "PG-13 / TV-14"
+
+            val freshCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
+                ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
+            }
+            if (freshCast.isNotEmpty()) {
+                dynamicCast = freshCast
+            }
         }
     }
 
@@ -1212,7 +1244,7 @@ fun CatalogItemFullScreenDetails(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = item.genre,
+                                text = dynamicGenre,
                                 color = Color(0xFF00E5FF),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -1383,15 +1415,15 @@ fun CatalogItemFullScreenDetails(
 
                 // Spec Grid section: "Mostrar director. Mostrar productora."
                 SpecInformationGrid(
-                    director = item.director ?: "No especificado",
-                    productora = item.producer ?: "Estudio Independiente",
-                    pais = "United States",
-                    idioma = item.languages ?: "Español Latino / Inglés",
-                    subtitulos = item.subtitles ?: "Español Latino / Inglés",
-                    clasificacion = "PG-13 / TV-14",
+                    director = dynamicDirector,
+                    productora = dynamicProducer,
+                    pais = dynamicCountry,
+                    idioma = dynamicLanguages,
+                    subtitulos = dynamicSubtitles,
+                    clasificacion = dynamicClassification,
                     temporadas = if (item.isTvShow) "Series" else "Película",
                     status = "Disponible",
-                    duracion = item.duration ?: "2h 15m"
+                    duracion = dynamicDuration
                 )
 
                 // Casting list: "Mostrar actores."

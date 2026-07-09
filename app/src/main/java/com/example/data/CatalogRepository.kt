@@ -171,6 +171,35 @@ class CatalogRepository(private val context: Context) {
         updateStats()
     }
 
+    suspend fun updateCatalogItem(updatedItem: CatalogItem) = withContext(Dispatchers.IO) {
+        try {
+            val dbCatalogs = catalogDao.getAllCatalogsList()
+            val allEntitiesToUpdate = mutableListOf<com.example.data.database.CatalogItemEntity>()
+            for (catalogEntity in dbCatalogs) {
+                val items = catalogDao.getItemsForCatalog(catalogEntity.id)
+                val matching = items.find { it.id == updatedItem.id }
+                if (matching != null) {
+                    allEntitiesToUpdate.add(updatedItem.toEntity(catalogEntity.id))
+                }
+            }
+            if (allEntitiesToUpdate.isNotEmpty()) {
+                catalogDao.insertCatalogItems(allEntitiesToUpdate)
+            }
+            
+            // Also update the in-memory _catalogs state flow so the UI refreshes instantly!
+            val current = _catalogs.value
+            val updatedCatalogs = current.map { catalog ->
+                val updatedItems = catalog.items.map { item ->
+                    if (item.id == updatedItem.id) updatedItem else item
+                }
+                catalog.copy(items = updatedItems)
+            }
+            _catalogs.value = updatedCatalogs
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun getAllCatalogs(): List<Catalog> = _catalogs.value
 
     suspend fun addCatalog(catalog: Catalog): Boolean = withContext(Dispatchers.IO) {
@@ -794,6 +823,16 @@ data class SyncResult(
                             "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300"
                         }
                         
+                        val bPath = obj.optString("backdrop_path").ifEmpty { obj.optString("backdrop", "") }
+                        val backdropUrl = if (bPath.isNotEmpty()) {
+                            if (bPath.startsWith("http")) bPath else "https://image.tmdb.org/t/p/w1280$bPath"
+                        } else null
+
+                        val lPath = obj.optString("logo_path").ifEmpty { obj.optString("logo", "") }
+                        val logoUrl = if (lPath.isNotEmpty()) {
+                            if (lPath.startsWith("http")) lPath else "https://image.tmdb.org/t/p/w500$lPath"
+                        } else null
+
                         val date = obj.optString("release_date").ifEmpty { obj.optString("first_air_date", "2024") }
                         val year = if (date.length >= 4) date.substring(0, 4) else "2024"
                         val vote = obj.optDouble("vote_average", 8.2)
@@ -813,7 +852,9 @@ data class SyncResult(
                                 genre = catalog.name,
                                 description = desc,
                                 tmdbId = if (tmdbId.isNotEmpty()) tmdbId else null,
-                                isTvShow = isTvShow
+                                isTvShow = isTvShow,
+                                backdropUrl = backdropUrl,
+                                logoUrl = logoUrl
                             )
                         )
                     }
@@ -877,7 +918,7 @@ data class SyncResult(
                 if (title.isEmpty()) continue
                 
                 var poster = ""
-                listOf("poster", "poster_url", "posterUrl", "poster_path", "image", "image_url", "imageUrl", "cover", "cover_url", "coverUrl", "thumbnail", "thumbnail_url", "logo").forEach { key ->
+                listOf("poster", "poster_url", "posterUrl", "poster_path", "image", "image_url", "imageUrl", "cover", "cover_url", "coverUrl", "thumbnail", "thumbnail_url").forEach { key ->
                     if (obj.has(key) && obj.optString(key).isNotEmpty()) {
                         poster = obj.optString(key)
                         return@forEach
@@ -1025,6 +1066,72 @@ data class SyncResult(
                     }
                 }
                 
+                var logoUrlStr: String? = null
+                listOf("logo", "logo_url", "logoUrl", "logo_path").forEach { key ->
+                    if (obj.has(key) && obj.optString(key).isNotEmpty()) {
+                        logoUrlStr = obj.optString(key)
+                        return@forEach
+                    }
+                }
+                if (logoUrlStr.isNullOrEmpty() && obj.has("movie")) {
+                    val movie = obj.optJSONObject("movie")
+                    if (movie != null) {
+                        listOf("logo", "logo_url", "logo_path").forEach { key ->
+                            if (movie.has(key) && movie.optString(key).isNotEmpty()) {
+                                logoUrlStr = movie.optString(key)
+                                return@forEach
+                            }
+                        }
+                    }
+                }
+                if (logoUrlStr.isNullOrEmpty() && obj.has("show")) {
+                    val show = obj.optJSONObject("show")
+                    if (show != null) {
+                        listOf("logo", "logo_url", "logo_path").forEach { key ->
+                            if (show.has(key) && show.optString(key).isNotEmpty()) {
+                                logoUrlStr = show.optString(key)
+                                return@forEach
+                            }
+                        }
+                    }
+                }
+                if (logoUrlStr != null && !logoUrlStr!!.startsWith("http") && logoUrlStr!!.startsWith("/")) {
+                    logoUrlStr = "https://image.tmdb.org/t/p/w500$logoUrlStr"
+                }
+
+                var backdropUrlStr: String? = null
+                listOf("backdrop", "backdrop_url", "backdropUrl", "backdrop_path", "background", "background_url", "backgroundUrl").forEach { key ->
+                    if (obj.has(key) && obj.optString(key).isNotEmpty()) {
+                        backdropUrlStr = obj.optString(key)
+                        return@forEach
+                    }
+                }
+                if (backdropUrlStr.isNullOrEmpty() && obj.has("movie")) {
+                    val movie = obj.optJSONObject("movie")
+                    if (movie != null) {
+                        listOf("backdrop", "backdrop_url", "backdrop_path", "background", "background_url", "backgroundUrl").forEach { key ->
+                            if (movie.has(key) && movie.optString(key).isNotEmpty()) {
+                                backdropUrlStr = movie.optString(key)
+                                return@forEach
+                            }
+                        }
+                    }
+                }
+                if (backdropUrlStr.isNullOrEmpty() && obj.has("show")) {
+                    val show = obj.optJSONObject("show")
+                    if (show != null) {
+                        listOf("backdrop", "backdrop_url", "backdrop_path", "background", "background_url", "backgroundUrl").forEach { key ->
+                            if (show.has(key) && show.optString(key).isNotEmpty()) {
+                                backdropUrlStr = show.optString(key)
+                                return@forEach
+                            }
+                        }
+                    }
+                }
+                if (backdropUrlStr != null && !backdropUrlStr!!.startsWith("http") && backdropUrlStr!!.startsWith("/")) {
+                    backdropUrlStr = "https://image.tmdb.org/t/p/w1280$backdropUrlStr"
+                }
+
                 val isTvShow = obj.optString("type") == "show" || obj.has("show") || obj.has("first_air_date") || (obj.has("name") && !obj.has("title")) || obj.optString("media_type") == "tv"
                 
                 list.add(
@@ -1038,7 +1145,9 @@ data class SyncResult(
                         description = desc,
                         streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null,
                         tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
-                        isTvShow = isTvShow
+                        isTvShow = isTvShow,
+                        logoUrl = logoUrlStr,
+                        backdropUrl = backdropUrlStr
                     )
                 )
             } catch (e: Exception) {
