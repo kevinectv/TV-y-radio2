@@ -1071,29 +1071,22 @@ fun CatalogItemFullScreenDetails(
             dynamicCast = emptyList()
         }
 
-        viewModel.catalogRepository?.engine?.enrichCatalogItem(item)?.let { enriched ->
-            viewModel.catalogRepository?.updateCatalogItem(enriched)
-            dynamicDescription = enriched.description
-            dynamicRating = enriched.rating
-            dynamicYear = enriched.year
-            dynamicLogoUrl = enriched.logoUrl
-            dynamicBackdrop = enriched.backdropUrl ?: ""
-            dynamicDirector = enriched.director ?: "No especificado"
-            dynamicProducer = enriched.producer ?: "Estudio Independiente"
-            dynamicLanguages = enriched.languages ?: "Español Latino / Inglés"
-            dynamicSubtitles = enriched.subtitles ?: "Español Latino / Inglés"
-            dynamicDuration = enriched.duration ?: "2h 15m"
-            dynamicGenre = enriched.genre
-            dynamicCountry = enriched.country ?: "Estados Unidos"
-            dynamicClassification = enriched.classification ?: "PG-13 / TV-14"
+        // Add robust logging as requested
+        android.util.Log.d("LuminaFlow_Details", "Arrived at FullScreenDetails - Title: ${item.title}, Logo: ${item.logoUrl}, Backdrop: ${item.backdropUrl}, Director: ${item.director}, Producer: ${item.producer}, Cast: ${item.castJson}, Duration: ${item.duration}, Trailer: ${item.trailerUrl}, Country: ${item.country}, Classification: ${item.classification}, Overview: ${item.description}")
 
-            val freshCast = com.example.data.LuminaCatalogEngine.deserializeCast(enriched.castJson).map { engineActor ->
-                ActorInfo(name = engineActor.name, role = engineActor.role, photoUrl = engineActor.photoUrl)
-            }
-            if (freshCast.isNotEmpty()) {
-                dynamicCast = freshCast
-            }
-        }
+        dynamicDescription = item.description.ifEmpty { "Descubre una experiencia de entretenimiento increíble con este título cuidadosamente seleccionado para el catálogo premium de Lumina." }
+        dynamicRating = item.rating
+        dynamicYear = item.year
+        dynamicLogoUrl = item.logoUrl
+        dynamicBackdrop = item.backdropUrl ?: ""
+        dynamicDirector = item.director ?: "No especificado"
+        dynamicProducer = item.producer ?: "Estudio Independiente"
+        dynamicLanguages = item.languages ?: "Español Latino / Inglés"
+        dynamicSubtitles = item.subtitles ?: "Español Latino / Inglés"
+        dynamicDuration = item.duration ?: "2h 15m"
+        dynamicGenre = item.genre
+        dynamicCountry = item.country ?: "Estados Unidos"
+        dynamicClassification = item.classification ?: "PG-13 / TV-14"
     }
 
     androidx.activity.compose.BackHandler {
@@ -1204,15 +1197,32 @@ fun CatalogItemFullScreenDetails(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Logo or Title
-                        if (!dynamicLogoUrl.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = dynamicLogoUrl,
+                        val cleanedLogoUrl = if (dynamicLogoUrl.isNullOrBlank() || dynamicLogoUrl == "null" || dynamicLogoUrl == "NULL") null else dynamicLogoUrl
+                        if (cleanedLogoUrl != null) {
+                            coil.compose.SubcomposeAsyncImage(
+                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                    .data(cleanedLogoUrl)
+                                    .crossfade(true)
+                                    .allowHardware(false)
+                                    .build(),
                                 contentDescription = item.title,
                                 modifier = Modifier
                                     .heightIn(max = 60.dp)
                                     .widthIn(max = 200.dp),
                                 contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart
+                                alignment = Alignment.BottomStart,
+                                loading = { },
+                                error = {
+                                    Text(
+                                        text = item.title.uppercase(),
+                                        color = Color.White,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = if (isWide) 24.sp else 18.sp,
+                                            letterSpacing = (-0.5).sp
+                                        )
+                                    )
+                                }
                             )
                         } else {
                             Text(

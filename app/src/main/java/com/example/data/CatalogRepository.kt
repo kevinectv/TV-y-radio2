@@ -383,6 +383,7 @@ class CatalogRepository(private val context: Context) {
         try {
             val api = BackendApi.getInstance()
             val jsonStr = api.getHome().trim()
+            android.util.Log.d("LuminaFlow_Backend", "loadHomeFromBackend() - JSON length: ${jsonStr.length}, startsWith: ${jsonStr.take(100)}")
             if (jsonStr.isEmpty()) return@withContext false
             
             val parsedCatalogs = parseHomeJson(jsonStr)
@@ -1095,8 +1096,15 @@ data class SyncResult(
                         }
                     }
                 }
-                if (logoUrlStr != null && !logoUrlStr!!.startsWith("http") && logoUrlStr!!.startsWith("/")) {
-                    logoUrlStr = "https://image.tmdb.org/t/p/w500$logoUrlStr"
+                if (logoUrlStr == "null" || logoUrlStr == "NULL") {
+                    logoUrlStr = null
+                }
+                if (logoUrlStr != null && !logoUrlStr!!.startsWith("http")) {
+                    if (logoUrlStr!!.startsWith("/")) {
+                        logoUrlStr = "https://image.tmdb.org/t/p/w500$logoUrlStr"
+                    } else if (logoUrlStr!!.isNotEmpty()) {
+                        logoUrlStr = "https://image.tmdb.org/t/p/w500/$logoUrlStr"
+                    }
                 }
 
                 var backdropUrlStr: String? = null
@@ -1128,28 +1136,233 @@ data class SyncResult(
                         }
                     }
                 }
-                if (backdropUrlStr != null && !backdropUrlStr!!.startsWith("http") && backdropUrlStr!!.startsWith("/")) {
-                    backdropUrlStr = "https://image.tmdb.org/t/p/w1280$backdropUrlStr"
+                if (backdropUrlStr == "null" || backdropUrlStr == "NULL") {
+                    backdropUrlStr = null
+                }
+                if (backdropUrlStr != null && !backdropUrlStr!!.startsWith("http")) {
+                    if (backdropUrlStr!!.startsWith("/")) {
+                        backdropUrlStr = "https://image.tmdb.org/t/p/w1280$backdropUrlStr"
+                    } else if (backdropUrlStr!!.isNotEmpty()) {
+                        backdropUrlStr = "https://image.tmdb.org/t/p/w1280/$backdropUrlStr"
+                    }
+                }
+
+                var directorStr: String? = null
+                listOf("director", "director_name", "directores", "directors").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray) {
+                            val listTemp = mutableListOf<String>()
+                            for (j in 0 until v.length()) {
+                                listTemp.add(v.optString(j))
+                            }
+                            directorStr = listTemp.filter { it.isNotEmpty() }.joinToString(", ")
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            directorStr = v
+                        }
+                    }
+                }
+
+                var producerStr: String? = null
+                listOf("producer", "producer_name", "producer_company", "productora", "producers", "production_companies", "production").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray) {
+                            val listTemp = mutableListOf<String>()
+                            for (j in 0 until v.length()) {
+                                val itemObj = v.optJSONObject(j)
+                                if (itemObj != null) {
+                                    listTemp.add(itemObj.optString("name", ""))
+                                } else {
+                                    listTemp.add(v.optString(j))
+                                }
+                            }
+                            producerStr = listTemp.filter { it.isNotEmpty() }.joinToString(", ")
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            producerStr = v
+                        }
+                    }
+                }
+
+                var durationStr: String? = null
+                listOf("duration", "runtime", "run_time", "duracion", "episode_run_time").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray && v.length() > 0) {
+                            durationStr = "${v.optInt(0)} min"
+                        } else if (v is Number) {
+                            durationStr = "${v.toInt()} min"
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            durationStr = v
+                        }
+                    }
+                }
+
+                var countryStr: String? = null
+                listOf("country", "pais", "production_countries", "origin_country").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray) {
+                            val listTemp = mutableListOf<String>()
+                            for (j in 0 until v.length()) {
+                                val itemObj = v.optJSONObject(j)
+                                if (itemObj != null) {
+                                    listTemp.add(itemObj.optString("name", ""))
+                                } else {
+                                    listTemp.add(v.optString(j))
+                                }
+                            }
+                            countryStr = listTemp.filter { it.isNotEmpty() }.joinToString(", ")
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            countryStr = v
+                        }
+                    }
+                }
+
+                var classificationStr: String? = null
+                listOf("classification", "rating_certification", "certification", "clasificacion", "content_rating", "content_ratings").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray && v.length() > 0) {
+                            val first = v.optJSONObject(0)
+                            classificationStr = first?.optString("rating", "") ?: v.optString(0)
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            classificationStr = v
+                        }
+                    }
+                }
+
+                var languagesStr: String? = null
+                listOf("languages", "idiomas", "spoken_languages", "language").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray) {
+                            val listTemp = mutableListOf<String>()
+                            for (j in 0 until v.length()) {
+                                val itemObj = v.optJSONObject(j)
+                                if (itemObj != null) {
+                                    listTemp.add(itemObj.optString("name", itemObj.optString("english_name", "")))
+                                } else {
+                                    listTemp.add(v.optString(j))
+                                }
+                            }
+                            languagesStr = listTemp.filter { it.isNotEmpty() }.joinToString(" / ")
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            languagesStr = v
+                        }
+                    }
+                }
+
+                var subtitlesStr: String? = null
+                listOf("subtitles", "subtitulos").forEach { key ->
+                    if (obj.has(key)) {
+                        val v = obj.opt(key)
+                        if (v is org.json.JSONArray) {
+                            val listTemp = mutableListOf<String>()
+                            for (j in 0 until v.length()) {
+                                listTemp.add(v.optString(j))
+                            }
+                            subtitlesStr = listTemp.filter { it.isNotEmpty() }.joinToString(" / ")
+                        } else if (v is String && v.isNotEmpty() && v != "null") {
+                            subtitlesStr = v
+                        }
+                    }
+                }
+
+                var trailerUrlStr: String? = null
+                listOf("trailer", "trailer_url", "trailerUrl", "video_url").forEach { key ->
+                    if (obj.has(key) && obj.optString(key).isNotEmpty()) {
+                        trailerUrlStr = obj.optString(key)
+                        return@forEach
+                    }
+                }
+
+                var castJsonStr: String? = null
+                if (obj.has("cast")) {
+                    val castVal = obj.get("cast")
+                    if (castVal is org.json.JSONArray) {
+                        val actors = mutableListOf<com.example.data.EngineActorInfo>()
+                        for (k in 0 until castVal.length()) {
+                            val element = castVal.opt(k)
+                            if (element is org.json.JSONObject) {
+                                val name = element.optString("name", element.optString("actor_name", element.optString("actor", "")))
+                                if (name.isNotEmpty()) {
+                                    val character = element.optString("character", element.optString("role", element.optString("personaje", "Actor")))
+                                    var photoUrl = element.optString("profile_path", element.optString("profilePath", element.optString("photo", element.optString("photo_url", element.optString("photoUrl", "")))))
+                                    if (photoUrl.isNotEmpty() && !photoUrl.startsWith("http")) {
+                                        if (photoUrl.startsWith("/")) {
+                                            photoUrl = "https://image.tmdb.org/t/p/w185$photoUrl"
+                                        } else {
+                                            photoUrl = "https://image.tmdb.org/t/p/w185/$photoUrl"
+                                        }
+                                    }
+                                    if (photoUrl.isEmpty()) {
+                                        photoUrl = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200"
+                                    }
+                                    actors.add(com.example.data.EngineActorInfo(name, character, photoUrl))
+                                }
+                            } else if (element is String && element.isNotEmpty()) {
+                                actors.add(
+                                    com.example.data.EngineActorInfo(
+                                        name = element,
+                                        role = "Actor",
+                                        photoUrl = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200"
+                                    )
+                                )
+                            }
+                        }
+                        if (actors.isNotEmpty()) {
+                            castJsonStr = com.example.data.LuminaCatalogEngine.serializeCast(actors)
+                        }
+                    } else if (castVal is String && castVal.isNotEmpty()) {
+                        if (castVal.contains("|")) {
+                            castJsonStr = castVal
+                        } else {
+                            val names = castVal.split(",")
+                            val actors = names.mapNotNull { name ->
+                                val trimmed = name.trim()
+                                if (trimmed.isNotEmpty()) {
+                                    com.example.data.EngineActorInfo(
+                                        name = trimmed,
+                                        role = "Actor",
+                                        photoUrl = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200"
+                                    )
+                                } else null
+                            }
+                            if (actors.isNotEmpty()) {
+                                castJsonStr = com.example.data.LuminaCatalogEngine.serializeCast(actors)
+                            }
+                        }
+                    }
                 }
 
                 val isTvShow = obj.optString("type") == "show" || obj.has("show") || obj.has("first_air_date") || (obj.has("name") && !obj.has("title")) || obj.optString("media_type") == "tv"
                 
-                list.add(
-                    CatalogItem(
-                        id = "${catalog.id}_g_${i}",
-                        title = title,
-                        posterUrl = poster,
-                        year = year,
-                        rating = rating,
-                        genre = catalog.name,
-                        description = desc,
-                        streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null,
-                        tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
-                        isTvShow = isTvShow,
-                        logoUrl = logoUrlStr,
-                        backdropUrl = backdropUrlStr
-                    )
+                val item = CatalogItem(
+                    id = "${catalog.id}_g_${i}",
+                    title = title,
+                    posterUrl = poster,
+                    year = year,
+                    rating = rating,
+                    genre = catalog.name,
+                    description = desc,
+                    streamUrl = if (streamUrl.isNotEmpty()) streamUrl else null,
+                    tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
+                    isTvShow = isTvShow,
+                    logoUrl = logoUrlStr,
+                    backdropUrl = backdropUrlStr,
+                    duration = durationStr,
+                    director = directorStr,
+                    producer = producerStr,
+                    castJson = castJsonStr,
+                    trailerUrl = trailerUrlStr,
+                    languages = languagesStr,
+                    subtitles = subtitlesStr,
+                    country = countryStr,
+                    classification = classificationStr
                 )
+                android.util.Log.d("LuminaFlow_Parse", "Parsed Item - Title: ${item.title}, Logo: ${item.logoUrl}, Backdrop: ${item.backdropUrl}, Director: ${item.director}, Producer: ${item.producer}, Cast: ${item.castJson}, Duration: ${item.duration}, Trailer: ${item.trailerUrl}, Country: ${item.country}, Classification: ${item.classification}")
+                list.add(item)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

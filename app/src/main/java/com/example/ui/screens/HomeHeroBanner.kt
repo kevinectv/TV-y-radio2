@@ -169,7 +169,8 @@ fun resolveHeroMetadata(
         techIndicators.add("Subtítulos")
     }
 
-    val logoUrl = loaded?.logoUrl ?: item.logoUrl
+    val rawLogoUrl = loaded?.logoUrl ?: item.logoUrl
+    val logoUrl = if (rawLogoUrl.isNullOrBlank() || rawLogoUrl == "null" || rawLogoUrl == "NULL") null else rawLogoUrl
     val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: ""
 
     val platformNames = listOf("Netflix", "Max", "Prime Video", "Disney+", "Apple TV+")
@@ -240,6 +241,7 @@ fun HomeHeroBannerTv(
             label = "hero_content_fade"
         ) { targetMovie ->
             val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            android.util.Log.d("LuminaHeroBanner", "Arrived at Hero Banner (TV) - Title: ${targetMovie.title}, Logo: ${richMeta.logoUrl}, Cast: ${targetMovie.castJson}")
             
             Box(
                 modifier = Modifier
@@ -462,6 +464,7 @@ fun HomeHeroBannerMobile(
             label = "hero_mobile_fade"
         ) { targetMovie ->
             val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            android.util.Log.d("LuminaHeroBanner", "Arrived at Hero Banner (Mobile) - Title: ${targetMovie.title}, Logo: ${richMeta.logoUrl}, Cast: ${targetMovie.castJson}")
             val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: targetMovie.backdropUrl ?: ""
 
             Box(modifier = Modifier.fillMaxSize()) {
