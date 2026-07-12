@@ -41,20 +41,7 @@ import coil.request.ImageRequest
 import coil.transform.Transformation
 import android.graphics.Bitmap
 
-private val PlatformLogos = mapOf(
-    "Netflix" to "https://image.tmdb.org/t/p/w300/t2yyOv40HZeVlLjVrCsPhIdZfC4.jpg",
-    "Disney+" to "https://image.tmdb.org/t/p/w300/7rwgEs15tFwyR9NPQ5vlURnb3x1.jpg",
-    "Prime Video" to "https://image.tmdb.org/t/p/w300/5NyLm42TmCqCMOZFvH4fcoSNKEW.jpg",
-    "Apple TV+" to "https://image.tmdb.org/t/p/w300/6uhKBfmtzFqOcLousHwZuzcrScK.jpg",
-    "Max" to "https://image.tmdb.org/t/p/w300/c2uuPbxqFJoGtwAunvGqHk98jC8.jpg",
-    "Hulu" to "https://image.tmdb.org/t/p/w300/giwM8XX4V2AQb9vsoN7yti82tKK.jpg",
-    "Paramount+" to "https://image.tmdb.org/t/p/w300/xbhHHa1YgtpwhC8lb1NQ3ACVcLd.jpg",
-    "Peacock" to "https://image.tmdb.org/t/p/w300/dB8G41Q6tSL5NBisrIeqByfepBc.jpg",
-    "Crunchyroll" to "https://image.tmdb.org/t/p/w300/f6TRLB3H4jDpFEZ0z2KWSSvu1SB.jpg",
-    "MUBI" to "https://image.tmdb.org/t/p/w300/aS2zvJWn9mwiCOZI4GAnkQxH0mL.jpg",
-    "Pluto TV" to "https://image.tmdb.org/t/p/w300/4KAy34EHvRM25Ih8wb82AuGU7zJ.jpg",
-    "Tubi TV" to "https://image.tmdb.org/t/p/w300/3QQKYFUD8x5g4PUNn7IEtqJWhJK.jpg"
-)
+
 
 data class LoadedTmdbDetails(
     val description: String,
@@ -342,11 +329,7 @@ fun HomeHeroBannerTv(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         // Logo de plataforma
-                        val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
-                            richMeta.platformLogoUrl
-                        } else {
-                            PlatformLogos[richMeta.platform]
-                        }
+                        val platformLogoUrl = richMeta.platformLogoUrl
 
                         if (!platformLogoUrl.isNullOrBlank()) {
                             Box(
@@ -581,11 +564,7 @@ fun HomeHeroBannerMobile(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        val platformLogoUrl = if (!richMeta.platformLogoUrl.isNullOrBlank()) {
-                            richMeta.platformLogoUrl
-                        } else {
-                            PlatformLogos[richMeta.platform]
-                        }
+                        val platformLogoUrl = richMeta.platformLogoUrl
 
                         if (!platformLogoUrl.isNullOrBlank()) {
                             Box(
