@@ -1336,6 +1336,22 @@ data class SyncResult(
                     }
                 }
 
+                var platformStr: String? = null
+                listOf("platform", "plataforma").forEach { key ->
+                    if (obj.has(key) && obj.optString(key).isNotEmpty()) {
+                        platformStr = obj.optString(key)
+                        return@forEach
+                    }
+                }
+
+                var platformLogoStr: String? = null
+                listOf("platformLogo", "platform_logo", "platformlogo", "plataforma_logo").forEach { key ->
+                    if (obj.has(key) && obj.optString(key).isNotEmpty()) {
+                        platformLogoStr = obj.optString(key)
+                        return@forEach
+                    }
+                }
+
                 val isTvShow = obj.optString("type") == "show" || obj.has("show") || obj.has("first_air_date") || (obj.has("name") && !obj.has("title")) || obj.optString("media_type") == "tv"
                 
                 val item = CatalogItem(
@@ -1350,6 +1366,8 @@ data class SyncResult(
                     tmdbId = if (tmdbId.isNotEmpty() && tmdbId != "null") tmdbId else null,
                     isTvShow = isTvShow,
                     logoUrl = logoUrlStr,
+                    platform = platformStr,
+                    platformLogo = platformLogoStr,
                     backdropUrl = backdropUrlStr,
                     duration = durationStr,
                     director = directorStr,
@@ -1361,7 +1379,7 @@ data class SyncResult(
                     country = countryStr,
                     classification = classificationStr
                 )
-                android.util.Log.d("LuminaFlow_Parse", "Parsed Item - Title: ${item.title}, Logo: ${item.logoUrl}, Backdrop: ${item.backdropUrl}, Director: ${item.director}, Producer: ${item.producer}, Cast: ${item.castJson}, Duration: ${item.duration}, Trailer: ${item.trailerUrl}, Country: ${item.country}, Classification: ${item.classification}")
+                android.util.Log.d("LuminaFlow_Parse", "Parsed Item - Title: ${item.title}, Logo: ${item.logoUrl}, Platform: ${item.platform}, PlatformLogo: ${item.platformLogo}, Backdrop: ${item.backdropUrl}, Director: ${item.director}, Producer: ${item.producer}, Cast: ${item.castJson}, Duration: ${item.duration}, Trailer: ${item.trailerUrl}, Country: ${item.country}, Classification: ${item.classification}")
                 list.add(item)
             } catch (e: Exception) {
                 e.printStackTrace()

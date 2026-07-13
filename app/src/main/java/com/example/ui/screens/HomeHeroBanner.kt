@@ -161,8 +161,8 @@ fun resolveHeroMetadata(
     val backdropUrl = loaded?.backdropUrl ?: item.backdropUrl ?: ""
 
     val platformNames = listOf("Netflix", "Max", "Prime Video", "Disney+", "Apple TV+")
-    val platformName = loaded?.platformName ?: platformNames[absHash % platformNames.size]
-    val platformLogoUrl = loaded?.platformLogoUrl
+    val platformName = if (!item.platform.isNullOrBlank()) item.platform else (loaded?.platformName ?: platformNames[absHash % platformNames.size])
+    val platformLogoUrl = if (!item.platformLogo.isNullOrBlank()) item.platformLogo else loaded?.platformLogoUrl
 
     return RichHeroMetadata(
         title = title,

@@ -33,6 +33,8 @@ data class CatalogItem(
     val tmdbId: String? = null,
     val isTvShow: Boolean = false,
     val logoUrl: String? = null,
+    val platform: String? = null,
+    val platformLogo: String? = null,
     val backdropUrl: String? = null,
     val trailerUrl: String? = null,
     val director: String? = null,

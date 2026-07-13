@@ -20,6 +20,8 @@ data class CatalogItemEntity(
     val tmdbId: String?,
     val isTvShow: Boolean,
     val logoUrl: String?,
+    val platform: String? = null,
+    val platformLogo: String? = null,
     val backdropUrl: String?,
     val trailerUrl: String?,
     val director: String?,
@@ -35,7 +37,7 @@ data class CatalogItemEntity(
 )
 
 fun CatalogItemEntity.toDomain(): CatalogItem {
-    android.util.Log.d("LuminaFlow_EntityToDomain", "toDomain() mapped - Title: $title, Logo: $logoUrl, Backdrop: $backdropUrl, Cast: $castJson")
+    android.util.Log.d("LuminaFlow_EntityToDomain", "toDomain() mapped - Title: $title, Logo: $logoUrl, PlatformLogo: $platformLogo, Backdrop: $backdropUrl, Cast: $castJson")
     return CatalogItem(
         id = id,
         title = title,
@@ -48,6 +50,8 @@ fun CatalogItemEntity.toDomain(): CatalogItem {
         tmdbId = tmdbId,
         isTvShow = isTvShow,
         logoUrl = logoUrl,
+        platform = platform,
+        platformLogo = platformLogo,
         backdropUrl = backdropUrl,
         trailerUrl = trailerUrl,
         director = director,
@@ -64,7 +68,7 @@ fun CatalogItemEntity.toDomain(): CatalogItem {
 }
 
 fun CatalogItem.toEntity(catalogId: String): CatalogItemEntity {
-    android.util.Log.d("LuminaFlow_DomainToEntity", "toEntity() mapped - Title: $title, Logo: $logoUrl, Backdrop: $backdropUrl, Cast: $castJson")
+    android.util.Log.d("LuminaFlow_DomainToEntity", "toEntity() mapped - Title: $title, Logo: $logoUrl, PlatformLogo: $platformLogo, Backdrop: $backdropUrl, Cast: $castJson")
     return CatalogItemEntity(
         catalogId = catalogId,
         id = id,
@@ -78,6 +82,8 @@ fun CatalogItem.toEntity(catalogId: String): CatalogItemEntity {
         tmdbId = tmdbId,
         isTvShow = isTvShow,
         logoUrl = logoUrl,
+        platform = platform,
+        platformLogo = platformLogo,
         backdropUrl = backdropUrl,
         trailerUrl = trailerUrl,
         director = director,
