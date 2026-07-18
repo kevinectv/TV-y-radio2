@@ -946,22 +946,9 @@ class MediaViewModel(
                 repository.deleteProfile("p3")
                 repository.deleteProfile("p4")
 
-                // Try to auto-restore last active profile
-                val lastId = sharedPreferences?.getString("last_active_profile_id", null)
-                if (lastId != null) {
-                    val allProfiles = repository.getProfiles().first()
-                    val lastProfile = allProfiles.find { it.id == lastId }
-                    if (lastProfile != null) {
-                        activeProfile = lastProfile
-                        showProfileSelector = false
-                    } else {
-                        showProfileSelector = true
-                        activeProfile = null
-                    }
-                } else {
-                    showProfileSelector = true
-                    activeProfile = null
-                }
+                // Always show the profile selector on startup per user request
+                showProfileSelector = true
+                activeProfile = null
             } catch (e: Exception) {
                 e.printStackTrace()
                 showProfileSelector = true

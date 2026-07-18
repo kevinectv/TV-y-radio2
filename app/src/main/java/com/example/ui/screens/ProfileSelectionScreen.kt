@@ -216,7 +216,7 @@ fun ProfileSelectionScreen(
                                     
                                     for (i in 0 until rowsCount) {
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                                             verticalAlignment = Alignment.Top,
                                             modifier = Modifier.padding(vertical = 4.dp)
                                         ) {
@@ -306,7 +306,7 @@ fun ProfileSelectionScreen(
                                         .padding(horizontal = 24.dp)
                                         .padding(vertical = 24.dp)
                                         .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     profilesList.forEachIndexed { index, profile ->
@@ -1128,7 +1128,7 @@ private fun ProfileItemView(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(160.dp.responsive())
-            .padding(8.dp)
+            .padding(horizontal = 4.dp, vertical = 8.dp)
     ) {
         Surface(
             onClick = {
@@ -1254,7 +1254,7 @@ private fun AddProfileItemView(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(160.dp.responsive())
-            .padding(8.dp)
+            .padding(horizontal = 4.dp, vertical = 8.dp)
     ) {
         Surface(
             onClick = onAddClick,
