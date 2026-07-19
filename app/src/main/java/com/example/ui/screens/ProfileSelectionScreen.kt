@@ -216,7 +216,7 @@ fun ProfileSelectionScreen(
                                     
                                     for (i in 0 until rowsCount) {
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             verticalAlignment = Alignment.Top,
                                             modifier = Modifier.padding(vertical = 4.dp)
                                         ) {
@@ -306,7 +306,7 @@ fun ProfileSelectionScreen(
                                         .padding(horizontal = 24.dp)
                                         .padding(vertical = 24.dp)
                                         .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     profilesList.forEachIndexed { index, profile ->
@@ -1127,8 +1127,8 @@ private fun ProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(160.dp.responsive())
-            .padding(horizontal = 4.dp, vertical = 8.dp)
+            .width(176.dp.responsive())
+            .padding(horizontal = 3.dp, vertical = 8.dp)
     ) {
         Surface(
             onClick = {
@@ -1138,18 +1138,18 @@ private fun ProfileItemView(
                     onEditProfile(profile)
                 }
             },
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(22.dp),
             color = Color.Transparent,
             modifier = Modifier
-                .size(110.dp.responsive())
+                .size(122.dp.responsive())
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
                 .tvFocusEffect(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(22.dp),
                     focusedBorderColor = focusBorderColor,
                     unfocusedBorderColor = if (isCurrentActive) focusBorderColor.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.05f),
-                    borderWidth = if (isCurrentActive) 3.dp else 1.5.dp,
+                    borderWidth = if (isCurrentActive) 3.5.dp else 1.5.dp,
                     scaleAmount = 1.1f,
                     liftOnFocus = true
                 )
@@ -1180,7 +1180,7 @@ private fun ProfileItemView(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(13.dp))
 
         if (screenMode == ProfileScreenMode.MANAGE) {
             Row(
@@ -1192,14 +1192,14 @@ private fun ProfileItemView(
                         onClick = {
                             reorderProfiles(viewModel, profilesList, index, index - 1)
                         },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(26.dp)
                     ) {
                         Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mover izquierda", tint = Color.LightGray)
                     }
                 }
                 Text(
                     text = profile.name,
-                    fontSize = 13.sp,
+                    fontSize = 14.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center,
@@ -1212,7 +1212,7 @@ private fun ProfileItemView(
                         onClick = {
                             reorderProfiles(viewModel, profilesList, index, index + 1)
                         },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(26.dp)
                     ) {
                         Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mover derecha", tint = Color.LightGray)
                     }
@@ -1221,7 +1221,7 @@ private fun ProfileItemView(
         } else {
             Text(
                 text = profile.name,
-                fontSize = 15.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (isCurrentActive) focusBorderColor else Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
@@ -1231,10 +1231,10 @@ private fun ProfileItemView(
         }
 
         if (profile.isKids) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             Text(
                 text = "Infantil",
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 color = Color(0xFFFFB300),
                 fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier
@@ -1253,20 +1253,20 @@ private fun AddProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(160.dp.responsive())
-            .padding(horizontal = 4.dp, vertical = 8.dp)
+            .width(176.dp.responsive())
+            .padding(horizontal = 3.dp, vertical = 8.dp)
     ) {
         Surface(
             onClick = onAddClick,
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(22.dp),
             color = Color.Transparent,
             modifier = Modifier
-                .size(110.dp.responsive())
+                .size(122.dp.responsive())
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
                 .tvFocusEffect(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(22.dp),
                     focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.White.copy(alpha = 0.05f),
                     borderWidth = 1.5.dp,
@@ -1278,24 +1278,24 @@ private fun AddProfileItemView(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Profile Image",
                     tint = Color.White.copy(alpha = 0.6f),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(40.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(13.dp))
 
         Text(
             text = "Añadir Perfil",
-            fontSize = 15.sp,
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White.copy(alpha = 0.8f),
             textAlign = TextAlign.Center
