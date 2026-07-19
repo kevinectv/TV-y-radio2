@@ -216,7 +216,7 @@ fun ProfileSelectionScreen(
                                     
                                     for (i in 0 until rowsCount) {
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                                             verticalAlignment = Alignment.Top,
                                             modifier = Modifier.padding(vertical = 4.dp)
                                         ) {
@@ -306,7 +306,7 @@ fun ProfileSelectionScreen(
                                         .padding(horizontal = 24.dp)
                                         .padding(vertical = 24.dp)
                                         .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     profilesList.forEachIndexed { index, profile ->
@@ -1127,8 +1127,8 @@ private fun ProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(176.dp.responsive())
-            .padding(horizontal = 3.dp, vertical = 8.dp)
+            .width(186.dp.responsive())
+            .padding(horizontal = 2.dp, vertical = 8.dp)
     ) {
         Surface(
             onClick = {
@@ -1141,7 +1141,7 @@ private fun ProfileItemView(
             shape = RoundedCornerShape(22.dp),
             color = Color.Transparent,
             modifier = Modifier
-                .size(122.dp.responsive())
+                .size(138.dp.responsive())
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
@@ -1253,15 +1253,15 @@ private fun AddProfileItemView(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .width(176.dp.responsive())
-            .padding(horizontal = 3.dp, vertical = 8.dp)
+            .width(186.dp.responsive())
+            .padding(horizontal = 2.dp, vertical = 8.dp)
     ) {
         Surface(
             onClick = onAddClick,
             shape = RoundedCornerShape(22.dp),
             color = Color.Transparent,
             modifier = Modifier
-                .size(122.dp.responsive())
+                .size(138.dp.responsive())
                 .focusProperties {
                     down = manageButtonFocusRequester
                 }
@@ -1286,7 +1286,7 @@ private fun AddProfileItemView(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Profile Image",
                     tint = Color.White.copy(alpha = 0.6f),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(45.dp)
                 )
             }
         }
