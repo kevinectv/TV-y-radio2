@@ -885,41 +885,17 @@ fun CatalogItemHomeCard(
 ) {
     val isHorizontal = layoutType == "Horizontal Poster Row" || layoutType == "Horizontal" || layoutType == "Landscape Row" || layoutType == "Banner Row"
 
-    val targetWidth = when (layoutType) {
-        "Horizontal Poster Row", "Horizontal" -> 200.dp
-        "Vertical Poster Row", "Vertical" -> 150.dp
-        "Landscape Row" -> 200.dp
-        "Banner Row" -> 240.dp
-        "Large Featured Row" -> 190.dp
-        "Compact Row" -> 100.dp
-        else -> 130.dp
+    val targetWidth = if (isHorizontal) {
+        200.dp
+    } else {
+        150.dp
     }.responsive()
     
-    val targetHeight = when (layoutType) {
-        "Horizontal Poster Row", "Horizontal" -> 110.dp
-        "Vertical Poster Row", "Vertical" -> 210.dp
-        "Landscape Row" -> 110.dp
-        "Banner Row" -> 90.dp
-        "Large Featured Row" -> 260.dp
-        "Compact Row" -> 140.dp
-        else -> 180.dp
+    val targetHeight = if (isHorizontal) {
+        110.dp
+    } else {
+        210.dp
     }.responsive()
-
-    val cardWidth by androidx.compose.animation.core.animateDpAsState(
-        targetValue = targetWidth,
-        animationSpec = androidx.compose.animation.core.spring(
-            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-        ),
-        label = "cardWidth"
-    )
-
-    val imageHeight by androidx.compose.animation.core.animateDpAsState(
-        targetValue = targetHeight,
-        animationSpec = androidx.compose.animation.core.spring(
-            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-        ),
-        label = "imageHeight"
-    )
 
     val imageUrl = remember(item, isHorizontal) {
         if (isHorizontal) {
@@ -936,7 +912,8 @@ fun CatalogItemHomeCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = modifier
-            .width(cardWidth)
+            .width(targetWidth)
+            .height(targetHeight)
             .clip(RoundedCornerShape(6.dp))
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
@@ -952,114 +929,108 @@ fun CatalogItemHomeCard(
                 onClick = onClick
             )
     ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(imageHeight)
-            ) {
-                // Movie/Show Image (Poster/Backdrop)
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = item.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Movie/Show Image (Poster/Backdrop)
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = item.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-                // Gold Rating Overlay Tag
-                Row(
+            // Gold Rating Overlay Tag
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Rating",
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(8.dp)
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
+                    text = item.rating,
+                    color = Color.White,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Favorite Overlay Tag
+            if (isFavorite) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.TopStart)
                         .padding(4.dp)
-                        .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .background(Color.Black.copy(alpha = 0.65f), CircleShape)
+                        .padding(4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "Rating",
-                        tint = Color(0xFFFFD700),
-                        modifier = Modifier.size(8.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = item.rating,
-                        color = Color.White,
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = "Favorito",
+                        tint = Color.Red,
+                        modifier = Modifier.size(10.dp)
                     )
                 }
+            }
 
-                // Favorite Overlay Tag
-                if (isFavorite) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(4.dp)
-                            .background(Color.Black.copy(alpha = 0.65f), CircleShape)
-                            .padding(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = "Favorito",
-                            tint = Color.Red,
-                            modifier = Modifier.size(10.dp)
+            // Dynamic Year & Title overlay gradient background and Progress Indicator
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                            )
+                        )
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        if (isHorizontal) {
+                            Text(
+                                text = item.title,
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                        }
+                        Text(
+                            text = item.year,
+                            color = Color.White.copy(alpha = 0.80f),
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                // Dynamic Year & Title overlay gradient background and Progress Indicator
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                ) {
+                // Seen progress bar
+                if (progress > 0f) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
-                                )
-                            )
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .height(4.dp)
+                            .background(Color.White.copy(alpha = 0.25f))
                     ) {
-                        Column {
-                            if (isHorizontal) {
-                                Text(
-                                    text = item.title,
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                            }
-                            Text(
-                                text = item.year,
-                                color = Color.White.copy(alpha = 0.80f),
-                                fontSize = 8.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    // Seen progress bar
-                    if (progress > 0f) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .background(Color.White.copy(alpha = 0.25f))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(progress)
-                                    .background(Color(0xFF00E5FF))
-                            )
-                        }
+                                .fillMaxHeight()
+                                .fillMaxWidth(progress)
+                                .background(Color(0xFF00E5FF))
+                        )
                     }
                 }
             }
@@ -2475,14 +2446,17 @@ fun CatalogVerticalGrid(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 rowItems.forEach { item ->
-                    Box(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CatalogItemHomeCard(
                             item = item,
                             layoutType = layoutType,
                             isFavorite = item.id in favoriteCatalogItems,
                             progress = seenProgress[item.id] ?: 0f,
                             onFocus = { onItemFocus(item) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier,
                             onClick = { onClick(item) }
                         )
                     }
