@@ -62,6 +62,18 @@ fun CatalogsScreen(
     val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
     var syncMode by remember { mutableStateOf(sharedPrefs.getString("catalog_sync_mode", "automatic") ?: "automatic") }
 
+    // Persistent layoutType overrides
+    val overriddenCatalogs = remember(catalogs) {
+        catalogs.map { cat ->
+            val override = sharedPrefs.getString("layout_override_${cat.id}", null)
+            if (override != null) {
+                cat.copy(layoutType = override)
+            } else {
+                cat
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,7 +111,7 @@ fun CatalogsScreen(
                         ) {
                             Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF00FF87)))
                             Text(
-                                text = "${catalogs.size} catalogs",
+                                text = "${overriddenCatalogs.size} catalogs",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -298,7 +310,7 @@ fun CatalogsScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         // ----------------- CATALOG LIST CARDS -----------------
-        if (catalogs.isEmpty()) {
+        if (overriddenCatalogs.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -329,7 +341,7 @@ fun CatalogsScreen(
                 }
             }
         } else {
-            catalogs.forEach { cat ->
+            overriddenCatalogs.forEach { cat ->
                 CatalogItemCard(
                     catalog = cat,
                     viewModel = viewModel,
@@ -547,8 +559,10 @@ fun CatalogsScreen(
                                 ManualAddCatalogForm(
                                     onDismiss = { showAddCatalogMainDialog = false },
                                     onConfirm = { name, source, url, layoutType ->
+                                        val newId = UUID.randomUUID().toString()
+                                        sharedPrefs.edit().putString("layout_override_$newId", layoutType).apply()
                                         val newCat = Catalog(
-                                            id = UUID.randomUUID().toString(),
+                                            id = newId,
                                             name = name,
                                             sourceType = source,
                                             url = url,
@@ -580,6 +594,7 @@ fun CatalogsScreen(
                 selectedCatalogToEdit = null
             },
             onConfirm = { updatedCat ->
+                sharedPrefs.edit().putString("layout_override_${updatedCat.id}", updatedCat.layoutType).apply()
                 viewModel.updateCatalog(updatedCat)
                 showEditDialog = false
                 selectedCatalogToEdit = null
@@ -671,6 +686,7 @@ fun CatalogItemCard(
     onEdit: () -> Unit
 ) {
     val context = LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
     val isVertical = catalog.layoutType == "Vertical Poster Row" || catalog.layoutType == "Vertical"
 
     Card(
@@ -747,6 +763,7 @@ fun CatalogItemCard(
                     contentDescription = "Layout",
                     onClick = {
                         val newLayout = if (isVertical) "Horizontal Poster Row" else "Vertical Poster Row"
+                        sharedPrefs.edit().putString("layout_override_${catalog.id}", newLayout).apply()
                         viewModel.updateCatalog(catalog.copy(layoutType = newLayout))
                         Toast.makeText(context, "Diseño cambiado a: ${if (isVertical) "Horizontal" else "Vertical"}", Toast.LENGTH_SHORT).show()
                     }
