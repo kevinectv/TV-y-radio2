@@ -883,8 +883,10 @@ fun CatalogItemHomeCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val cardWidth = when (layoutType) {
-        "Horizontal Poster Row", "Horizontal" -> 130.dp
+    val isHorizontal = layoutType == "Horizontal Poster Row" || layoutType == "Horizontal" || layoutType == "Landscape Row" || layoutType == "Banner Row"
+
+    val targetWidth = when (layoutType) {
+        "Horizontal Poster Row", "Horizontal" -> 200.dp
         "Vertical Poster Row", "Vertical" -> 150.dp
         "Landscape Row" -> 200.dp
         "Banner Row" -> 240.dp
@@ -893,8 +895,8 @@ fun CatalogItemHomeCard(
         else -> 130.dp
     }.responsive()
     
-    val imageHeight = when (layoutType) {
-        "Horizontal Poster Row", "Horizontal" -> 180.dp
+    val targetHeight = when (layoutType) {
+        "Horizontal Poster Row", "Horizontal" -> 110.dp
         "Vertical Poster Row", "Vertical" -> 210.dp
         "Landscape Row" -> 110.dp
         "Banner Row" -> 90.dp
@@ -902,6 +904,34 @@ fun CatalogItemHomeCard(
         "Compact Row" -> 140.dp
         else -> 180.dp
     }.responsive()
+
+    val cardWidth by androidx.compose.animation.core.animateDpAsState(
+        targetValue = targetWidth,
+        animationSpec = androidx.compose.animation.core.spring(
+            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+        ),
+        label = "cardWidth"
+    )
+
+    val imageHeight by androidx.compose.animation.core.animateDpAsState(
+        targetValue = targetHeight,
+        animationSpec = androidx.compose.animation.core.spring(
+            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+        ),
+        label = "imageHeight"
+    )
+
+    val imageUrl = remember(item, isHorizontal) {
+        if (isHorizontal) {
+            if (!item.backdropUrl.isNullOrEmpty()) {
+                item.backdropUrl
+            } else {
+                item.posterUrl
+            }
+        } else {
+            item.posterUrl
+        }
+    }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
@@ -928,9 +958,9 @@ fun CatalogItemHomeCard(
                     .fillMaxWidth()
                     .height(imageHeight)
             ) {
-                // Movie/Show Poster
+                // Movie/Show Image (Poster/Backdrop)
                 AsyncImage(
-                    model = item.posterUrl,
+                    model = imageUrl,
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -978,7 +1008,7 @@ fun CatalogItemHomeCard(
                     }
                 }
 
-                // Dynamic Year overlay gradient background and Progress Indicator
+                // Dynamic Year & Title overlay gradient background and Progress Indicator
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -992,14 +1022,27 @@ fun CatalogItemHomeCard(
                                     colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
                                 )
                             )
-                            .padding(4.dp)
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
                     ) {
-                        Text(
-                            text = item.year,
-                            color = Color.White.copy(alpha = 0.80f),
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column {
+                            if (isHorizontal) {
+                                Text(
+                                    text = item.title,
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+                            Text(
+                                text = item.year,
+                                color = Color.White.copy(alpha = 0.80f),
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     // Seen progress bar
