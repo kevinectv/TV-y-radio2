@@ -65,213 +65,163 @@ fun CatalogsScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // ----------------- PREMIUM TV HEADER -----------------
-        Card(
+        // ----------------- REDESIGNED HEADER (Image 1 style) -----------------
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.03f)),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "CATÁLOGOS MULTIMEDIA",
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 20.sp,
-                            letterSpacing = 1.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Organiza, ordena y personaliza las filas de películas, series y anime en tu pantalla principal. Soporta vinculación de APIs, Trakt, filtros avanzados de MDBList y almacenamiento local.",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 12.sp,
-                            lineHeight = 18.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(20.dp))
-
-                    // Sync all button
-                    Button(
-                        onClick = {
-                            viewModel.syncAllCatalogs()
-                            Toast.makeText(context, "Sincronizando todos los catálogos en segundo plano...", Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF), contentColor = Color.Black),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.tvFocusEffect(
-                            shape = RoundedCornerShape(10.dp),
-                            focusedBorderColor = Color.White,
-                            liftOnFocus = true,
-                            scaleAmount = 1.05f
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Sincronizar",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Sincronizar Todo", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Divider(color = Color.White.copy(alpha = 0.06f))
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Stats Dashboard Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    // Stat 1: Total installed
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = Color(0xFF00E5FF),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${catalogs.size} Instalados",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Stat 2: Active count
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = null,
-                            tint = Color(0xFF00FF87),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${catalogs.count { it.isVisible }} Visibles",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    // Stat 3: Database Status
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF00FF87),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Room Database Optimizada",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Divider(color = Color.White.copy(alpha = 0.06f))
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Room DB Live Stats
-                val lastSyncTime by viewModel.lastSyncTime.collectAsState()
-                val storedItemsCount by viewModel.storedItemsCount.collectAsState()
-                val cacheSize by viewModel.cacheSize.collectAsState()
-
-                LaunchedEffect(Unit) {
-                    viewModel.catalogRepository?.updateStats()
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "ESTADÍSTICAS DE PERSISTENCIA LOCAL",
-                        color = Color(0xFF00E5FF),
+                        text = "Catalogs",
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        letterSpacing = 1.2.sp
+                        fontSize = 32.sp
                     )
+
+                    // Badge 1: N catalogs
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF00FF87)))
+                            Text(
+                                text = "${catalogs.size} catalogs",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Badge 2: Cloud synced
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF00FF87)))
+                            Text(
+                                text = "Cloud synced",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Clean Refresh Button next to badges
+                    IconButton(
+                        onClick = {
+                            viewModel.syncAllCatalogs()
+                            Toast.makeText(context, "Sincronizando todos los catálogos...", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.05f), CircleShape)
+                            .tvFocusEffect(shape = CircleShape)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Sincronizar todo", tint = Color.White)
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Última Sincro", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(lastSyncTime, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Almacenados", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text("$storedItemsCount items", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Tamaño Caché", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(cacheSize, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Discover, rename, order and remove home rows and list catalogs...",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Catalogs",
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
 
-        // ----------------- GIANT MAIN PRIMARY ACTION BUTTON -----------------
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // ----------------- REDESIGNED ADD CATALOG BUTTON (Image 1 style) -----------------
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .tvFocusEffect(
                     shape = RoundedCornerShape(16.dp),
-                    focusedBorderColor = Color(0xFF00FF87),
+                    focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                    borderWidth = 3.dp,
+                    borderWidth = 2.dp,
                     liftOnFocus = true,
-                    scaleAmount = 1.03f
+                    scaleAmount = 1.02f
                 )
                 .clickable { showAddCatalogMainDialog = true },
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.08f)),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.03f)),
+            border = BorderStroke(2.dp, Color.White.copy(alpha = 0.15f))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 18.dp, horizontal = 24.dp),
-                horizontalArrangement = Arrangement.Center,
+                    .padding(vertical = 16.dp, horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.AddCircle,
-                    contentDescription = "Añadir Catálogo",
-                    tint = Color(0xFF00FF87),
-                    modifier = Modifier.size(26.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "AÑADIR CATÁLOGO",
-                    color = Color.White,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 15.sp,
-                    letterSpacing = 1.5.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Catalog",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Add Catalog",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Import a Trakt or MDBList catalog URL",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "ADD",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
 
@@ -507,86 +457,72 @@ fun CatalogsScreen(
                         .fillMaxSize()
                         .padding(20.dp)
                 ) {
-                    // Dialog Header Row
+                    // Dialog Header Row - Top 5 Custom Buttons matching Image 2 exactly
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Button 1: Buscar listas (Curated tab)
+                        DialogHeaderButton(
+                            title = "Buscar listas",
+                            subtitle = "Buscar listas",
+                            isSelected = (activeTab == AddCatalogTab.CURATED),
+                            onClick = { activeTab = AddCatalogTab.CURATED }
+                        )
+
+                        // Button 2: Buscar (MdbList Community tab)
+                        DialogHeaderButtonCompact(
+                            text = "Buscar",
+                            isSelected = (activeTab == AddCatalogTab.MDBLIST),
+                            onClick = { activeTab = AddCatalogTab.MDBLIST }
+                        )
+
+                        // Button 3: Pegar URL (Manual tab)
+                        DialogHeaderButton(
+                            title = "Pegar URL",
+                            subtitle = "URL de Trakt o MDBList",
+                            isSelected = (activeTab == AddCatalogTab.MANUAL),
+                            onClick = { activeTab = AddCatalogTab.MANUAL }
+                        )
+
+                        // Button 4: Añadir URL (Manual tab shortcut)
+                        DialogHeaderButtonCompact(
+                            text = "Añadir URL",
+                            isSelected = false,
+                            onClick = { activeTab = AddCatalogTab.MANUAL }
+                        )
+
+                        // Button 5: Cerrar (Dismiss)
+                        DialogHeaderButtonCompact(
+                            text = "Cerrar",
+                            isSelected = false,
+                            onClick = { showAddCatalogMainDialog = false }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Secondary Sub-labels matching Image 2 exactly
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AddCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF00FF87),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "AÑADIR NUEVO CATÁLOGO",
-                                color = Color.White,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
-                                letterSpacing = 1.sp
-                            )
-                        }
-
-                        // Close Button
-                        IconButton(
-                            onClick = { showAddCatalogMainDialog = false },
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.05f), CircleShape)
-                                .tvFocusEffect(shape = CircleShape)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Tab Selectors
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val tabs = listOf(
-                            AddCatalogTab.CURATED to "✨ Catálogos Curados",
-                            AddCatalogTab.MDBLIST to "🔍 Comunidad MDBList",
-                            AddCatalogTab.MANUAL to "📝 Configuración Manual"
+                        Text(
+                            text = "Busca en Trakt y MDBList automáticamente",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 12.sp
                         )
-
-                        tabs.forEach { (tab, label) ->
-                            val isSelected = activeTab == tab
-                            val targetBgColor = if (isSelected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.04f)
-                            val targetTextColor = if (isSelected) Color.Black else Color.White
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(targetBgColor)
-                                    .clickable { activeTab = tab }
-                                    .tvFocusEffect(
-                                        shape = RoundedCornerShape(10.dp),
-                                        focusedBorderColor = Color.White,
-                                        liftOnFocus = true,
-                                        scaleAmount = 1.04f
-                                    )
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    color = targetTextColor,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
+                        Text(
+                            text = "Pulsa Seleccionar en un campo para editar",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 12.sp
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Divider(color = Color.White.copy(alpha = 0.08f))
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Content Pane based on selected tab
                     Box(
@@ -699,278 +635,132 @@ fun CompactActionButton(
 }
 
 @Composable
+fun SquareActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White.copy(alpha = 0.04f))
+            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .tvFocusEffect(
+                shape = RoundedCornerShape(8.dp),
+                focusedBorderColor = Color.White,
+                liftOnFocus = true,
+                scaleAmount = 1.1f
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+@Composable
 fun CatalogItemCard(
     catalog: Catalog,
     viewModel: MediaViewModel,
     onEdit: () -> Unit
 ) {
     val context = LocalContext.current
-
-    val sourceColor = when (catalog.sourceType) {
-        "TMDB" -> Color(0xFF00E5FF)
-        "Trakt" -> Color(0xFFED1C24)
-        "MDBList" -> Color(0xFFFF9800)
-        "Import" -> Color(0xFF9C27B0)
-        else -> Color(0xFF00FF87)
-    }
-
-    val statusColor = when (catalog.status) {
-        "Sincronizado" -> Color(0xFF00FF87)
-        "Error" -> Color(0xFFFF4D4D)
-        else -> Color(0xFFFFC107)
-    }
-
     val isVertical = catalog.layoutType == "Vertical Poster Row" || catalog.layoutType == "Vertical"
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .tvFocusEffect(shape = RoundedCornerShape(14.dp), liftOnFocus = true, scaleAmount = 1.01f),
-        shape = RoundedCornerShape(14.dp),
+            .tvFocusEffect(shape = RoundedCornerShape(12.dp), liftOnFocus = true, scaleAmount = 1.01f),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (catalog.isVisible) Color(0xFF131722) else Color(0xFF0C0F14)
+            containerColor = Color.White.copy(alpha = 0.03f)
         ),
         border = BorderStroke(
             1.dp,
-            if (catalog.isVisible) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.03f)
+            Color.White.copy(alpha = 0.08f)
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Accent bar decoration
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(5.dp)
-                    .background(
-                        if (catalog.isVisible) sourceColor else sourceColor.copy(alpha = 0.3f),
-                        RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp)
-                    )
-            )
+            // Left Side: Name and URL
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = catalog.name,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = catalog.url,
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Right Side: Row of Action Buttons (square-shaped matching the image)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header of catalog card
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = catalog.name,
-                                color = if (catalog.isVisible) Color.White else Color.White.copy(alpha = 0.4f),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                // ✏️ Edit
+                SquareActionButton(
+                    icon = Icons.Default.Edit,
+                    contentDescription = "Editar",
+                    onClick = onEdit
+                )
 
-                            // Source tag badge
-                            Text(
-                                text = catalog.sourceType.uppercase(),
-                                color = sourceColor,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 8.sp,
-                                modifier = Modifier
-                                    .background(sourceColor.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
-                                    .border(0.5.dp, sourceColor.copy(alpha = 0.3f), RoundedCornerShape(3.dp))
-                                    .padding(horizontal = 6.dp, vertical = 1.5.dp)
-                            )
+                // ⬆ Move Up
+                SquareActionButton(
+                    icon = Icons.Default.ArrowUpward,
+                    contentDescription = "Subir",
+                    onClick = { viewModel.moveCatalogUp(catalog.id) }
+                )
 
-                            // Layout tag badge
-                            Text(
-                                text = if (isVertical) "VERTICAL" else "HORIZONTAL",
-                                color = Color(0xFF00FF87),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 8.sp,
-                                modifier = Modifier
-                                    .background(Color(0xFF00FF87).copy(alpha = 0.12f), RoundedCornerShape(3.dp))
-                                    .border(0.5.dp, Color(0xFF00FF87).copy(alpha = 0.3f), RoundedCornerShape(3.dp))
-                                    .padding(horizontal = 6.dp, vertical = 1.5.dp)
-                            )
-                        }
+                // ⬇ Move Down
+                SquareActionButton(
+                    icon = Icons.Default.ArrowDownward,
+                    contentDescription = "Bajar",
+                    onClick = { viewModel.moveCatalogDown(catalog.id) }
+                )
+
+                // ↔ Layout Mode Toggle (Horizontal / Vertical)
+                SquareActionButton(
+                    icon = if (isVertical) Icons.Default.SwapVert else Icons.Default.SwapHoriz,
+                    contentDescription = "Layout",
+                    onClick = {
+                        val newLayout = if (isVertical) "Horizontal Poster Row" else "Vertical Poster Row"
+                        viewModel.updateCatalog(catalog.copy(layoutType = newLayout))
+                        Toast.makeText(context, "Diseño cambiado a: ${if (isVertical) "Horizontal" else "Vertical"}", Toast.LENGTH_SHORT).show()
                     }
+                )
 
-                    // Visibility dot status
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(
-                                    if (catalog.isVisible) Color(0xFF00FF87) else Color.Gray,
-                                    CircleShape
-                                )
-                        )
-                        Text(
-                            text = if (catalog.isVisible) "Visible" else "Oculto",
-                            color = if (catalog.isVisible) Color(0xFF00FF87) else Color.White.copy(alpha = 0.4f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                // 🗑 Delete
+                SquareActionButton(
+                    icon = Icons.Default.Delete,
+                    contentDescription = "Eliminar",
+                    onClick = {
+                        viewModel.deleteCatalog(catalog.id)
+                        Toast.makeText(context, "Catálogo eliminado: ${catalog.name}", Toast.LENGTH_SHORT).show()
                     }
-                }
-
-                // Metadata Stats section
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.4f),
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Text(
-                            text = "${catalog.items.size} ítems",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 11.5.sp
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = statusColor,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Text(
-                            text = catalog.status,
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 11.5.sp
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.4f),
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Text(
-                            text = "Sincro: ${catalog.lastUpdated}",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 11.5.sp
-                        )
-                    }
-                }
-
-                // TV-Action Row: Scrollable chips for focus
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // ✏️ Editar
-                    CompactActionButton(
-                        icon = Icons.Default.Edit,
-                        text = "✏️ Editar",
-                        onClick = onEdit,
-                        containerColor = Color.White.copy(alpha = 0.03f),
-                        contentColor = Color.White,
-                        borderColor = Color.White.copy(alpha = 0.12f)
-                    )
-
-                    // 🔄 Sincronizar
-                    CompactActionButton(
-                        icon = Icons.Default.Refresh,
-                        text = "🔄 Actualizar",
-                        onClick = {
-                            viewModel.syncCatalog(catalog.id)
-                            Toast.makeText(context, "Sincronizando cartelera: ${catalog.name}", Toast.LENGTH_SHORT).show()
-                        },
-                        containerColor = Color(0xFF00E5FF).copy(alpha = 0.06f),
-                        contentColor = Color(0xFF00E5FF),
-                        borderColor = Color(0xFF00E5FF).copy(alpha = 0.25f)
-                    )
-
-                    // ↕ Layout Mode Toggle (No Dialog, direct horizontal/vertical toggle)
-                    CompactActionButton(
-                        icon = if (isVertical) Icons.Default.SwapVert else Icons.Default.SwapHoriz,
-                        text = if (isVertical) "↕️ Vertical" else "↔️ Horizontal",
-                        onClick = {
-                            val newLayout = if (isVertical) "Horizontal Poster Row" else "Vertical Poster Row"
-                            viewModel.updateCatalog(catalog.copy(layoutType = newLayout))
-                            Toast.makeText(context, "Diseño cambiado a: ${if (isVertical) "Horizontal" else "Vertical"}", Toast.LENGTH_SHORT).show()
-                        },
-                        containerColor = Color(0xFF00FF87).copy(alpha = 0.06f),
-                        contentColor = Color(0xFF00FF87),
-                        borderColor = Color(0xFF00FF87).copy(alpha = 0.25f)
-                    )
-
-                    // ⬆ Subir (Move Index Up)
-                    CompactActionButton(
-                        icon = Icons.Default.ArrowUpward,
-                        text = "⬆ Subir",
-                        onClick = { viewModel.moveCatalogUp(catalog.id) },
-                        containerColor = Color.White.copy(alpha = 0.03f),
-                        contentColor = Color.White.copy(alpha = 0.85f),
-                        borderColor = Color.White.copy(alpha = 0.1f)
-                    )
-
-                    // ⬇ Bajar (Move Index Down)
-                    CompactActionButton(
-                        icon = Icons.Default.ArrowDownward,
-                        text = "⬇ Bajar",
-                        onClick = { viewModel.moveCatalogDown(catalog.id) },
-                        containerColor = Color.White.copy(alpha = 0.03f),
-                        contentColor = Color.White.copy(alpha = 0.85f),
-                        borderColor = Color.White.copy(alpha = 0.1f)
-                    )
-
-                    // 👁 Mostrar / Ocultar (Toggle Visibility)
-                    CompactActionButton(
-                        icon = if (catalog.isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        text = if (catalog.isVisible) "👁 Ocultar" else "👁 Mostrar",
-                        onClick = { viewModel.updateCatalog(catalog.copy(isVisible = !catalog.isVisible)) },
-                        containerColor = Color.White.copy(alpha = 0.03f),
-                        contentColor = if (catalog.isVisible) Color.White.copy(alpha = 0.7f) else Color(0xFF00FF87),
-                        borderColor = Color.White.copy(alpha = 0.12f)
-                    )
-
-                    // 🗑 Eliminar (Danger action)
-                    CompactActionButton(
-                        icon = Icons.Default.Delete,
-                        text = "🗑 Eliminar",
-                        onClick = {
-                            viewModel.deleteCatalog(catalog.id)
-                            Toast.makeText(context, "Catálogo eliminado: ${catalog.name}", Toast.LENGTH_SHORT).show()
-                        },
-                        containerColor = Color(0xFFFF4D4D).copy(alpha = 0.08f),
-                        contentColor = Color(0xFFFF4D4D),
-                        borderColor = Color(0xFFFF4D4D).copy(alpha = 0.3f)
-                    )
-                }
+                )
             }
         }
     }
@@ -1669,5 +1459,86 @@ fun ManualAddCatalogForm(
                 Text("Crear Catálogo", fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
+    }
+}
+
+@Composable
+fun DialogHeaderButton(
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .width(180.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f))
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .tvFocusEffect(
+                shape = RoundedCornerShape(12.dp),
+                focusedBorderColor = Color.White,
+                liftOnFocus = true,
+                scaleAmount = 1.05f
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Column {
+            Text(
+                text = title,
+                color = if (isSelected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.5f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun DialogHeaderButtonCompact(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .width(110.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f))
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .tvFocusEffect(
+                shape = RoundedCornerShape(12.dp),
+                focusedBorderColor = Color.White,
+                liftOnFocus = true,
+                scaleAmount = 1.05f
+            )
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (isSelected) Color(0xFF00E5FF) else Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
