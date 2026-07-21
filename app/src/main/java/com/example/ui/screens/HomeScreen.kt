@@ -193,7 +193,18 @@ fun HomeScreen(
     val recentChans by viewModel.recentChannels.collectAsState()
     val recentRadios by viewModel.recentRadioStations.collectAsState()
 
-    val catalogs by viewModel.catalogsStateFlow.collectAsState()
+    val rawCatalogs by viewModel.catalogsStateFlow.collectAsState()
+    val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
+    val catalogs = remember(rawCatalogs) {
+        rawCatalogs.map { cat ->
+            val override = sharedPrefs.getString("layout_override_${cat.id}", null)
+            if (override != null) {
+                cat.copy(layoutType = override)
+            } else {
+                cat
+            }
+        }
+    }
     var selectedCatalogItem by remember { mutableStateOf<CatalogItem?>(null) }
     var activeTrailerItem by remember { mutableStateOf<CatalogItem?>(null) }
 
