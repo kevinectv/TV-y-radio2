@@ -259,7 +259,7 @@ fun HomeScreen(
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
     // Adjust height for layout: TV uses cinematic banner (350.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
-    val bannerHeight = if (isWideLayout) 350.dp else 0.dp
+    val bannerHeight = if (isWideLayout) 310.dp else 0.dp
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
