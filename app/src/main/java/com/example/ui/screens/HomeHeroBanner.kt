@@ -220,7 +220,7 @@ fun HomeHeroBannerTv(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(bannerHeight)
+            .heightIn(min = bannerHeight)
     ) {
         Crossfade(
             targetState = currentMovie,
@@ -232,9 +232,10 @@ fun HomeHeroBannerTv(
             
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 74.dp),
-                contentAlignment = Alignment.BottomStart
+                contentAlignment = Alignment.TopStart
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(0.58f),
