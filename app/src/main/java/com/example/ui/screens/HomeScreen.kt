@@ -949,30 +949,6 @@ fun CatalogItemHomeCard(
                 contentScale = ContentScale.Crop
             )
 
-            // Gold Rating Overlay Tag
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-                    .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Rating",
-                    tint = Color(0xFFFFD700),
-                    modifier = Modifier.size(8.dp)
-                )
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(
-                    text = item.rating,
-                    color = Color.White,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
             // Favorite Overlay Tag
             if (isFavorite) {
                 Box(
@@ -991,7 +967,13 @@ fun CatalogItemHomeCard(
                 }
             }
 
-            // Dynamic Year & Title overlay gradient background and Progress Indicator
+            val logoHeight = if (isHorizontal) {
+                18.dp
+            } else {
+                26.dp
+            }.responsive()
+
+            // Soft bottom gradient and Logo/Title display
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1002,28 +984,34 @@ fun CatalogItemHomeCard(
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.40f),
+                                    Color.Black.copy(alpha = 0.90f)
+                                )
                             )
                         )
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp, top = 20.dp)
                 ) {
-                    Column {
-                        if (isHorizontal) {
-                            Text(
-                                text = item.title,
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                        }
+                    if (!item.logoUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = item.logoUrl,
+                            contentDescription = item.title,
+                            modifier = Modifier
+                                .fillMaxWidth(0.95f)
+                                .height(logoHeight)
+                                .align(Alignment.BottomStart),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
                         Text(
-                            text = item.year,
-                            color = Color.White.copy(alpha = 0.80f),
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold
+                            text = item.title,
+                            color = Color.White,
+                            fontSize = 10.sp.responsive(),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.align(Alignment.BottomStart)
                         )
                     }
                 }
