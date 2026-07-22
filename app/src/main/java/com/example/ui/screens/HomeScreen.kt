@@ -168,8 +168,8 @@ fun CatalogRowSkeleton(isWideLayout: Boolean) {
 fun PosterSkeleton() {
     Box(
         modifier = Modifier
-            .width(130.dp.responsive())
-            .height(180.dp.responsive())
+            .width(165.dp.responsive())
+            .height(230.dp.responsive())
             .shimmerEffect()
     )
 }
@@ -360,6 +360,7 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(28.dp.responsive()),
                             contentPadding = PaddingValues(bottom = 90.dp)
                         ) {
                             // EN TELÉFONO: Carrusel Destacado Vertical estilo móvil adentro de la lista scrollable
@@ -659,11 +660,13 @@ fun ChannelHomeCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(180.dp.responsive())
-            .height(115.dp.responsive())
+            .width(198.dp.responsive())
+            .height(126.dp.responsive())
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+                liftOnFocus = true,
+                scaleAmount = 1.08f,
                 interactionSource = interactionSource
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
@@ -780,11 +783,13 @@ fun RadioHomeCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(180.dp.responsive())
-            .height(115.dp.responsive())
+            .width(198.dp.responsive())
+            .height(126.dp.responsive())
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                liftOnFocus = true,
+                scaleAmount = 1.08f,
                 interactionSource = interactionSource
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
@@ -897,15 +902,15 @@ fun CatalogItemHomeCard(
     val isHorizontal = layoutType == "Horizontal Poster Row" || layoutType == "Horizontal" || layoutType == "Landscape Row" || layoutType == "Banner Row"
 
     val targetWidth = if (isHorizontal) {
-        200.dp
+        220.dp
     } else {
-        150.dp
+        165.dp
     }.responsive()
     
     val targetHeight = if (isHorizontal) {
-        110.dp
+        120.dp
     } else {
-        210.dp
+        230.dp
     }.responsive()
 
     val imageUrl = remember(item, isHorizontal) {
@@ -930,6 +935,8 @@ fun CatalogItemHomeCard(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
                 unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+                liftOnFocus = true,
+                scaleAmount = 1.08f,
                 interactionSource = interactionSource,
                 onFocus = onFocus
             )
@@ -2484,11 +2491,13 @@ fun CatalogItemNumberedCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(150.dp)
-            .height(175.dp)
+            .width(165.dp.responsive())
+            .height(192.dp.responsive())
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
+                liftOnFocus = true,
+                scaleAmount = 1.08f,
                 interactionSource = interactionSource,
                 onFocus = onFocus
             )
@@ -2524,8 +2533,8 @@ fun CatalogItemNumberedCard(
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
             modifier = Modifier
-                .width(110.dp)
-                .height(155.dp)
+                .width(121.dp.responsive())
+                .height(170.dp.responsive())
                 .align(Alignment.BottomEnd)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
