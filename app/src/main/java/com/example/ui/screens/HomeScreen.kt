@@ -168,8 +168,8 @@ fun CatalogRowSkeleton(isWideLayout: Boolean) {
 fun PosterSkeleton() {
     Box(
         modifier = Modifier
-            .width(165.dp.responsive())
-            .height(230.dp.responsive())
+            .width(186.dp.responsive())
+            .height(260.dp.responsive())
             .shimmerEffect()
     )
 }
@@ -259,7 +259,7 @@ fun HomeScreen(
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
     // Adjust height for layout: TV uses cinematic banner (350.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
-    val bannerHeight = if (isWideLayout) 310.dp else 0.dp
+    val bannerHeight = if (isWideLayout) 260.dp else 0.dp
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -660,11 +660,12 @@ fun ChannelHomeCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(198.dp.responsive())
-            .height(126.dp.responsive())
+            .width(222.dp.responsive())
+            .height(141.dp.responsive())
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+                borderWidth = 1.8.dp,
                 interactionSource = interactionSource
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
@@ -781,11 +782,12 @@ fun RadioHomeCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(198.dp.responsive())
-            .height(126.dp.responsive())
+            .width(222.dp.responsive())
+            .height(141.dp.responsive())
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
+                borderWidth = 1.8.dp,
                 interactionSource = interactionSource
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
@@ -898,15 +900,15 @@ fun CatalogItemHomeCard(
     val isHorizontal = layoutType == "Horizontal Poster Row" || layoutType == "Horizontal" || layoutType == "Landscape Row" || layoutType == "Banner Row"
 
     val targetWidth = if (isHorizontal) {
-        220.dp
+        247.dp
     } else {
-        165.dp
+        186.dp
     }.responsive()
     
     val targetHeight = if (isHorizontal) {
-        120.dp
+        135.dp
     } else {
-        230.dp
+        260.dp
     }.responsive()
 
     val imageUrl = remember(item, isHorizontal) {
@@ -931,6 +933,7 @@ fun CatalogItemHomeCard(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
                 unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+                borderWidth = 1.8.dp,
                 interactionSource = interactionSource,
                 onFocus = onFocus
             )
@@ -969,9 +972,9 @@ fun CatalogItemHomeCard(
             }
 
             val logoHeight = if (isHorizontal) {
-                18.dp
+                20.dp
             } else {
-                26.dp
+                29.dp
             }.responsive()
 
             // Soft bottom gradient and Logo/Title display
@@ -992,7 +995,7 @@ fun CatalogItemHomeCard(
                                 )
                             )
                         )
-                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp, top = 20.dp)
+                        .padding(start = 16.dp.responsive(), end = 16.dp.responsive(), bottom = 16.dp.responsive(), top = 24.dp.responsive())
                 ) {
                     if (!item.logoUrl.isNullOrEmpty()) {
                         AsyncImage(
@@ -1002,6 +1005,7 @@ fun CatalogItemHomeCard(
                                 .fillMaxWidth(0.95f)
                                 .height(logoHeight)
                                 .align(Alignment.BottomStart),
+                            alignment = Alignment.BottomStart,
                             contentScale = ContentScale.Fit
                         )
                     } else {
@@ -2485,11 +2489,12 @@ fun CatalogItemNumberedCard(
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .width(165.dp.responsive())
-            .height(192.dp.responsive())
+            .width(185.dp.responsive())
+            .height(215.dp.responsive())
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
+                borderWidth = 1.8.dp,
                 interactionSource = interactionSource,
                 onFocus = onFocus
             )
@@ -2525,8 +2530,8 @@ fun CatalogItemNumberedCard(
             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
             modifier = Modifier
-                .width(121.dp.responsive())
-                .height(170.dp.responsive())
+                .width(135.dp.responsive())
+                .height(190.dp.responsive())
                 .align(Alignment.BottomEnd)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
