@@ -665,8 +665,6 @@ fun ChannelHomeCard(
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
-                liftOnFocus = true,
-                scaleAmount = 1.08f,
                 interactionSource = interactionSource
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
@@ -788,8 +786,6 @@ fun RadioHomeCard(
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
-                liftOnFocus = true,
-                scaleAmount = 1.08f,
                 interactionSource = interactionSource
             )
             .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
@@ -935,8 +931,6 @@ fun CatalogItemHomeCard(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
                 unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
-                liftOnFocus = true,
-                scaleAmount = 1.08f,
                 interactionSource = interactionSource,
                 onFocus = onFocus
             )
@@ -2496,8 +2490,6 @@ fun CatalogItemNumberedCard(
             .tvFocusEffect(
                 shape = RoundedCornerShape(6.dp),
                 focusedBorderColor = Color.White,
-                liftOnFocus = true,
-                scaleAmount = 1.08f,
                 interactionSource = interactionSource,
                 onFocus = onFocus
             )
