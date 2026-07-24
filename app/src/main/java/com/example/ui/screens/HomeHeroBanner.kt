@@ -363,16 +363,16 @@ fun HomeHeroBannerTv(
                     // 4. Línea de metadatos 2: Logo Plataforma + Calificación IMDb + Clasificación por edad
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp.responsive())
+                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
                     ) {
                         // Logo de plataforma o badge de texto
                         val platformLogoUrl = richMeta.platformLogoUrl
                         if (!platformLogoUrl.isNullOrBlank()) {
                             Box(
                                 modifier = Modifier
-                                    .height(20.dp.responsive())
-                                    .widthIn(max = 80.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                    .height(24.dp.responsive())
+                                    .widthIn(max = 85.dp.responsive())
+                                    .background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(4.dp))
                                     .padding(horizontal = 6.dp, vertical = 2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -386,19 +386,21 @@ fun HomeHeroBannerTv(
                         } else {
                             Box(
                                 modifier = Modifier
-                                    .height(20.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                    .height(24.dp.responsive())
+                                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
                                     .padding(horizontal = 8.dp, vertical = 3.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = richMeta.platform,
                                     color = Color.White,
-                                    fontSize = 10.sp.responsive(),
+                                    fontSize = 11.sp.responsive(),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
+
+                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp.responsive())
 
                         // Badge IMDb
                         Row(
@@ -422,9 +424,11 @@ fun HomeHeroBannerTv(
                                 text = richMeta.ratingImdb,
                                 color = Color.White,
                                 fontSize = 13.sp.responsive(),
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.ExtraBold
                             )
                         }
+
+                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp.responsive())
 
                         // Clasificación por edad (age rating / classification)
                         val ageRating = targetMovie.classification?.ifBlank { null } ?: if ((richMeta.ratingImdb.toFloatOrNull() ?: 7.5f) >= 7.8f) "+16" else "+12"
