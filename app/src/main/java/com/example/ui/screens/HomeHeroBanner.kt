@@ -405,21 +405,16 @@ fun HomeHeroBannerTv(
                         // Badge IMDb
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
                         ) {
-                            Box(
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_imdb),
+                                contentDescription = "IMDb Logo",
                                 modifier = Modifier
-                                    .background(Color(0xFFF5C518), RoundedCornerShape(3.dp))
-                                    .padding(horizontal = 5.dp, vertical = 2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "IMDb",
-                                    color = Color.Black,
-                                    fontSize = 10.sp.responsive(),
-                                    fontWeight = FontWeight.Black
-                                )
-                            }
+                                    .height(18.dp.responsive())
+                                    .width(36.dp.responsive()),
+                                contentScale = ContentScale.Fit
+                            )
                             Text(
                                 text = richMeta.ratingImdb,
                                 color = Color.White,
