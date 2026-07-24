@@ -1,7 +1,11 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -238,7 +242,7 @@ fun HomeHeroBannerTv(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 64.dp),
+                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 84.dp),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(
@@ -249,15 +253,17 @@ fun HomeHeroBannerTv(
                     // 0. Badge TENDENCIA
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFF2563EB).copy(alpha = 0.25f), RoundedCornerShape(4.dp))
-                            .border(1.dp, Color(0xFF2563EB).copy(alpha = 0.6f), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                            .background(Color(0xFF2563EB).copy(alpha = 0.22f), CircleShape)
+                            .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.45f), CircleShape)
+                            .padding(horizontal = 12.dp.responsive(), vertical = 4.dp.responsive()),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "🔥 TENDENCIA",
-                            color = Color(0xFF60A5FA),
+                            color = Color(0xFF93C5FD),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp.responsive()
+                            fontSize = 8.5.sp.responsive(),
+                            letterSpacing = 0.8.sp
                         )
                     }
 
@@ -357,7 +363,7 @@ fun HomeHeroBannerTv(
                     // 4. Línea de metadatos 2: Logo Plataforma + Calificación IMDb + Clasificación por edad
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
+                        horizontalArrangement = Arrangement.spacedBy(14.dp.responsive())
                     ) {
                         // Logo de plataforma o badge de texto
                         val platformLogoUrl = richMeta.platformLogoUrl
@@ -394,8 +400,6 @@ fun HomeHeroBannerTv(
                             }
                         }
 
-                        Text(text = "|", color = Color.White.copy(alpha = 0.3f), fontSize = 13.sp.responsive())
-
                         // Badge IMDb
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -422,21 +426,21 @@ fun HomeHeroBannerTv(
                             )
                         }
 
-                        Text(text = "|", color = Color.White.copy(alpha = 0.3f), fontSize = 13.sp.responsive())
-
                         // Clasificación por edad (age rating / classification)
                         val ageRating = targetMovie.classification?.ifBlank { null } ?: if ((richMeta.ratingImdb.toFloatOrNull() ?: 7.5f) >= 7.8f) "+16" else "+12"
                         Box(
                             modifier = Modifier
-                                .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(3.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
+                                .border(0.8.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 7.dp.responsive(), vertical = 2.5.dp.responsive()),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = ageRating,
                                 color = Color.White,
-                                fontSize = 10.sp.responsive(),
-                                fontWeight = FontWeight.Bold
+                                fontSize = 9.sp.responsive(),
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.2.sp
                             )
                         }
                     }
@@ -450,21 +454,26 @@ fun HomeHeroBannerTv(
                     ) {
                         val playInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                         val isPlayFocused = playInteractionSource.collectIsFocusedAsState().value
+                        val playScale by animateFloatAsState(
+                            targetValue = if (isPlayFocused) 1.04f else 1.0f,
+                            animationSpec = tween(durationMillis = 150),
+                            label = "playScale"
+                        )
                         
                         Row(
                             modifier = Modifier
                                 .height(44.dp.responsive())
-                                .tvFocusEffect(
-                                    shape = RoundedCornerShape(22.dp),
-                                    focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.Transparent,
-                                    borderWidth = 2.dp,
-                                    scaleAmount = 1.05f,
-                                    liftOnFocus = true,
-                                    interactionSource = playInteractionSource
-                                )
+                                .graphicsLayer {
+                                    scaleX = playScale
+                                    scaleY = playScale
+                                }
                                 .background(
-                                    color = if (isPlayFocused) Color(0xFF6C5CE7).copy(alpha = 0.9f) else Color(0xFF6C5CE7),
+                                    color = if (isPlayFocused) Color(0xFF6C5CE7).copy(alpha = 0.95f) else Color(0xFF6C5CE7).copy(alpha = 0.75f),
+                                    shape = RoundedCornerShape(22.dp)
+                                )
+                                .border(
+                                    width = if (isPlayFocused) 2.dp else 1.dp,
+                                    color = if (isPlayFocused) Color.White else Color.White.copy(alpha = 0.15f),
                                     shape = RoundedCornerShape(22.dp)
                                 )
                                 .clickable(
@@ -489,27 +498,32 @@ fun HomeHeroBannerTv(
                                 color = Color.White,
                                 fontSize = 14.sp.responsive(),
                                 fontWeight = FontWeight.Bold
-                            )
+                              )
                         }
 
                         val favInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                         val isFavFocused = favInteractionSource.collectIsFocusedAsState().value
                         val isFav = targetMovie.id in favoriteCatalogItems
+                        val favScale by animateFloatAsState(
+                            targetValue = if (isFavFocused) 1.04f else 1.0f,
+                            animationSpec = tween(durationMillis = 150),
+                            label = "favScale"
+                        )
 
                         Box(
                             modifier = Modifier
                                 .size(44.dp.responsive())
-                                .tvFocusEffect(
-                                    shape = CircleShape,
-                                    focusedBorderColor = Color.White,
-                                    unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
-                                    borderWidth = 2.dp,
-                                    scaleAmount = 1.05f,
-                                    liftOnFocus = true,
-                                    interactionSource = favInteractionSource
-                                )
+                                .graphicsLayer {
+                                    scaleX = favScale
+                                    scaleY = favScale
+                                }
                                 .background(
                                     color = if (isFavFocused) Color.White.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.1f),
+                                    shape = CircleShape
+                                )
+                                .border(
+                                    width = if (isFavFocused) 2.dp else 1.dp,
+                                    color = if (isFavFocused) Color.White else Color.White.copy(alpha = 0.15f),
                                     shape = CircleShape
                                 )
                                 .clickable(
