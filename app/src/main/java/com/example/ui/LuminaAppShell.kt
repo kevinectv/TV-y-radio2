@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -156,32 +157,63 @@ fun LuminaAppShell(
                                 val isSelected = viewModel.currentTab == tab
                                 var isTabFocused by remember { mutableStateOf(false) }
                                 
-                                val tabAlpha by animateFloatAsState(if (isSelected || isTabFocused) 1f else 0.55f, label = "tab_alpha")
-                                val tabScale by animateFloatAsState(if (isTabFocused) 1.1f else (if (isSelected) 1.05f else 1f), label = "tab_scale")
+                                val tabBgColor by animateColorAsState(
+                                     targetValue = when {
+                                         isTabFocused -> Color.White.copy(alpha = 0.15f)
+                                         isSelected -> Color.White.copy(alpha = 0.08f)
+                                         else -> Color.Transparent
+                                     },
+                                     animationSpec = tween(durationMillis = 200),
+                                     label = "tab_bg"
+                                 )
+                                val tabBorderColor by animateColorAsState(
+                                     targetValue = when {
+                                         isTabFocused -> Color.White.copy(alpha = 0.22f)
+                                         isSelected -> Color.White.copy(alpha = 0.12f)
+                                         else -> Color.Transparent
+                                     },
+                                     animationSpec = tween(durationMillis = 200),
+                                     label = "tab_border"
+                                 )
+                                 
+                                 val contentColor by animateColorAsState(
+                                     targetValue = when {
+                                         isTabFocused -> Color.White
+                                         isSelected -> Color.White
+                                         else -> Color.White.copy(alpha = 0.55f)
+                                     },
+                                     animationSpec = tween(durationMillis = 200),
+                                     label = "tab_content_color"
+                                 )
+
+                                 val tabScale by animateFloatAsState(
+                                     targetValue = if (isTabFocused) 1.05f else 1.0f,
+                                     animationSpec = tween(durationMillis = 200),
+                                     label = "tab_scale"
+                                 )
 
                                 Box(
                                     modifier = Modifier
                                         .scale(tabScale)
                                         .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(
-                                            when {
-                                                isTabFocused -> Color.White
-                                                isSelected -> Color.White.copy(alpha = 0.15f)
-                                                else -> Color.Transparent
-                                            }
-                                        )
+                                         .shadow(
+                                             elevation = if (isTabFocused) 4.dp else 0.dp,
+                                             shape = CircleShape,
+                                             clip = false
+                                         )
+                                         .clip(CircleShape)
+                                         .background(tabBgColor)
                                         .border(
-                                            width = if (isTabFocused) 0.dp else if (isSelected) 1.dp else 0.dp,
-                                            color = if (isSelected) Color.White.copy(alpha = 0.4f) else Color.Transparent,
-                                            shape = RoundedCornerShape(10.dp)
+                                            width = if (isTabFocused || isSelected) 1.dp else 0.dp,
+                                            color = tabBorderColor,
+                                            shape = CircleShape
                                         )
                                         .clickable { viewModel.selectTab(tab) }
                                         .tvFocusEffect(
-                                            shape = RoundedCornerShape(10.dp),
-                                            focusedBorderColor = Color.White,
+                                            shape = CircleShape,
+                                            focusedBorderColor = Color.Transparent,
                                             unfocusedBorderColor = Color.Transparent,
-                                            scaleAmount = 1.03f
+                                            scaleAmount = 1.00f
                                         )
                                         .padding(horizontal = 14.dp.responsive(), vertical = 8.dp.responsive()),
                                     contentAlignment = Alignment.Center
@@ -200,23 +232,22 @@ fun LuminaAppShell(
                                                 AppTab.SETTINGS -> Icons.Filled.Settings
                                             },
                                             contentDescription = tab.label,
-                                            tint = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
+                                            tint = contentColor,
                                             modifier = Modifier.size(16.dp.responsive())
                                         )
 
                                         Text(
                                             text = tab.label,
-                                            color = if (isTabFocused) Color.Black else if (isSelected) Color.White else Color.White.copy(alpha = tabAlpha),
+                                            color = contentColor,
                                             fontSize = 11.sp.responsive(),
-                                            fontWeight = if (isSelected || isTabFocused) FontWeight.ExtraBold else FontWeight.Medium,
+                                            fontWeight = if (isSelected || isTabFocused) FontWeight.SemiBold else FontWeight.Medium,
                                             letterSpacing = 0.5.sp
                                         )
                                     }
                                 }
-                            }
                         }
                     }
-
+                    }
                     // Right Node: Live Clock and Configuration quick icon
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
