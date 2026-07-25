@@ -189,6 +189,7 @@ fun LuminaAppShell(
                                     AppTab.HOME -> true
                                     AppTab.RADIO -> true
                                     AppTab.WATCHLIST -> true
+                                    AppTab.TV -> true
                                     else -> false
                                 }
 
@@ -223,6 +224,7 @@ fun LuminaAppShell(
                                                     AppTab.HOME -> Icons.Filled.Home
                                                     AppTab.WATCHLIST -> Icons.Filled.Favorite
                                                     AppTab.RADIO -> Icons.Filled.Radio
+                                                    AppTab.TV -> Icons.Filled.LiveTv
                                                     else -> Icons.Filled.Star
                                                 },
                                                 contentDescription = tab.label,
