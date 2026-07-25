@@ -102,65 +102,57 @@ fun LuminaAppShell(
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             topBar = {
-                // --- 2. BARRA SUPERIOR PREMIUM (GLASSMORPHISM NAV) ---
+                // --- 2. BARRA SUPERIOR PREMIUM (NUEVA APARIENCIA DE ALTO NIVEL) ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(
+                            horizontal = if (isWideLayout) 32.dp else 16.dp,
+                            vertical = if (isWideLayout) 16.dp else 10.dp
+                        ),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Node: Avatar Profile + Search Item expander
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        // User Profile Circle (Clicking switches/selects profile)
-                        val activeColorHex = viewModel.activeProfile?.profileColor ?: "#00E5FF"
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.5.dp, Color(android.graphics.Color.parseColor(activeColorHex)), RoundedCornerShape(8.dp))
-                                .clickable { viewModel.logoutProfile() }
-                                .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                        ) {
-                            viewModel.activeProfile?.let { profile ->
-                                ProfileAvatar(
-                                    profile = profile,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-
-                        // App Title always shown as a clean branded anchor
-                        Text(
-                            text = "LUMINA",
-                            color = Color.White,
-                            fontSize = 14.sp.responsive(),
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.2.sp
-                        )
-                    }
+                    // Left Node: Branded Title "LUMINA" with a beautiful custom electric-blue styled 'A'
+                    Text(
+                        text = androidx.compose.ui.text.buildAnnotatedString {
+                            append("LUMIN")
+                            pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
+                            append("A")
+                            pop()
+                        },
+                        color = Color.White,
+                        fontSize = if (isWideLayout) 18.sp.responsive() else 15.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
 
                     // Central Node: Main Navigation Tabs Row - ONLY on Wide Screens
                     if (isWideLayout) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
                         ) {
-                            AppTab.values().filter { it != AppTab.SETTINGS }.forEach { tab ->
+                            // Render navigation options exactly (filtering out SETTINGS and SEARCH to place SEARCH on the right, matching the reference image)
+                            AppTab.values().filter { it != AppTab.SETTINGS && it != AppTab.SEARCH }.forEach { tab ->
                                 val isSelected = viewModel.currentTab == tab
                                 var isTabFocused by remember { mutableStateOf(false) }
-                                
+
+                                val displayLabel = when (tab) {
+                                    AppTab.HOME -> "Inicio"
+                                    AppTab.WATCHLIST -> "Mi lista"
+                                    AppTab.TV -> "IPTV"
+                                    AppTab.RADIO -> "Radio"
+                                    else -> tab.label
+                                }
+
                                 val tabBgColor by animateColorAsState(
                                      targetValue = when {
-                                         isTabFocused -> Color.White.copy(alpha = 0.15f)
-                                         isSelected -> Color.White.copy(alpha = 0.08f)
+                                         isTabFocused && isSelected -> Color(0xFF151833).copy(alpha = 0.9f)
+                                         isTabFocused -> Color.White.copy(alpha = 0.12f)
+                                         isSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
                                          else -> Color.Transparent
                                      },
                                      animationSpec = tween(durationMillis = 200),
@@ -168,19 +160,20 @@ fun LuminaAppShell(
                                  )
                                 val tabBorderColor by animateColorAsState(
                                      targetValue = when {
-                                         isTabFocused -> Color.White.copy(alpha = 0.22f)
-                                         isSelected -> Color.White.copy(alpha = 0.12f)
+                                         isTabFocused && isSelected -> Color(0xFF00E5FF)
+                                         isTabFocused -> Color.White.copy(alpha = 0.4f)
+                                         isSelected -> Color(0xFF2E3092).copy(alpha = 0.7f)
                                          else -> Color.Transparent
                                      },
                                      animationSpec = tween(durationMillis = 200),
                                      label = "tab_border"
                                  )
-                                 
+
                                  val contentColor by animateColorAsState(
                                      targetValue = when {
                                          isTabFocused -> Color.White
                                          isSelected -> Color.White
-                                         else -> Color.White.copy(alpha = 0.55f)
+                                         else -> Color.White.copy(alpha = 0.65f)
                                      },
                                      animationSpec = tween(durationMillis = 200),
                                      label = "tab_content_color"
@@ -192,19 +185,21 @@ fun LuminaAppShell(
                                      label = "tab_scale"
                                  )
 
+                                val hasIcon = when (tab) {
+                                    AppTab.HOME -> true
+                                    AppTab.RADIO -> true
+                                    AppTab.WATCHLIST -> true
+                                    else -> false
+                                }
+
                                 Box(
                                     modifier = Modifier
                                         .scale(tabScale)
                                         .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
-                                         .shadow(
-                                             elevation = if (isTabFocused) 4.dp else 0.dp,
-                                             shape = CircleShape,
-                                             clip = false
-                                         )
-                                         .clip(CircleShape)
-                                         .background(tabBgColor)
+                                        .clip(CircleShape)
+                                        .background(tabBgColor)
                                         .border(
-                                            width = if (isTabFocused || isSelected) 1.dp else 0.dp,
+                                            width = if (isTabFocused || isSelected) 1.2.dp else 0.dp,
                                             color = tabBorderColor,
                                             shape = CircleShape
                                         )
@@ -215,46 +210,111 @@ fun LuminaAppShell(
                                             unfocusedBorderColor = Color.Transparent,
                                             scaleAmount = 1.00f
                                         )
-                                        .padding(horizontal = 14.dp.responsive(), vertical = 8.dp.responsive()),
+                                        .padding(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive()),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = when (tab) {
-                                                AppTab.HOME -> Icons.Filled.Home
-                                                AppTab.WATCHLIST -> Icons.Filled.Favorite
-                                                AppTab.TV -> Icons.Filled.LiveTv
-                                                AppTab.RADIO -> Icons.Filled.Radio
-                                                AppTab.SEARCH -> Icons.Filled.Search
-                                                AppTab.SETTINGS -> Icons.Filled.Settings
-                                            },
-                                            contentDescription = tab.label,
-                                            tint = contentColor,
-                                            modifier = Modifier.size(16.dp.responsive())
-                                        )
+                                        if (hasIcon) {
+                                            Icon(
+                                                imageVector = when (tab) {
+                                                    AppTab.HOME -> Icons.Filled.Home
+                                                    AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                                    AppTab.RADIO -> Icons.Filled.Radio
+                                                    else -> Icons.Filled.Star
+                                                },
+                                                contentDescription = tab.label,
+                                                tint = contentColor,
+                                                modifier = Modifier.size(15.dp.responsive())
+                                            )
+                                        }
 
                                         Text(
-                                            text = tab.label,
+                                            text = displayLabel,
                                             color = contentColor,
-                                            fontSize = 11.sp.responsive(),
-                                            fontWeight = if (isSelected || isTabFocused) FontWeight.SemiBold else FontWeight.Medium,
-                                            letterSpacing = 0.5.sp
+                                            fontSize = 12.5.sp.responsive(),
+                                            fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium,
+                                            letterSpacing = 0.3.sp
                                         )
                                     }
                                 }
+                            }
                         }
                     }
-                    }
-                    // Right Node: Live Clock and Configuration quick icon
+
+                    // Right Node: Live Clock, Search Icon, Profile Avatar, and optional Settings Button
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // Settings icon in top right - ONLY on Wide Screens (on Mobile it is in the Bottom Bar!)
+                        // 1. Buscador (Search) - Styled EXACTLY like the reference image on the right next to the avatar!
                         if (isWideLayout) {
+                            val isSearchSelected = viewModel.currentTab == AppTab.SEARCH
+                            var isSearchFocused by remember { mutableStateOf(false) }
+
+                            val searchBgColor by animateColorAsState(
+                                 targetValue = when {
+                                     isSearchFocused && isSearchSelected -> Color(0xFF151833).copy(alpha = 0.9f)
+                                     isSearchFocused -> Color.White.copy(alpha = 0.12f)
+                                     isSearchSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
+                                     else -> Color.Transparent
+                                 },
+                                 animationSpec = tween(durationMillis = 200),
+                                 label = "search_bg"
+                             )
+                            val searchBorderColor by animateColorAsState(
+                                 targetValue = when {
+                                     isSearchFocused && isSearchSelected -> Color(0xFF00E5FF)
+                                     isSearchFocused -> Color.White.copy(alpha = 0.4f)
+                                     isSearchSelected -> Color(0xFF2E3092).copy(alpha = 0.7f)
+                                     else -> Color.Transparent
+                                 },
+                                 animationSpec = tween(durationMillis = 200),
+                                 label = "search_border"
+                             )
+                            val searchColor by animateColorAsState(
+                                 targetValue = when {
+                                     isSearchFocused || isSearchSelected -> Color.White
+                                     else -> Color.White.copy(alpha = 0.65f)
+                                 },
+                                 animationSpec = tween(durationMillis = 200),
+                                 label = "search_color"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .onFocusChanged { isSearchFocused = it.isFocused || it.hasFocus }
+                                    .clip(CircleShape)
+                                    .background(searchBgColor)
+                                    .border(
+                                        width = if (isSearchFocused || isSearchSelected) 1.2.dp else 0.dp,
+                                        color = searchBorderColor,
+                                        shape = CircleShape
+                                    )
+                                    .clickable { viewModel.selectTab(AppTab.SEARCH) }
+                                    .tvFocusEffect(
+                                        shape = CircleShape,
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        scaleAmount = 1.05f
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = "Buscar",
+                                    tint = searchColor,
+                                    modifier = Modifier.size(18.dp.responsive())
+                                )
+                            }
+                        }
+
+                        // 2. Settings icon in top right - ONLY on Wide Screens (on Mobile it is in the Bottom Bar!)
+                        if (isWideLayout) {
+                            val isSettingsSelected = viewModel.currentTab == AppTab.SETTINGS
                             var isSettingsFocused by remember { mutableStateOf(false) }
                             val settingsRotation by animateFloatAsState(
                                 targetValue = if (isSettingsFocused) 180f else 0f,
@@ -262,27 +322,59 @@ fun LuminaAppShell(
                                 label = "settings_rotation"
                             )
 
+                            val settingsBgColor by animateColorAsState(
+                                 targetValue = when {
+                                     isSettingsFocused && isSettingsSelected -> Color(0xFF151833).copy(alpha = 0.9f)
+                                     isSettingsFocused -> Color.White.copy(alpha = 0.12f)
+                                     isSettingsSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
+                                     else -> Color.Transparent
+                                 },
+                                 animationSpec = tween(durationMillis = 200),
+                                 label = "settings_bg"
+                             )
+                            val settingsBorderColor by animateColorAsState(
+                                 targetValue = when {
+                                     isSettingsFocused && isSettingsSelected -> Color(0xFF00E5FF)
+                                     isSettingsFocused -> Color.White.copy(alpha = 0.4f)
+                                     isSettingsSelected -> Color(0xFF2E3092).copy(alpha = 0.7f)
+                                     else -> Color.Transparent
+                                 },
+                                 animationSpec = tween(durationMillis = 200),
+                                 label = "settings_border"
+                             )
+                            val settingsColor by animateColorAsState(
+                                 targetValue = when {
+                                     isSettingsFocused || isSettingsSelected -> Color.White
+                                     else -> Color.White.copy(alpha = 0.65f)
+                                 },
+                                 animationSpec = tween(durationMillis = 200),
+                                 label = "settings_color"
+                            )
+
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .onFocusChanged { isSettingsFocused = it.isFocused || it.hasFocus }
-                                    .focusable()
-                                    .background(
-                                        color = if (isSettingsFocused) Color.White.copy(alpha = 0.22f) else Color.Transparent,
-                                        shape = CircleShape
-                                    )
+                                    .clip(CircleShape)
+                                    .background(settingsBgColor)
                                     .border(
-                                        width = if (isSettingsFocused) 1.5.dp else 0.dp,
-                                        color = if (isSettingsFocused) Color.White.copy(alpha = 0.8f) else Color.Transparent,
+                                        width = if (isSettingsFocused || isSettingsSelected) 1.2.dp else 0.dp,
+                                        color = settingsBorderColor,
                                         shape = CircleShape
                                     )
-                                    .clickable { viewModel.selectTab(AppTab.SETTINGS) },
+                                    .clickable { viewModel.selectTab(AppTab.SETTINGS) }
+                                    .tvFocusEffect(
+                                        shape = CircleShape,
+                                        focusedBorderColor = Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        scaleAmount = 1.05f
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Settings,
                                     contentDescription = "Settings Icon Toggle",
-                                    tint = if (isSettingsFocused) Color.White else Color.White.copy(alpha = 0.75f),
+                                    tint = settingsColor,
                                     modifier = Modifier
                                         .size(18.dp)
                                         .graphicsLayer {
@@ -292,16 +384,43 @@ fun LuminaAppShell(
                             }
                         }
 
-                        // Digital Clock displaying 12-hour AM/PM format
+                        // 3. User Profile Avatar Button - Styled as a perfect circle matching the image
+                        val activeColorHex = viewModel.activeProfile?.profileColor ?: "#00E5FF"
+                        var isAvatarFocused by remember { mutableStateOf(false) }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .onFocusChanged { isAvatarFocused = it.isFocused || it.hasFocus }
+                                .clip(CircleShape)
+                                .border(
+                                    width = if (isAvatarFocused) 2.dp else 1.5.dp,
+                                    color = if (isAvatarFocused) Color(0xFF00E5FF) else Color(android.graphics.Color.parseColor(activeColorHex)),
+                                    shape = CircleShape
+                                )
+                                .clickable { viewModel.logoutProfile() }
+                                .tvFocusEffect(
+                                    shape = CircleShape,
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    scaleAmount = 1.05f
+                                )
+                        ) {
+                            viewModel.activeProfile?.let { profile ->
+                                ProfileAvatar(
+                                    profile = profile,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+
+                        // 4. Digital Clock displaying 12-hour AM/PM format (Subtle elegance, no background container)
                         Text(
                             text = timeString,
                             color = Color.White,
-                            fontSize = if (isWideLayout) 12.sp else 10.5.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = if (isWideLayout) 13.sp.responsive() else 11.sp,
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp,
-                            modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp)
                         )
                     }
                 }
