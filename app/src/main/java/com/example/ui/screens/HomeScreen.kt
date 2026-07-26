@@ -672,25 +672,38 @@ fun ChannelHomeCard(
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.03f else 1.00f,
+        targetValue = if (isFocused) 1.04f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "channel_card_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.dp else 1.dp,
+        targetValue = if (isFocused) 2.5.dp else 1.dp,
         animationSpec = tween(durationMillis = 200),
         label = "channel_card_border_width"
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
-        animationSpec = tween(durationMillis = 200),
-        label = "channel_card_border_color"
     )
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 12.dp else 0.dp,
         animationSpec = tween(durationMillis = 200),
         label = "channel_card_shadow"
     )
+
+    val borderBrush = remember(isFocused) {
+        if (isFocused) {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF00E5FF),
+                    Color(0xFF3B82F6)
+                )
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.08f),
+                    Color.White.copy(alpha = 0.08f)
+                )
+            )
+        }
+    }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
@@ -707,7 +720,7 @@ fun ChannelHomeCard(
             .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
             .border(
                 width = borderWidth,
-                color = borderColor,
+                brush = borderBrush,
                 shape = RoundedCornerShape(12.dp)
             )
             .onFocusChanged { focusState ->
@@ -730,7 +743,7 @@ fun ChannelHomeCard(
                 alpha = 0.4f
             )
 
-            // Fade Gradient overlays
+            // High-fidelity smooth dark vertical gradient overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -738,8 +751,10 @@ fun ChannelHomeCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.35f),
-                                Color.Black.copy(alpha = 0.90f)
+                                Color.Black.copy(alpha = 0.15f),
+                                Color.Black.copy(alpha = 0.45f),
+                                Color.Black.copy(alpha = 0.85f),
+                                Color.Black.copy(alpha = 0.98f)
                             )
                         )
                     )
@@ -749,7 +764,7 @@ fun ChannelHomeCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(10.dp),
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -826,25 +841,38 @@ fun RadioHomeCard(
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.03f else 1.00f,
+        targetValue = if (isFocused) 1.04f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "radio_card_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.dp else 1.dp,
+        targetValue = if (isFocused) 2.5.dp else 1.dp,
         animationSpec = tween(durationMillis = 200),
         label = "radio_card_border_width"
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
-        animationSpec = tween(durationMillis = 200),
-        label = "radio_card_border_color"
     )
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 12.dp else 0.dp,
         animationSpec = tween(durationMillis = 200),
         label = "radio_card_shadow"
     )
+
+    val borderBrush = remember(isFocused) {
+        if (isFocused) {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF00E5FF),
+                    Color(0xFF3B82F6)
+                )
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.08f),
+                    Color.White.copy(alpha = 0.08f)
+                )
+            )
+        }
+    }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
@@ -861,7 +889,7 @@ fun RadioHomeCard(
             .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
             .border(
                 width = borderWidth,
-                color = borderColor,
+                brush = borderBrush,
                 shape = RoundedCornerShape(12.dp)
             )
             .onFocusChanged { focusState ->
@@ -883,7 +911,7 @@ fun RadioHomeCard(
                 alpha = 0.45f
             )
 
-            // Glow gradient overlay matching station
+            // High-fidelity smooth dark vertical gradient overlay with a touch of station theme color
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -891,8 +919,10 @@ fun RadioHomeCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                cardColor.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.9f)
+                                cardColor.copy(alpha = 0.15f),
+                                cardColor.copy(alpha = 0.45f),
+                                Color.Black.copy(alpha = 0.85f),
+                                Color.Black.copy(alpha = 0.98f)
                             )
                         )
                     )
@@ -902,7 +932,7 @@ fun RadioHomeCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(10.dp),
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -1001,25 +1031,38 @@ fun CatalogItemHomeCard(
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.03f else 1.00f,
+        targetValue = if (isFocused) 1.04f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "card_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.dp else 1.dp,
+        targetValue = if (isFocused) 2.5.dp else 1.dp,
         animationSpec = tween(durationMillis = 200),
         label = "card_border_width"
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
-        animationSpec = tween(durationMillis = 200),
-        label = "card_border_color"
     )
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 12.dp else 0.dp,
         animationSpec = tween(durationMillis = 200),
         label = "card_shadow"
     )
+
+    val borderBrush = remember(isFocused) {
+        if (isFocused) {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF00E5FF),
+                    Color(0xFF3B82F6)
+                )
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.08f),
+                    Color.White.copy(alpha = 0.08f)
+                )
+            )
+        }
+    }
 
     LaunchedEffect(isFocused) {
         if (isFocused) {
@@ -1043,7 +1086,7 @@ fun CatalogItemHomeCard(
             .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
             .border(
                 width = borderWidth,
-                color = borderColor,
+                brush = borderBrush,
                 shape = RoundedCornerShape(12.dp)
             )
             .onFocusChanged { focusState ->
@@ -2604,25 +2647,38 @@ fun CatalogItemNumberedCard(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.03f else 1.00f,
+        targetValue = if (isFocused) 1.04f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "numbered_card_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.dp else 1.dp,
+        targetValue = if (isFocused) 2.5.dp else 1.dp,
         animationSpec = tween(durationMillis = 200),
         label = "numbered_card_border_width"
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
-        animationSpec = tween(durationMillis = 200),
-        label = "numbered_card_border_color"
     )
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 12.dp else 0.dp,
         animationSpec = tween(durationMillis = 200),
         label = "numbered_card_shadow"
     )
+
+    val borderBrush = remember(isFocused) {
+        if (isFocused) {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF00E5FF),
+                    Color(0xFF3B82F6)
+                )
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.08f),
+                    Color.White.copy(alpha = 0.08f)
+                )
+            )
+        }
+    }
 
     LaunchedEffect(isFocused) {
         if (isFocused) {
@@ -2647,13 +2703,13 @@ fun CatalogItemNumberedCard(
             )
     ) {
         // 1. Giant Number Rank (Drawn FIRST on the bottom layer to stay behind the poster card)
-        val rankStr = ""
+        val rankStr = rank.toString()
         Text(
             text = rankStr,
             style = TextStyle(
                 fontSize = 110.sp,
                 fontWeight = FontWeight.Black,
-                color = if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.9f) else Color.White.copy(alpha = 0.4f), // Highlight rank color too!
+                color = if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.25f), // Highlight rank color too!
                 letterSpacing = (-7).sp,
                 shadow = androidx.compose.ui.graphics.Shadow(
                     color = Color.Black.copy(alpha = 0.95f),
@@ -2682,7 +2738,7 @@ fun CatalogItemNumberedCard(
                 .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
                 .border(
                     width = borderWidth,
-                    color = borderColor,
+                    brush = borderBrush,
                     shape = RoundedCornerShape(12.dp)
                 )
         ) {
