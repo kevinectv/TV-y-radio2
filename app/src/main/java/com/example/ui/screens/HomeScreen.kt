@@ -7,6 +7,8 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.RepeatMode
@@ -154,7 +156,7 @@ fun CatalogRowSkeleton(isWideLayout: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp.responsive()),
-            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
             userScrollEnabled = false
         ) {
             items(6) {
@@ -397,7 +399,7 @@ fun HomeScreen(
                                             color = Color(0xFF00FF87)
                                         )
                                         LazyRow(
-                                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                                             contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
                                         ) {
                                             items(progressItems) { (item, progressVal) ->
@@ -445,7 +447,7 @@ fun HomeScreen(
                                                 color = Color(0xFF00FF87)
                                             )
                                             LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                                                horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                                                 contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
                                             ) {
                                                 items(progressItems) { (item, progressVal) ->
@@ -526,7 +528,7 @@ fun DrawCatalogRow(
 
     if (isSupportedRowType) {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
             contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
         ) {
             items(catalog.items.take(catalog.numItems)) { item ->
@@ -579,7 +581,7 @@ fun DrawCatalogRow(
         }
     } else {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
             contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
         ) {
             items(catalog.items.take(catalog.numItems)) { item ->
@@ -611,37 +613,48 @@ fun HomeSectionRowHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                start = 16.dp.responsive(),
-                end = 16.dp.responsive(),
-                top = 22.dp.responsive(),
-                bottom = 6.dp.responsive()
+                start = 20.dp.responsive(),
+                end = 20.dp.responsive(),
+                top = 26.dp.responsive(),
+                bottom = 8.dp.responsive()
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left Vertical Neon Anchor Bar for high-end cinematic vibe
+        // High-end dual-gradient neon bar
         Box(
             modifier = Modifier
-                .width(3.5.dp)
-                .height(16.dp)
+                .width(4.dp)
+                .height(18.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(color)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(color, color.copy(alpha = 0.45f))
+                    )
+                )
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
         if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = color.copy(alpha = 0.8f),
-                modifier = Modifier.size(14.dp)
+                tint = color.copy(alpha = 0.85f),
+                modifier = Modifier.size(16.dp.responsive())
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
         }
         Text(
             text = title,
             color = Color.White,
-            fontWeight = FontWeight.Black,
-            fontSize = 13.sp,
-            letterSpacing = 1.2.sp
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 14.sp.responsive(),
+            letterSpacing = 1.1.sp,
+            style = TextStyle(
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                    blurRadius = 2f
+                )
+            )
         )
     }
 }
@@ -657,19 +670,50 @@ fun ChannelHomeCard(
         isFavorite = viewModel.isChannelFavorite(channel.id)
     }
 
+    var isFocused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.03f else 1.00f,
+        animationSpec = tween(durationMillis = 200),
+        label = "channel_card_scale"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (isFocused) 2.dp else 1.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "channel_card_border_width"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
+        animationSpec = tween(durationMillis = 200),
+        label = "channel_card_border_color"
+    )
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isFocused) 12.dp else 0.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "channel_card_shadow"
+    )
+
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
             .width(222.dp.responsive())
             .height(141.dp.responsive())
-            .tvFocusEffect(
-                shape = RoundedCornerShape(6.dp),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
-                borderWidth = 1.8.dp,
-                interactionSource = interactionSource
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.shadowElevation = shadowElevation.value
+                shape = RoundedCornerShape(12.dp)
+                clip = true
+            }
+            .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
+            .border(
+                width = borderWidth,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
             )
-            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
-            .clip(RoundedCornerShape(6.dp))
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused || focusState.hasFocus
+            }
+            .focusable(interactionSource = interactionSource)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -693,8 +737,9 @@ fun ChannelHomeCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.85f)
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.35f),
+                                Color.Black.copy(alpha = 0.90f)
                             )
                         )
                     )
@@ -779,19 +824,50 @@ fun RadioHomeCard(
         }
     }
 
+    var isFocused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.03f else 1.00f,
+        animationSpec = tween(durationMillis = 200),
+        label = "radio_card_scale"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (isFocused) 2.dp else 1.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "radio_card_border_width"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
+        animationSpec = tween(durationMillis = 200),
+        label = "radio_card_border_color"
+    )
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isFocused) 12.dp else 0.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "radio_card_shadow"
+    )
+
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         modifier = Modifier
             .width(222.dp.responsive())
             .height(141.dp.responsive())
-            .tvFocusEffect(
-                shape = RoundedCornerShape(6.dp),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
-                borderWidth = 1.8.dp,
-                interactionSource = interactionSource
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.shadowElevation = shadowElevation.value
+                shape = RoundedCornerShape(12.dp)
+                clip = true
+            }
+            .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
+            .border(
+                width = borderWidth,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
             )
-            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
-            .clip(RoundedCornerShape(6.dp))
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused || focusState.hasFocus
+            }
+            .focusable(interactionSource = interactionSource)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -815,7 +891,7 @@ fun RadioHomeCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                cardColor.copy(alpha = 0.7f),
+                                cardColor.copy(alpha = 0.5f),
                                 Color.Black.copy(alpha = 0.9f)
                             )
                         )
@@ -923,21 +999,57 @@ fun CatalogItemHomeCard(
         }
     }
 
+    var isFocused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.03f else 1.00f,
+        animationSpec = tween(durationMillis = 200),
+        label = "card_scale"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (isFocused) 2.dp else 1.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "card_border_width"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
+        animationSpec = tween(durationMillis = 200),
+        label = "card_border_color"
+    )
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isFocused) 12.dp else 0.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "card_shadow"
+    )
+
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            onFocus()
+        }
+    }
+
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+
     Box(
         modifier = modifier
             .width(targetWidth)
             .height(targetHeight)
-            .clip(RoundedCornerShape(6.dp))
-            .tvFocusEffect(
-                shape = RoundedCornerShape(6.dp),
-                focusedBorderColor = Color.White,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
-                borderWidth = 1.8.dp,
-                interactionSource = interactionSource,
-                onFocus = onFocus
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.shadowElevation = shadowElevation.value
+                shape = RoundedCornerShape(12.dp)
+                clip = true
+            }
+            .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
+            .border(
+                width = borderWidth,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
             )
-            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused || focusState.hasFocus
+            }
+            .focusable(interactionSource = interactionSource)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -953,87 +1065,91 @@ fun CatalogItemHomeCard(
                 contentScale = ContentScale.Crop
             )
 
+            // High-fidelity smooth dark gradient overlay at the bottom to protect text/logo
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.15f),
+                                Color.Black.copy(alpha = 0.45f),
+                                Color.Black.copy(alpha = 0.85f),
+                                Color.Black.copy(alpha = 0.98f)
+                            ),
+                            startY = 100f
+                        )
+                    )
+            )
+
             // Favorite Overlay Tag
             if (isFavorite) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(4.dp)
-                        .background(Color.Black.copy(alpha = 0.65f), CircleShape)
-                        .padding(4.dp)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha = 0.7f), CircleShape)
+                        .padding(6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Favorite,
                         contentDescription = "Favorito",
                         tint = Color.Red,
-                        modifier = Modifier.size(10.dp)
+                        modifier = Modifier.size(11.dp)
                     )
                 }
             }
 
             val logoHeight = if (isHorizontal) {
-                20.dp
+                22.dp
             } else {
-                29.dp
+                32.dp
             }.responsive()
 
-            // Soft bottom gradient and Logo/Title display
+            // Info display (Logo / Title) aligned perfectly inside padded area
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.Bottom
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.40f),
-                                    Color.Black.copy(alpha = 0.90f)
-                                )
-                            )
-                        )
-                        .padding(start = 16.dp.responsive(), end = 16.dp.responsive(), bottom = 16.dp.responsive(), top = 24.dp.responsive())
-                ) {
-                    if (!item.logoUrl.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = item.logoUrl,
-                            contentDescription = item.title,
-                            modifier = Modifier
-                                .fillMaxWidth(0.95f)
-                                .height(logoHeight)
-                                .align(Alignment.BottomStart),
-                            alignment = Alignment.BottomStart,
-                            contentScale = ContentScale.Fit
-                        )
-                    } else {
-                        Text(
-                            text = item.title,
-                            color = Color.White,
-                            fontSize = 10.sp.responsive(),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.align(Alignment.BottomStart)
-                        )
-                    }
+                if (!item.logoUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = item.logoUrl,
+                        contentDescription = item.title,
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .height(logoHeight),
+                        alignment = Alignment.BottomStart,
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontSize = 11.sp.responsive(),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
                 // Seen progress bar
                 if (progress > 0f) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(4.dp)
-                            .background(Color.White.copy(alpha = 0.25f))
+                            .height(3.5.dp)
+                            .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(1.5.dp))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .fillMaxWidth(progress)
-                                .background(Color(0xFF00E5FF))
+                                .background(Color(0xFF00E5FF), RoundedCornerShape(1.5.dp))
                         )
                     }
                 }
@@ -1466,7 +1582,7 @@ fun CatalogItemFullScreenDetails(
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                             contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(dynamicCast) { actor ->
@@ -1532,7 +1648,7 @@ fun CatalogItemFullScreenDetails(
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                             contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(extraImages) { imageUrl ->
@@ -1623,7 +1739,7 @@ fun CatalogItemFullScreenDetails(
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                             contentPadding = PaddingValues(vertical = 4.dp.responsive())
                         ) {
                             items(similarItems) { similar ->
@@ -2486,18 +2602,44 @@ fun CatalogItemNumberedCard(
     onFocus: () -> Unit = {},
     onClick: () -> Unit
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.03f else 1.00f,
+        animationSpec = tween(durationMillis = 200),
+        label = "numbered_card_scale"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (isFocused) 2.dp else 1.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "numbered_card_border_width"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.08f),
+        animationSpec = tween(durationMillis = 200),
+        label = "numbered_card_border_color"
+    )
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isFocused) 12.dp else 0.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "numbered_card_shadow"
+    )
+
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            onFocus()
+        }
+    }
+
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    
     Box(
         modifier = Modifier
             .width(185.dp.responsive())
             .height(215.dp.responsive())
-            .tvFocusEffect(
-                shape = RoundedCornerShape(6.dp),
-                focusedBorderColor = Color.White,
-                borderWidth = 1.8.dp,
-                interactionSource = interactionSource,
-                onFocus = onFocus
-            )
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused || focusState.hasFocus
+            }
+            .focusable(interactionSource = interactionSource)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -2505,14 +2647,14 @@ fun CatalogItemNumberedCard(
             )
     ) {
         // 1. Giant Number Rank (Drawn FIRST on the bottom layer to stay behind the poster card)
-        val rankStr = "$rank"
+        val rankStr = ""
         Text(
             text = rankStr,
             style = TextStyle(
-                fontSize = 120.sp,
-                fontWeight = FontWeight.W900,
-                color = Color.White.copy(alpha = 0.82f), // Semi-transparent silvery white/gray look
-                letterSpacing = (-9).sp,
+                fontSize = 110.sp,
+                fontWeight = FontWeight.Black,
+                color = if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.9f) else Color.White.copy(alpha = 0.4f), // Highlight rank color too!
+                letterSpacing = (-7).sp,
                 shadow = androidx.compose.ui.graphics.Shadow(
                     color = Color.Black.copy(alpha = 0.95f),
                     offset = androidx.compose.ui.geometry.Offset(4f, 4f),
@@ -2521,18 +2663,28 @@ fun CatalogItemNumberedCard(
             ),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .offset(x = 2.dp, y = 14.dp) // Aligns beautifully with the bottom edge
+                .offset(x = 2.dp, y = 10.dp) // Aligns beautifully with the bottom edge
         )
 
         // 2. Poster Card (Drawn SECOND on the top layer to overlap the giant rank number on the right)
-        Card(
-            shape = RoundedCornerShape(4.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+        Box(
             modifier = Modifier
                 .width(135.dp.responsive())
                 .height(190.dp.responsive())
                 .align(Alignment.BottomEnd)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.shadowElevation = shadowElevation.value
+                    shape = RoundedCornerShape(12.dp)
+                    clip = true
+                }
+                .background(Color(0xFF0B0C0F), RoundedCornerShape(12.dp))
+                .border(
+                    width = borderWidth,
+                    color = borderColor,
+                    shape = RoundedCornerShape(12.dp)
+                )
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // Movie/Show Poster
@@ -2543,11 +2695,27 @@ fun CatalogItemNumberedCard(
                     contentScale = ContentScale.Crop
                 )
 
+                // High-fidelity smooth vertical dark gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.25f),
+                                    Color.Black.copy(alpha = 0.65f),
+                                    Color.Black.copy(alpha = 0.95f)
+                                )
+                            )
+                        )
+                )
+
                 // Gold Rating Overlay Tag
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp)
+                        .padding(6.dp)
                         .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2572,7 +2740,7 @@ fun CatalogItemNumberedCard(
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(4.dp)
+                            .padding(6.dp)
                             .background(Color.Black.copy(alpha = 0.65f), CircleShape)
                             .padding(4.dp)
                     ) {
@@ -2585,53 +2753,42 @@ fun CatalogItemNumberedCard(
                     }
                 }
 
-                // Dynamic Year overlay gradient background & progress
+                // Dynamic Title and Year overlay & progress
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f))
-                                )
-                            )
-                            .padding(vertical = 4.dp, horizontal = 6.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = item.title,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 8.5.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = item.year,
-                                color = Color.White.copy(alpha = 0.80f),
-                                fontSize = 7.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp.responsive(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = item.year,
+                        color = Color.White.copy(alpha = 0.80f),
+                        fontSize = 8.sp.responsive(),
+                        fontWeight = FontWeight.SemiBold
+                    )
 
                     // Seen progress bar
                     if (progress > 0f) {
+                        Spacer(modifier = Modifier.height(6.dp))
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(4.dp)
-                                .background(Color.White.copy(alpha = 0.25f))
+                                .height(3.3.dp)
+                                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(1.5.dp))
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth(progress)
-                                    .background(Color(0xFF00E5FF))
+                                    .background(Color(0xFF00E5FF), RoundedCornerShape(1.5.dp))
                             )
                         }
                     }
@@ -2641,7 +2798,6 @@ fun CatalogItemNumberedCard(
     }
 }
 
-// Cinematic Details helper structures for rich immersive home page banners matching user screenshot
 @Composable
 fun TrailerYoutubePlayerDialog(
     item: CatalogItem,
