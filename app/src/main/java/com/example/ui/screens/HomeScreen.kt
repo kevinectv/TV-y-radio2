@@ -545,6 +545,14 @@ fun DrawCatalogRow(
                     }
                 )
             }
+            item {
+                if (catalog.items.isNotEmpty()) {
+                    SeeAllHomeCard(
+                        layoutType = layoutToDraw,
+                        onClick = { onClick(catalog.items.first()) }
+                    )
+                }
+            }
         }
     } else if (layoutToDraw == "Vertical") {
         CatalogVerticalGrid(
@@ -578,6 +586,14 @@ fun DrawCatalogRow(
                     }
                 )
             }
+            item {
+                if (catalog.items.isNotEmpty()) {
+                    SeeAllHomeCard(
+                        layoutType = "Vertical",
+                        onClick = { onClick(catalog.items.first()) }
+                    )
+                }
+            }
         }
     } else {
         LazyRow(
@@ -597,6 +613,128 @@ fun DrawCatalogRow(
                         onClick(item)
                     }
                 )
+            }
+            item {
+                if (catalog.items.isNotEmpty()) {
+                    SeeAllHomeCard(
+                        layoutType = "Horizontal Poster Row",
+                        onClick = { onClick(catalog.items.first()) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SeeAllHomeCard(
+    layoutType: String = "Landscape Row",
+    onClick: () -> Unit
+) {
+    val isHorizontal = layoutType in listOf("Horizontal Poster Row", "Horizontal", "Landscape Row", "Banner Row", "Large Featured Row", "Compact Row")
+    
+    val targetWidth = if (isHorizontal) 140.dp else 120.dp
+    val targetHeight = if (isHorizontal) 135.dp else 260.dp
+
+    var isFocused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.04f else 1.00f,
+        animationSpec = tween(durationMillis = 200),
+        label = "see_all_scale"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (isFocused) 2.5.dp else 1.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "see_all_border"
+    )
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isFocused) 12.dp else 0.dp,
+        animationSpec = tween(durationMillis = 200),
+        label = "see_all_shadow"
+    )
+
+    val borderBrush = remember(isFocused) {
+        if (isFocused) {
+            Brush.linearGradient(
+                colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.08f))
+            )
+        }
+    }
+
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+
+    Box(
+        modifier = Modifier
+            .width(targetWidth.responsive())
+            .height(targetHeight.responsive()),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.shadowElevation = shadowElevation.value
+                    shape = RoundedCornerShape(14.dp)
+                    clip = true
+                }
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF11142A),
+                            Color(0xFF0B0D1B)
+                        )
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .border(
+                    width = borderWidth,
+                    brush = borderBrush,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused || focusState.hasFocus
+                }
+                .focusable(interactionSource = interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Ver todos",
+                    color = Color.White,
+                    fontSize = 13.sp.responsive(),
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .size(32.dp.responsive())
+                        .background(
+                            if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.08f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = "Ver todos",
+                        tint = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.size(20.dp.responsive())
+                    )
+                }
             }
         }
     }
@@ -712,154 +850,161 @@ fun ChannelHomeCard(
     }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+
     Box(
         modifier = Modifier
             .width(222.dp.responsive())
-            .height(141.dp.responsive())
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                this.shadowElevation = shadowElevation.value
-                shape = RoundedCornerShape(14.dp)
-                clip = true
-            }
-            .background(Color(0xFF060709), RoundedCornerShape(14.dp))
-            .border(
-                width = borderWidth,
-                brush = borderBrush,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused || focusState.hasFocus
-            }
-            .focusable(interactionSource = interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onPlayClick
-            )
+            .height(141.dp.responsive()),
+        contentAlignment = Alignment.Center
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Background Artwork
-            AsyncImage(
-                model = channel.logoUrl,
-                contentDescription = channel.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = imageAlpha
-            )
-
-            // High-fidelity smooth dark vertical gradient overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.20f),
-                                Color.Black.copy(alpha = 0.50f),
-                                Color.Black.copy(alpha = 0.88f),
-                                Color.Black.copy(alpha = 0.98f)
-                            )
-                        )
-                    )
-            )
-
-            // Content info
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.Start
-            ) {
-                // Top controls (Channel tag and Favorite bullet)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                Color(0xFF00E5FF).copy(alpha = if (isFocused) 0.25f else 0.10f),
-                                RoundedCornerShape(6.dp)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFF00E5FF).copy(alpha = if (isFocused) 0.8f else 0.25f),
-                                shape = RoundedCornerShape(6.dp)
-                            )
-                            .padding(horizontal = 7.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = "CH ${channel.number}",
-                            color = Color(0xFF00E5FF),
-                            fontSize = 8.5.sp.responsive(),
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { viewModel.toggleChannelFavorite(channel.id) },
-                        modifier = Modifier
-                            .size(26.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                            .border(
-                                width = 1.dp,
-                                color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favorito",
-                            tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
-                            modifier = Modifier.size(13.dp)
-                        )
-                    }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.shadowElevation = shadowElevation.value
+                    shape = RoundedCornerShape(14.dp)
+                    clip = true
                 }
+                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
+                .border(
+                    width = if (isFocused) 2.dp else 1.dp,
+                    brush = borderBrush,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused || focusState.hasFocus
+                }
+                .focusable(interactionSource = interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onPlayClick
+                )
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Background Artwork
+                AsyncImage(
+                    model = channel.logoUrl,
+                    contentDescription = channel.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = imageAlpha
+                )
 
-                // Channel metadata
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Text(
-                        text = channel.name,
-                        color = Color.White,
-                        fontSize = 13.sp.responsive(),
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.8f),
-                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                blurRadius = 4f
+                // High-fidelity smooth dark vertical gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.20f),
+                                    Color.Black.copy(alpha = 0.50f),
+                                    Color.Black.copy(alpha = 0.88f),
+                                    Color.Black.copy(alpha = 0.98f)
+                                )
                             )
                         )
-                    )
-                    
+                )
+
+                // Content info
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    // Top controls (Channel tag and Favorite bullet)
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Live indicator pulsing red dot
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
-                                .background(Color(0xFFFF2D55), CircleShape)
+                                .background(
+                                    Color(0xFF00E5FF).copy(alpha = if (isFocused) 0.25f else 0.10f),
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFF00E5FF).copy(alpha = if (isFocused) 0.8f else 0.25f),
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 7.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "CH ${channel.number}",
+                                color = Color(0xFF00E5FF),
+                                fontSize = 8.5.sp.responsive(),
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { viewModel.toggleChannelFavorite(channel.id) },
+                            modifier = Modifier
+                                .size(26.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = "Favorito",
+                                tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
+
+                    // Channel metadata
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = channel.name,
+                            color = Color.White,
+                            fontSize = 13.sp.responsive(),
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(
+                                shadow = androidx.compose.ui.graphics.Shadow(
+                                    color = Color.Black.copy(alpha = 0.8f),
+                                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                    blurRadius = 4f
+                                )
+                            )
                         )
                         
-                        Text(
-                            text = channel.category.uppercase(),
-                            color = Color.White.copy(alpha = 0.65f),
-                            fontSize = 8.5.sp.responsive(),
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            // Live indicator pulsing red dot
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(Color(0xFFFF2D55), CircleShape)
+                            )
+                            
+                            Text(
+                                text = channel.category.uppercase(),
+                                color = Color.White.copy(alpha = 0.65f),
+                                fontSize = 8.5.sp.responsive(),
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
                 }
             }
@@ -928,140 +1073,147 @@ fun RadioHomeCard(
     }
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+
     Box(
         modifier = Modifier
             .width(222.dp.responsive())
-            .height(141.dp.responsive())
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                this.shadowElevation = shadowElevation.value
-                shape = RoundedCornerShape(14.dp)
-                clip = true
-            }
-            .background(Color(0xFF060709), RoundedCornerShape(14.dp))
-            .border(
-                width = borderWidth,
-                brush = borderBrush,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused || focusState.hasFocus
-            }
-            .focusable(interactionSource = interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onPlayClick
-            )
+            .height(141.dp.responsive()),
+        contentAlignment = Alignment.Center
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = station.logoUrl,
-                contentDescription = station.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = imageAlpha
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.shadowElevation = shadowElevation.value
+                    shape = RoundedCornerShape(14.dp)
+                    clip = true
+                }
+                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
+                .border(
+                    width = if (isFocused) 2.dp else 1.dp,
+                    brush = borderBrush,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused || focusState.hasFocus
+                }
+                .focusable(interactionSource = interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onPlayClick
+                )
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = station.logoUrl,
+                    contentDescription = station.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = imageAlpha
+                )
 
-            // High-fidelity smooth dark vertical gradient overlay with a touch of station theme color
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                cardColor.copy(alpha = 0.10f),
-                                cardColor.copy(alpha = 0.35f),
-                                Color.Black.copy(alpha = 0.85f),
-                                Color.Black.copy(alpha = 0.98f)
+                // High-fidelity smooth dark vertical gradient overlay with a touch of station theme color
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    cardColor.copy(alpha = 0.10f),
+                                    cardColor.copy(alpha = 0.35f),
+                                    Color.Black.copy(alpha = 0.85f),
+                                    Color.Black.copy(alpha = 0.98f)
+                                )
                             )
                         )
-                    )
-            )
+                )
 
-            // Station particulars
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.Start
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Station particulars
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    // Styled Frequency badge matching station theme color
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                cardColor.copy(alpha = if (isFocused) 0.3f else 0.12f),
-                                RoundedCornerShape(6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Styled Frequency badge matching station theme color
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    cardColor.copy(alpha = if (isFocused) 0.3f else 0.12f),
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = cardColor.copy(alpha = if (isFocused) 0.8f else 0.3f),
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = station.frequency,
+                                color = Color.White,
+                                fontSize = 8.5.sp.responsive(),
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.5.sp
                             )
-                            .border(
-                                width = 1.dp,
-                                color = cardColor.copy(alpha = if (isFocused) 0.8f else 0.3f),
-                                shape = RoundedCornerShape(6.dp)
+                        }
+
+                        IconButton(
+                            onClick = { viewModel.toggleRadioFavorite(station.id) },
+                            modifier = Modifier
+                                .size(26.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = "Favoritos",
+                                tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
+                                modifier = Modifier.size(13.dp)
                             )
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                        }
+                    }
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         Text(
-                            text = station.frequency,
+                            text = station.name,
                             color = Color.White,
-                            fontSize = 8.5.sp.responsive(),
+                            fontSize = 13.sp.responsive(),
                             fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(
+                                shadow = androidx.compose.ui.graphics.Shadow(
+                                    color = Color.Black.copy(alpha = 0.8f),
+                                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                    blurRadius = 4f
+                                )
+                            )
+                        )
+                        Text(
+                            text = station.genre.uppercase(),
+                            color = Color.White.copy(alpha = 0.65f),
+                            fontSize = 8.5.sp.responsive(),
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
                     }
-
-                    IconButton(
-                        onClick = { viewModel.toggleRadioFavorite(station.id) },
-                        modifier = Modifier
-                            .size(26.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                            .border(
-                                width = 1.dp,
-                                color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favoritos",
-                            tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
-                            modifier = Modifier.size(13.dp)
-                        )
-                    }
-                }
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Text(
-                        text = station.name,
-                        color = Color.White,
-                        fontSize = 13.sp.responsive(),
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.8f),
-                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                blurRadius = 4f
-                            )
-                        )
-                    )
-                    Text(
-                        text = station.genre.uppercase(),
-                        color = Color.White.copy(alpha = 0.65f),
-                        fontSize = 8.5.sp.responsive(),
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    )
                 }
             }
         }
@@ -1160,228 +1312,236 @@ fun CatalogItemHomeCard(
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
+    // Outer Box with FIXED layout bounds to guarantee the row never shifts or jumps vertically
     Box(
         modifier = modifier
             .width(targetWidth)
-            .height(targetHeight)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                this.shadowElevation = shadowElevation.value
-                shape = RoundedCornerShape(14.dp)
-                clip = true
-            }
-            .background(Color(0xFF060709), RoundedCornerShape(14.dp))
-            .border(
-                width = borderWidth,
-                brush = borderBrush,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused || focusState.hasFocus
-            }
-            .focusable(interactionSource = interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
+            .height(targetHeight),
+        contentAlignment = Alignment.Center
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Movie/Show Image (Poster/Backdrop) with elegant dimming
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = item.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = imageAlpha
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.shadowElevation = shadowElevation.value
+                    shape = RoundedCornerShape(14.dp)
+                    clip = true
+                }
+                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
+                .border(
+                    width = if (isFocused) 2.dp else 1.dp,
+                    brush = borderBrush,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused || focusState.hasFocus
+                }
+                .focusable(interactionSource = interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick
+                )
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Movie/Show Image (Poster/Backdrop) with elegant dimming
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = imageAlpha
+                )
 
-            // High-fidelity smooth dark gradient overlay (multi-stop vignette)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.15f),
-                                Color.Black.copy(alpha = 0.45f),
-                                Color.Black.copy(alpha = 0.85f),
-                                Color.Black.copy(alpha = 0.98f)
+                // High-fidelity smooth dark gradient overlay (multi-stop vignette)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.15f),
+                                    Color.Black.copy(alpha = 0.45f),
+                                    Color.Black.copy(alpha = 0.85f),
+                                    Color.Black.copy(alpha = 0.98f)
+                                )
                             )
                         )
-                    )
-            )
+                )
 
-            // Floating Badges at the top (Favorite and Rating/Year)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-                    .align(Alignment.TopStart),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Favorite Icon Capsule
-                if (isFavorite) {
-                    Box(
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.65f), CircleShape)
-                            .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                            .padding(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = "Favorito",
-                            tint = Color(0xFFFF2D55),
-                            modifier = Modifier.size(11.dp)
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.size(1.dp))
-                }
-
-                // Rating Badge (for Vertical cards or cards with valid rating)
-                if (!item.rating.isNullOrEmpty() && item.rating != "0" && item.rating != "0.0") {
-                    Row(
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 6.dp, vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(10.dp)
-                        )
-                        Text(
-                            text = item.rating,
-                            color = Color.White,
-                            fontSize = 8.5.sp.responsive(),
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                }
-            }
-
-            val logoHeight = if (isHorizontal) {
-                24.dp
-            } else {
-                34.dp
-            }.responsive()
-
-            // Bottom Info display (Logo / Title / Subtitles) aligned perfectly inside padded area
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.Start
-            ) {
-                if (!item.logoUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = item.logoUrl,
-                        contentDescription = item.title,
-                        modifier = Modifier
-                            .fillMaxWidth(0.90f)
-                            .height(logoHeight),
-                        alignment = Alignment.BottomStart,
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    Text(
-                        text = item.title,
-                        color = Color.White,
-                        fontSize = 12.sp.responsive(),
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.9f),
-                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                blurRadius = 4f
-                            )
-                        )
-                    )
-                }
-
-                // Subtitle Row (Platform badge, Year, or Genre)
-                Spacer(modifier = Modifier.height(4.dp))
+                // Floating Badges at the top (Favorite and Rating/Year)
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                        .align(Alignment.TopStart),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Stylized platform badge if present
-                    val platformName = item.platform ?: ""
-                    if (platformName.isNotEmpty()) {
-                        val badgeColor = when {
-                            platformName.contains("max", ignoreCase = true) -> Color(0xFF0022FF)
-                            platformName.contains("prime", ignoreCase = true) -> Color(0xFF00A8E1)
-                            platformName.contains("netflix", ignoreCase = true) -> Color(0xFFE50914)
-                            platformName.contains("disney", ignoreCase = true) -> Color(0xFF113CCF)
-                            else -> Color.White.copy(alpha = 0.15f)
-                        }
+                    // Favorite Icon Capsule
+                    if (isFavorite) {
                         Box(
                             modifier = Modifier
-                                .background(badgeColor.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
-                                .border(1.dp, badgeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp, vertical = 1.5.dp)
+                                .background(Color.Black.copy(alpha = 0.65f), CircleShape)
+                                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                                .padding(6.dp)
                         ) {
-                            Text(
-                                text = platformName.lowercase(),
-                                color = Color.White,
-                                fontSize = 7.5.sp.responsive(),
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.2.sp
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = "Favorito",
+                                tint = Color(0xFFFF2D55),
+                                modifier = Modifier.size(11.dp)
                             )
                         }
-                    } else if (!item.platformLogo.isNullOrEmpty()) {
+                    } else {
+                        Spacer(modifier = Modifier.size(1.dp))
+                    }
+
+                    // Rating Badge (for Vertical cards or cards with valid rating)
+                    if (!item.rating.isNullOrEmpty() && item.rating != "0" && item.rating != "0.0") {
+                        Row(
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
+                                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "Rating",
+                                tint = Color(0xFFFFC107),
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                text = item.rating,
+                                color = Color.White,
+                                fontSize = 8.5.sp.responsive(),
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
+
+                val logoHeight = if (isHorizontal) {
+                    24.dp
+                } else {
+                    34.dp
+                }.responsive()
+
+                // Bottom Info display (Logo / Title / Subtitles) aligned perfectly inside padded area
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    if (!item.logoUrl.isNullOrEmpty()) {
                         AsyncImage(
-                            model = item.platformLogo,
-                            contentDescription = "Platform",
-                            modifier = Modifier.height(11.dp.responsive()),
+                            model = item.logoUrl,
+                            contentDescription = item.title,
+                            modifier = Modifier
+                                .fillMaxWidth(0.90f)
+                                .height(logoHeight),
+                            alignment = Alignment.BottomStart,
                             contentScale = ContentScale.Fit
                         )
-                    }
-
-                    // Release Year or Genre
-                    val yearOrGenre = if (item.year.isNotEmpty()) item.year else item.genre
-                    if (yearOrGenre.isNotEmpty()) {
+                    } else {
                         Text(
-                            text = yearOrGenre,
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 8.5.sp.responsive(),
-                            fontWeight = FontWeight.Bold
+                            text = item.title,
+                            color = Color.White,
+                            fontSize = 12.sp.responsive(),
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(
+                                shadow = androidx.compose.ui.graphics.Shadow(
+                                    color = Color.Black.copy(alpha = 0.9f),
+                                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                    blurRadius = 4f
+                                )
+                            )
                         )
                     }
-                }
 
-                // Seen progress bar with glassmorphic track and neon cyan fill
-                if (progress > 0f) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp)
-                            .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(2.dp))
+                    // Subtitle Row (Platform badge, Year, or Genre)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        // Stylized platform badge if present
+                        val platformName = item.platform ?: ""
+                        if (platformName.isNotEmpty()) {
+                            val badgeColor = when {
+                                platformName.contains("max", ignoreCase = true) -> Color(0xFF0022FF)
+                                platformName.contains("prime", ignoreCase = true) -> Color(0xFF00A8E1)
+                                platformName.contains("netflix", ignoreCase = true) -> Color(0xFFE50914)
+                                platformName.contains("disney", ignoreCase = true) -> Color(0xFF113CCF)
+                                platformName.contains("amc", ignoreCase = true) -> Color(0xFF008080)
+                                else -> Color.White.copy(alpha = 0.15f)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(badgeColor.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
+                                    .border(1.dp, badgeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 5.dp, vertical = 1.5.dp)
+                            ) {
+                                Text(
+                                    text = platformName.lowercase(),
+                                    color = Color.White,
+                                    fontSize = 7.5.sp.responsive(),
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.2.sp
+                                )
+                            }
+                        } else if (!item.platformLogo.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = item.platformLogo,
+                                contentDescription = "Platform",
+                                modifier = Modifier.height(11.dp.responsive()),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+
+                        // Release Year or Genre
+                        val yearOrGenre = if (item.year.isNotEmpty()) item.year else item.genre
+                        if (yearOrGenre.isNotEmpty()) {
+                            Text(
+                                text = yearOrGenre,
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 8.5.sp.responsive(),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Seen progress bar with glassmorphic track and neon cyan fill
+                    if (progress > 0f) {
+                        Spacer(modifier = Modifier.height(6.dp))
                         Box(
                             modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(progress)
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
-                                    ),
-                                    RoundedCornerShape(2.dp)
-                                )
-                        )
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(2.dp))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(progress)
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
+                                        ),
+                                        RoundedCornerShape(2.dp)
+                                    )
+                            )
+                        }
                     }
                 }
             }
