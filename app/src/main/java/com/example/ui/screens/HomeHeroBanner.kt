@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -228,7 +229,7 @@ fun HomeHeroBannerTv(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = bannerHeight)
+            .height(bannerHeight)
     ) {
         Crossfade(
             targetState = currentMovie,
@@ -241,8 +242,8 @@ fun HomeHeroBannerTv(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 84.dp),
+                    .fillMaxHeight()
+                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 76.dp),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(
@@ -250,41 +251,81 @@ fun HomeHeroBannerTv(
                     verticalArrangement = Arrangement.spacedBy(8.dp.responsive()),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // 0. Badge TENDENCIA
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFF2563EB).copy(alpha = 0.22f), CircleShape)
-                            .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.45f), CircleShape)
-                            .padding(horizontal = 12.dp.responsive(), vertical = 4.dp.responsive()),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp.responsive()),
+                        horizontalAlignment = Alignment.Start
                     ) {
-                        Text(
-                            text = "🔥 TENDENCIA",
-                            color = Color(0xFF93C5FD),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 8.5.sp.responsive(),
-                            letterSpacing = 0.8.sp
-                        )
-                    }
-
-                    // 1. Logo o Título (grande)
-                    if (!richMeta.logoUrl.isNullOrBlank()) {
-                        val context = LocalContext.current
-                        coil.compose.SubcomposeAsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(richMeta.logoUrl)
-                                .crossfade(true)
-                                .allowHardware(false)
-                                .transformations(TrimTransparentPixelsTransformation())
-                                .build(),
-                            contentDescription = richMeta.title,
+                        // 0. Badge TENDENCIA
+                        Box(
                             modifier = Modifier
-                                .heightIn(max = 80.dp.responsive())
-                                .widthIn(max = 340.dp.responsive()),
-                            contentScale = ContentScale.Fit,
-                            alignment = Alignment.CenterStart,
-                            loading = { },
-                            error = {
+                                .background(Color(0xFF2563EB).copy(alpha = 0.22f), RoundedCornerShape(6.dp))
+                                .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp.responsive(), vertical = 3.dp.responsive()),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Whatshot,
+                                    contentDescription = null,
+                                    tint = Color(0xFF93C5FD),
+                                    modifier = Modifier.size(11.dp.responsive())
+                                )
+                                Text(
+                                    text = "TENDENCIA",
+                                    color = Color(0xFF93C5FD),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 8.5.sp.responsive(),
+                                    letterSpacing = 0.8.sp
+                                )
+                            }
+                        }
+
+                        // 1. Logo o Título (grande) con altura fija reservada
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp.responsive()),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (!richMeta.logoUrl.isNullOrBlank()) {
+                                val context = LocalContext.current
+                                coil.compose.SubcomposeAsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(richMeta.logoUrl)
+                                        .crossfade(true)
+                                        .allowHardware(false)
+                                        .transformations(TrimTransparentPixelsTransformation())
+                                        .build(),
+                                    contentDescription = richMeta.title,
+                                    modifier = Modifier
+                                        .heightIn(max = 80.dp.responsive())
+                                        .widthIn(max = 340.dp.responsive()),
+                                    contentScale = ContentScale.Fit,
+                                    alignment = Alignment.CenterStart,
+                                    loading = { },
+                                    error = {
+                                        Text(
+                                            text = richMeta.title,
+                                            style = TextStyle(
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 28.sp.responsive(),
+                                                color = Color.White,
+                                                letterSpacing = (-1).sp,
+                                                shadow = androidx.compose.ui.graphics.Shadow(
+                                                    color = Color.Black.copy(alpha = 0.9f),
+                                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                    blurRadius = 8f
+                                                )
+                                            ),
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                )
+                            } else {
                                 Text(
                                     text = richMeta.title,
                                     style = TextStyle(
@@ -302,28 +343,12 @@ fun HomeHeroBannerTv(
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                        )
-                    } else {
-                        Text(
-                            text = richMeta.title,
-                            style = TextStyle(
-                                fontWeight = FontWeight.Black,
-                                fontSize = 28.sp.responsive(),
-                                color = Color.White,
-                                letterSpacing = (-1).sp,
-                                shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = Color.Black.copy(alpha = 0.9f),
-                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                    blurRadius = 8f
-                                )
-                            ),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        }
                     }
 
-                    // 2. Línea de metadatos: Año | Duración | Género (perfectamente ordenados)
+                    // 2. Línea de metadatos: Año | Duración | Género (perfectamente ordenados) con altura fija
                     Row(
+                        modifier = Modifier.height(20.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
                     ) {
@@ -349,19 +374,27 @@ fun HomeHeroBannerTv(
                         )
                     }
 
-                    // 3. Sinopsis clara debajo de los metadatos
-                    Text(
-                        text = richMeta.description,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.sp.responsive(),
-                        maxLines = 3,
-                        lineHeight = 18.sp.responsive(),
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // 3. Sinopsis clara con altura fija reservada
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp.responsive()),
+                        contentAlignment = Alignment.TopStart
+                    ) {
+                        Text(
+                            text = richMeta.description,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 13.sp.responsive(),
+                            maxLines = 3,
+                            lineHeight = 18.sp.responsive(),
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
-                    // 4. Línea de metadatos 2: Logo Plataforma + Calificación IMDb + Clasificación por edad
+                    // 4. Línea de metadatos 2: Logo Plataforma + Calificación IMDb + Clasificación por edad con altura fija
                     Row(
+                        modifier = Modifier.height(26.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
                     ) {
@@ -446,8 +479,9 @@ fun HomeHeroBannerTv(
 
                     Spacer(modifier = Modifier.height(6.dp.responsive()))
 
-                    // 5. Botones de acción: Reproducir y + (Favoritos)
+                    // 5. Botones de acción: Reproducir y + (Favoritos) con altura fija
                     Row(
+                        modifier = Modifier.height(50.dp.responsive()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -461,19 +495,19 @@ fun HomeHeroBannerTv(
                         
                         Row(
                             modifier = Modifier
-                                .height(44.dp.responsive())
+                                .height(50.dp.responsive())
                                 .graphicsLayer {
                                     scaleX = playScale
                                     scaleY = playScale
                                 }
                                 .background(
-                                    color = if (isPlayFocused) Color(0xFF6C5CE7).copy(alpha = 0.95f) else Color(0xFF6C5CE7).copy(alpha = 0.75f),
-                                    shape = RoundedCornerShape(22.dp)
+                                    color = if (isPlayFocused) Color.White else Color.White.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(25.dp)
                                 )
                                 .border(
                                     width = if (isPlayFocused) 2.dp else 1.dp,
                                     color = if (isPlayFocused) Color.White else Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(22.dp)
+                                    shape = RoundedCornerShape(25.dp)
                                 )
                                 .clickable(
                                     interactionSource = playInteractionSource,
@@ -488,13 +522,13 @@ fun HomeHeroBannerTv(
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Reproducir",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp.responsive())
+                                tint = if (isPlayFocused) Color(0xFF0F0F1A) else Color.White,
+                                modifier = Modifier.size(22.dp.responsive())
                             )
                             Spacer(modifier = Modifier.width(6.dp.responsive()))
                             Text(
                                 text = "Reproducir",
-                                color = Color.White,
+                                color = if (isPlayFocused) Color(0xFF0F0F1A) else Color.White,
                                 fontSize = 14.sp.responsive(),
                                 fontWeight = FontWeight.Bold
                               )
@@ -511,13 +545,13 @@ fun HomeHeroBannerTv(
 
                         Box(
                             modifier = Modifier
-                                .size(44.dp.responsive())
+                                .size(50.dp.responsive())
                                 .graphicsLayer {
                                     scaleX = favScale
                                     scaleY = favScale
                                 }
                                 .background(
-                                    color = if (isFavFocused) Color.White.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.1f),
+                                    color = if (isFavFocused) Color.White else Color.White.copy(alpha = 0.15f),
                                     shape = CircleShape
                                 )
                                 .border(
@@ -536,8 +570,8 @@ fun HomeHeroBannerTv(
                             Icon(
                                 imageVector = if (isFav) Icons.Filled.Check else Icons.Filled.Add,
                                 contentDescription = "Favorito",
-                                tint = if (isFav) Color(0xFF00FF87) else Color.White,
-                                modifier = Modifier.size(20.dp.responsive())
+                                tint = if (isFavFocused) Color(0xFF0F0F1A) else (if (isFav) Color(0xFF00FF87) else Color.White),
+                                modifier = Modifier.size(22.dp.responsive())
                             )
                         }
                     }
@@ -646,65 +680,83 @@ fun HomeHeroBannerMobile(
                     verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Badge Tendencia
+                    // Badge Destacado Hoy
                     Surface(
                         color = Color(0xFFE5B91E).copy(alpha = 0.9f),
                         shape = RoundedCornerShape(4.dp)
                     ) {
-                        Text(
-                            text = "🔥 DESTACADO HOY",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Whatshot,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "DESTACADO HOY",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    // Logo o Título Centrado
-                    if (!richMeta.logoUrl.isNullOrBlank()) {
-                        val context = LocalContext.current
-                        coil.compose.SubcomposeAsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(richMeta.logoUrl)
-                                .crossfade(true)
-                                .allowHardware(false)
-                                .transformations(TrimTransparentPixelsTransformation())
-                                .build(),
-                            contentDescription = richMeta.title,
-                            modifier = Modifier
-                                .heightIn(max = 75.dp)
-                                .widthIn(max = 240.dp),
-                            contentScale = ContentScale.Fit,
-                            alignment = Alignment.Center,
-                            loading = { },
-                            error = {
-                                Text(
-                                    text = richMeta.title,
-                                    style = TextStyle(
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 26.sp,
-                                        color = Color.White,
-                                        textAlign = TextAlign.Center
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        )
-                    } else {
-                        Text(
-                            text = richMeta.title,
-                            style = TextStyle(
-                                fontWeight = FontWeight.Black,
-                                fontSize = 26.sp,
-                                color = Color.White,
-                                textAlign = TextAlign.Center
-                            ),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    // Logo o Título Centrado con altura fija reservada
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(75.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!richMeta.logoUrl.isNullOrBlank()) {
+                            val context = LocalContext.current
+                            coil.compose.SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(richMeta.logoUrl)
+                                    .crossfade(true)
+                                    .allowHardware(false)
+                                    .transformations(TrimTransparentPixelsTransformation())
+                                    .build(),
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = 75.dp)
+                                    .widthIn(max = 240.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.Center,
+                                loading = { },
+                                error = {
+                                    Text(
+                                        text = richMeta.title,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 26.sp,
+                                            color = Color.White,
+                                            textAlign = TextAlign.Center
+                                        ),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 26.sp,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -812,7 +864,7 @@ fun HomeHeroBannerMobile(
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                             shape = RoundedCornerShape(8.dp),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 10.dp),
-                            modifier = Modifier.height(44.dp)
+                            modifier = Modifier.height(50.dp)
                         ) {
                             Icon(Icons.Filled.PlayArrow, contentDescription = "Reproducir", modifier = Modifier.size(22.dp))
                             Spacer(modifier = Modifier.width(6.dp))

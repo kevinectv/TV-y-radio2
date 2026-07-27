@@ -549,6 +549,24 @@ fun LuminaAppShell(
             }
         }
 
+        // 6. NUEVA PANTALLA DE VER TODOS LOS ELEMENTOS DEL CATÁLOGO (PREMIUM GRID)
+        AnimatedVisibility(
+            visible = CatalogNavigation.activeCatalogForSeeAll != null,
+            enter = fadeIn(animationSpec = tween(350)) + scaleIn(initialScale = 0.95f),
+            exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.95f),
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(97f)
+        ) {
+            CatalogNavigation.activeCatalogForSeeAll?.let { catalog ->
+                CatalogGridScreen(
+                    catalog = catalog,
+                    viewModel = viewModel,
+                    onDismiss = { CatalogNavigation.activeCatalogForSeeAll = null }
+                )
+            }
+        }
+
 
     }
 }

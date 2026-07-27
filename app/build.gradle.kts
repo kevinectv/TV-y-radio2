@@ -151,6 +151,7 @@ tasks.register("copyApkToOutputFolders") {
     inputs.file(buildDir.file("outputs/apk/debug/app-debug.apk"))
     outputs.dir(projectDir.dir("../build-outputs"))
     outputs.dir(projectDir.dir("../.build-outputs"))
+    outputs.upToDateWhen { false }
     
     doLast {
         val apkSource = buildDir.file("outputs/apk/debug/app-debug.apk").get().asFile
@@ -197,5 +198,6 @@ tasks.register("copyApkToOutputFolders") {
 
 afterEvaluate {
     tasks.findByName("assembleDebug")?.finalizedBy("copyApkToOutputFolders")
+    tasks.findByName("assemble")?.finalizedBy("copyApkToOutputFolders")
 }
 

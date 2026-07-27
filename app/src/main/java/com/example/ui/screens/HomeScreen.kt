@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -261,7 +262,7 @@ fun HomeScreen(
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
     // Adjust height for layout: TV uses cinematic banner (350.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
-    val bannerHeight = if (isWideLayout) 260.dp else 0.dp
+    val bannerHeight = if (isWideLayout) 350.dp else 0.dp
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -549,7 +550,7 @@ fun DrawCatalogRow(
                 if (catalog.items.isNotEmpty()) {
                     SeeAllHomeCard(
                         layoutType = layoutToDraw,
-                        onClick = { onClick(catalog.items.first()) }
+                        onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
                     )
                 }
             }
@@ -590,7 +591,7 @@ fun DrawCatalogRow(
                 if (catalog.items.isNotEmpty()) {
                     SeeAllHomeCard(
                         layoutType = "Vertical",
-                        onClick = { onClick(catalog.items.first()) }
+                        onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
                     )
                 }
             }
@@ -618,7 +619,7 @@ fun DrawCatalogRow(
                 if (catalog.items.isNotEmpty()) {
                     SeeAllHomeCard(
                         layoutType = "Horizontal Poster Row",
-                        onClick = { onClick(catalog.items.first()) }
+                        onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
                     )
                 }
             }
@@ -633,17 +634,17 @@ fun SeeAllHomeCard(
 ) {
     val isHorizontal = layoutType in listOf("Horizontal Poster Row", "Horizontal", "Landscape Row", "Banner Row", "Large Featured Row", "Compact Row")
     
-    val targetWidth = if (isHorizontal) 140.dp else 120.dp
-    val targetHeight = if (isHorizontal) 135.dp else 260.dp
+    val targetWidth = if (isHorizontal) 140.dp.responsive() else 120.dp.responsive()
+    val targetHeight = if (isHorizontal) 138.dp.responsive() else 260.dp.responsive()
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.04f else 1.00f,
+        targetValue = if (isFocused) 1.045f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "see_all_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.5.dp else 1.dp,
+        targetValue = if (isFocused) 2.dp else 1.dp,
         animationSpec = tween(durationMillis = 200),
         label = "see_all_border"
     )
@@ -669,33 +670,35 @@ fun SeeAllHomeCard(
 
     Box(
         modifier = Modifier
-            .width(targetWidth.responsive())
-            .height(targetHeight.responsive()),
+            .width(targetWidth)
+            .height(targetHeight),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .zIndex(if (isFocused) 2f else 1f)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                     this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                     clip = true
                 }
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF11142A),
-                            Color(0xFF0B0D1B)
-                        )
+                        colors = if (isFocused) {
+                            listOf(Color(0xFF1B1B33), Color(0xFF0A0B14))
+                        } else {
+                            listOf(Color(0xFF101124), Color(0xFF05060C))
+                        }
                     ),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
                 .border(
                     width = borderWidth,
                     brush = borderBrush,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused || focusState.hasFocus
@@ -710,29 +713,36 @@ fun SeeAllHomeCard(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(12.dp)
             ) {
                 Text(
                     text = "Ver todos",
-                    color = Color.White,
-                    fontSize = 13.sp.responsive(),
-                    fontWeight = FontWeight.Bold
+                    color = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp.responsive(),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Box(
                     modifier = Modifier
-                        .size(32.dp.responsive())
+                        .size(36.dp.responsive())
                         .background(
-                            if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.08f),
+                            if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f),
                             CircleShape
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.4f) else Color.White.copy(alpha = 0.12f),
+                            shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.ChevronRight,
+                        imageVector = Icons.Filled.ArrowForward,
                         contentDescription = "Ver todos",
-                        tint = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(20.dp.responsive())
+                        tint = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.75f),
+                        modifier = Modifier.size(16.dp.responsive())
                     )
                 }
             }
@@ -810,12 +820,12 @@ fun ChannelHomeCard(
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.04f else 1.00f,
+        targetValue = if (isFocused) 1.045f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "channel_card_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.5.dp else 1.dp,
+        targetValue = if (isFocused) 2.dp else 0.5.dp,
         animationSpec = tween(durationMillis = 200),
         label = "channel_card_border_width"
     )
@@ -826,7 +836,7 @@ fun ChannelHomeCard(
     )
 
     val imageAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1.0f else 0.65f,
+        targetValue = if (isFocused) 1.0f else 0.85f,
         animationSpec = tween(durationMillis = 200),
         label = "channel_image_alpha"
     )
@@ -860,18 +870,19 @@ fun ChannelHomeCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .zIndex(if (isFocused) 2f else 1f)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                     this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                     clip = true
                 }
-                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
+                .background(Color(0xFF07080F), RoundedCornerShape(12.dp))
                 .border(
-                    width = if (isFocused) 2.dp else 1.dp,
+                    width = borderWidth,
                     brush = borderBrush,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused || focusState.hasFocus
@@ -893,7 +904,7 @@ fun ChannelHomeCard(
                     alpha = imageAlpha
                 )
 
-                // High-fidelity smooth dark vertical gradient overlay
+                // Elegant discrete bottom gradient overlay
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -901,110 +912,101 @@ fun ChannelHomeCard(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    Color.Black.copy(alpha = 0.20f),
-                                    Color.Black.copy(alpha = 0.50f),
-                                    Color.Black.copy(alpha = 0.88f),
-                                    Color.Black.copy(alpha = 0.98f)
-                                )
+                                    Color.Black.copy(alpha = 0.35f),
+                                    Color.Black.copy(alpha = 0.92f)
+                                ),
+                                startY = 0.35f
                             )
                         )
                 )
 
-                // Content info
+                // Top Floating Badges (Rating or Favorite)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .align(Alignment.TopStart),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "CH ${channel.number}",
+                            color = Color(0xFF00E5FF),
+                            fontSize = 8.sp.responsive(),
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.toggleChannelFavorite(channel.id) },
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            .border(
+                                width = 0.5.dp,
+                                color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
+                            modifier = Modifier.size(10.dp)
+                        )
+                    }
+                }
+
+                // Bottom Metadata Info Area
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .fillMaxWidth()
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // Top controls (Channel tag and Favorite bullet)
+                    Text(
+                        text = channel.name,
+                        color = Color.White,
+                        fontSize = 12.sp.responsive(),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = Color.Black.copy(alpha = 0.85f),
+                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                blurRadius = 3f
+                            )
+                        )
+                    )
+                    
+                    Spacer(modifier = Modifier.height(5.dp))
+
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .background(
-                                    Color(0xFF00E5FF).copy(alpha = if (isFocused) 0.25f else 0.10f),
-                                    RoundedCornerShape(6.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = Color(0xFF00E5FF).copy(alpha = if (isFocused) 0.8f else 0.25f),
-                                    shape = RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 7.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = "CH ${channel.number}",
-                                color = Color(0xFF00E5FF),
-                                fontSize = 8.5.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 0.5.sp
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { viewModel.toggleChannelFavorite(channel.id) },
-                            modifier = Modifier
-                                .size(26.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
-                                    shape = CircleShape
-                                )
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = "Favorito",
-                                tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
-                                modifier = Modifier.size(13.dp)
-                            )
-                        }
-                    }
-
-                    // Channel metadata
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = channel.name,
-                            color = Color.White,
-                            fontSize = 13.sp.responsive(),
-                            fontWeight = FontWeight.ExtraBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = Color.Black.copy(alpha = 0.8f),
-                                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                    blurRadius = 4f
-                                )
-                            )
+                                .size(5.dp)
+                                .background(Color(0xFFFF2D55), CircleShape)
                         )
                         
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            // Live indicator pulsing red dot
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .background(Color(0xFFFF2D55), CircleShape)
-                            )
-                            
-                            Text(
-                                text = channel.category.uppercase(),
-                                color = Color.White.copy(alpha = 0.65f),
-                                fontSize = 8.5.sp.responsive(),
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp
-                            )
-                        }
+                        Text(
+                            text = channel.category.lowercase(),
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 8.sp.responsive(),
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
+                        )
                     }
                 }
             }
@@ -1033,12 +1035,12 @@ fun RadioHomeCard(
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.04f else 1.00f,
+        targetValue = if (isFocused) 1.045f else 1.00f,
         animationSpec = tween(durationMillis = 200),
         label = "radio_card_scale"
     )
     val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.5.dp else 1.dp,
+        targetValue = if (isFocused) 2.dp else 0.5.dp,
         animationSpec = tween(durationMillis = 200),
         label = "radio_card_border_width"
     )
@@ -1049,7 +1051,7 @@ fun RadioHomeCard(
     )
 
     val imageAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 0.95f else 0.65f,
+        targetValue = if (isFocused) 1.0f else 0.85f,
         animationSpec = tween(durationMillis = 200),
         label = "radio_image_alpha"
     )
@@ -1083,18 +1085,19 @@ fun RadioHomeCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .zIndex(if (isFocused) 2f else 1f)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                     this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                     clip = true
                 }
-                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
+                .background(Color(0xFF07080F), RoundedCornerShape(12.dp))
                 .border(
-                    width = if (isFocused) 2.dp else 1.dp,
+                    width = borderWidth,
                     brush = borderBrush,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused || focusState.hasFocus
@@ -1115,7 +1118,7 @@ fun RadioHomeCard(
                     alpha = imageAlpha
                 )
 
-                // High-fidelity smooth dark vertical gradient overlay with a touch of station theme color
+                // Elegant discrete bottom gradient overlay with a touch of station theme color
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -1123,97 +1126,96 @@ fun RadioHomeCard(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    cardColor.copy(alpha = 0.10f),
-                                    cardColor.copy(alpha = 0.35f),
-                                    Color.Black.copy(alpha = 0.85f),
-                                    Color.Black.copy(alpha = 0.98f)
-                                )
+                                    cardColor.copy(alpha = 0.15f),
+                                    Color.Black.copy(alpha = 0.92f)
+                                ),
+                                startY = 0.35f
                             )
                         )
                 )
 
-                // Station particulars
-                Column(
+                // Top Floating Badges (Rating or Favorite)
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.Start
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .align(Alignment.TopStart),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Styled Frequency badge matching station theme color
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    cardColor.copy(alpha = if (isFocused) 0.3f else 0.12f),
-                                    RoundedCornerShape(6.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = cardColor.copy(alpha = if (isFocused) 0.8f else 0.3f),
-                                    shape = RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = station.frequency,
-                                color = Color.White,
-                                fontSize = 8.5.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 0.5.sp
+                    Box(
+                        modifier = Modifier
+                            .background(cardColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                            .border(
+                                width = 0.5.dp,
+                                color = cardColor.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(4.dp)
                             )
-                        }
-
-                        IconButton(
-                            onClick = { viewModel.toggleRadioFavorite(station.id) },
-                            modifier = Modifier
-                                .size(26.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
-                                    shape = CircleShape
-                                )
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = "Favoritos",
-                                tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
-                                modifier = Modifier.size(13.dp)
-                            )
-                        }
-                    }
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = station.name,
+                            text = station.frequency,
                             color = Color.White,
-                            fontSize = 13.sp.responsive(),
+                            fontSize = 8.sp.responsive(),
                             fontWeight = FontWeight.ExtraBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = Color.Black.copy(alpha = 0.8f),
-                                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                    blurRadius = 4f
-                                )
-                            )
-                        )
-                        Text(
-                            text = station.genre.uppercase(),
-                            color = Color.White.copy(alpha = 0.65f),
-                            fontSize = 8.5.sp.responsive(),
-                            fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
                     }
+
+                    IconButton(
+                        onClick = { viewModel.toggleRadioFavorite(station.id) },
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            .border(
+                                width = 0.5.dp,
+                                color = if (isFavorite) Color.Red.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Favoritos",
+                            tint = if (isFavorite) Color(0xFFFF2D55) else Color.White,
+                            modifier = Modifier.size(10.dp)
+                        )
+                    }
+                }
+
+                // Bottom Metadata Info Area
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.Bottom,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = station.name,
+                        color = Color.White,
+                        fontSize = 12.sp.responsive(),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = Color.Black.copy(alpha = 0.85f),
+                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                blurRadius = 3f
+                            )
+                        )
+                    )
+                    
+                    Spacer(modifier = Modifier.height(5.dp))
+
+                    Text(
+                        text = station.genre.lowercase(),
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 8.sp.responsive(),
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
+                    )
                 }
             }
         }
@@ -1228,62 +1230,47 @@ private fun CardColorGradientOverlay(color: Color): Brush {
 }
 
 @Composable
-fun CatalogItemHomeCard(
+fun LuminaPremiumCard(
     item: CatalogItem,
-    layoutType: String = "Vertical",
+    layoutType: String = "Horizontal Poster Row",
     isFavorite: Boolean = false,
     progress: Float = 0f,
+    rank: Int? = null,
     onFocus: () -> Unit = {},
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val isHorizontal = layoutType == "Horizontal Poster Row" || layoutType == "Horizontal" || layoutType == "Landscape Row" || layoutType == "Banner Row"
+    val isHorizontal = layoutType in listOf(
+        "Horizontal Poster Row", "Horizontal", "Landscape Row", "Banner Row", "Large Featured Row", "Compact Row"
+    )
 
-    val targetWidth = if (isHorizontal) {
-        247.dp
-    } else {
-        186.dp
-    }.responsive()
-    
-    val targetHeight = if (isHorizontal) {
-        135.dp
-    } else {
-        260.dp
-    }.responsive()
+    val targetWidth = if (isHorizontal) 248.dp.responsive() else 180.dp.responsive()
+    val targetHeight = if (isHorizontal) 138.dp.responsive() else 260.dp.responsive()
 
     val imageUrl = remember(item, isHorizontal) {
         if (isHorizontal) {
-            if (!item.backdropUrl.isNullOrEmpty()) {
-                item.backdropUrl
-            } else {
-                item.posterUrl
-            }
+            if (!item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl
         } else {
             item.posterUrl
         }
     }
 
     var isFocused by remember { mutableStateOf(false) }
+
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.04f else 1.00f,
+        targetValue = if (isFocused) 1.045f else 1.0f,
         animationSpec = tween(durationMillis = 200),
-        label = "card_scale"
-    )
-    val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.5.dp else 1.dp,
-        animationSpec = tween(durationMillis = 200),
-        label = "card_border_width"
+        label = "lumina_card_scale"
     )
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 12.dp else 0.dp,
         animationSpec = tween(durationMillis = 200),
-        label = "card_shadow"
+        label = "lumina_card_shadow"
     )
-
     val imageAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1.0f else 0.82f,
+        targetValue = if (isFocused) 1.0f else 0.85f,
         animationSpec = tween(durationMillis = 200),
-        label = "card_image_alpha"
+        label = "lumina_card_alpha"
     )
 
     val borderBrush = remember(isFocused) {
@@ -1312,7 +1299,6 @@ fun CatalogItemHomeCard(
 
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
-    // Outer Box with FIXED layout bounds to guarantee the row never shifts or jumps vertically
     Box(
         modifier = modifier
             .width(targetWidth)
@@ -1322,18 +1308,19 @@ fun CatalogItemHomeCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .zIndex(if (isFocused) 2f else 1f)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                     this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                     clip = true
                 }
-                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
+                .background(Color(0xFF07080F), RoundedCornerShape(12.dp))
                 .border(
-                    width = if (isFocused) 2.dp else 1.dp,
+                    width = if (isFocused) 2.dp else 0.5.dp,
                     brush = borderBrush,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused || focusState.hasFocus
@@ -1346,7 +1333,7 @@ fun CatalogItemHomeCard(
                 )
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // Movie/Show Image (Poster/Backdrop) with elegant dimming
+                // Background Poster Image ( occupying practically the whole card )
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = item.title,
@@ -1355,7 +1342,7 @@ fun CatalogItemHomeCard(
                     alpha = imageAlpha
                 )
 
-                // High-fidelity smooth dark gradient overlay (multi-stop vignette)
+                // Elegant discrete bottom gradient overlay (not dark on top, only fading to solid black at the very bottom)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -1363,90 +1350,101 @@ fun CatalogItemHomeCard(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    Color.Black.copy(alpha = 0.15f),
-                                    Color.Black.copy(alpha = 0.45f),
-                                    Color.Black.copy(alpha = 0.85f),
-                                    Color.Black.copy(alpha = 0.98f)
-                                )
+                                    Color.Black.copy(alpha = 0.35f),
+                                    Color.Black.copy(alpha = 0.92f)
+                                ),
+                                startY = 0.35f
                             )
                         )
                 )
 
-                // Floating Badges at the top (Favorite and Rating/Year)
+                // Top Floating Badges (Rating, Rank, or Favorite) - extremely clean, minimal
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(10.dp)
+                        .padding(8.dp)
                         .align(Alignment.TopStart),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Favorite Icon Capsule
-                    if (isFavorite) {
+                    if (rank != null) {
                         Box(
                             modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.65f), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                                .padding(6.dp)
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
+                                    ),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "#$rank",
+                                color = Color.White,
+                                fontSize = 8.5.sp.responsive(),
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    } else if (isFavorite) {
+                        Box(
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                                .padding(5.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Favorite,
                                 contentDescription = "Favorito",
                                 tint = Color(0xFFFF2D55),
-                                modifier = Modifier.size(11.dp)
+                                modifier = Modifier.size(10.dp)
                             )
                         }
                     } else {
                         Spacer(modifier = Modifier.size(1.dp))
                     }
 
-                    // Rating Badge (for Vertical cards or cards with valid rating)
+                    // Small rating star
                     if (!item.rating.isNullOrEmpty() && item.rating != "0" && item.rating != "0.0") {
                         Row(
                             modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
-                                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = "Rating",
                                 tint = Color(0xFFFFC107),
-                                modifier = Modifier.size(10.dp)
+                                modifier = Modifier.size(9.dp)
                             )
                             Text(
                                 text = item.rating,
                                 color = Color.White,
-                                fontSize = 8.5.sp.responsive(),
+                                fontSize = 8.sp.responsive(),
                                 fontWeight = FontWeight.ExtraBold
                             )
                         }
                     }
                 }
 
-                val logoHeight = if (isHorizontal) {
-                    24.dp
-                } else {
-                    34.dp
-                }.responsive()
-
-                // Bottom Info display (Logo / Title / Subtitles) aligned perfectly inside padded area
+                // Bottom Content Area (Redesigned with the movie logo/title and stylized modern platform badge below)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
+                        .align(Alignment.BottomStart)
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.Start
                 ) {
+                    // Movie Logo / Title
+                    val logoHeight = if (isHorizontal) 24.dp.responsive() else 32.dp.responsive()
                     if (!item.logoUrl.isNullOrEmpty()) {
                         AsyncImage(
                             model = item.logoUrl,
                             contentDescription = item.title,
                             modifier = Modifier
-                                .fillMaxWidth(0.90f)
+                                .fillMaxWidth(0.85f)
                                 .height(logoHeight),
                             alignment = Alignment.BottomStart,
                             contentScale = ContentScale.Fit
@@ -1455,98 +1453,115 @@ fun CatalogItemHomeCard(
                         Text(
                             text = item.title,
                             color = Color.White,
-                            fontSize = 12.sp.responsive(),
-                            fontWeight = FontWeight.ExtraBold,
-                            maxLines = 2,
+                            fontSize = (if (isHorizontal) 12 else 13).sp.responsive(),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = TextStyle(
                                 shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = Color.Black.copy(alpha = 0.9f),
+                                    color = Color.Black.copy(alpha = 0.85f),
                                     offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                    blurRadius = 4f
+                                    blurRadius = 3f
                                 )
                             )
                         )
                     }
 
-                    // Subtitle Row (Platform badge, Year, or Genre)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
+
+                    // Minimal, ultra-modern platform text & year
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // Stylized platform badge if present
                         val platformName = item.platform ?: ""
                         if (platformName.isNotEmpty()) {
-                            val badgeColor = when {
-                                platformName.contains("max", ignoreCase = true) -> Color(0xFF0022FF)
+                            val brandColor = when {
+                                platformName.contains("max", ignoreCase = true) -> Color(0xFF00E5FF)
                                 platformName.contains("prime", ignoreCase = true) -> Color(0xFF00A8E1)
                                 platformName.contains("netflix", ignoreCase = true) -> Color(0xFFE50914)
                                 platformName.contains("disney", ignoreCase = true) -> Color(0xFF113CCF)
-                                platformName.contains("amc", ignoreCase = true) -> Color(0xFF008080)
-                                else -> Color.White.copy(alpha = 0.15f)
+                                platformName.contains("amc", ignoreCase = true) -> Color(0xFF00FF87)
+                                else -> Color(0xFF00E5FF)
                             }
-                            Box(
-                                modifier = Modifier
-                                    .background(badgeColor.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
-                                    .border(1.dp, badgeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 5.dp, vertical = 1.5.dp)
-                            ) {
-                                Text(
-                                    text = platformName.lowercase(),
-                                    color = Color.White,
-                                    fontSize = 7.5.sp.responsive(),
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.2.sp
-                                )
-                            }
+                            Text(
+                                text = platformName.lowercase(),
+                                color = brandColor,
+                                fontSize = 8.sp.responsive(),
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.5.sp
+                            )
                         } else if (!item.platformLogo.isNullOrEmpty()) {
                             AsyncImage(
                                 model = item.platformLogo,
                                 contentDescription = "Platform",
-                                modifier = Modifier.height(11.dp.responsive()),
+                                modifier = Modifier.height(10.dp.responsive()),
                                 contentScale = ContentScale.Fit
                             )
                         }
 
-                        // Release Year or Genre
                         val yearOrGenre = if (item.year.isNotEmpty()) item.year else item.genre
                         if (yearOrGenre.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(3.dp)
+                                    .background(Color.White.copy(alpha = 0.4f), CircleShape)
+                            )
                             Text(
                                 text = yearOrGenre,
                                 color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 8.5.sp.responsive(),
-                                fontWeight = FontWeight.Bold
+                                fontSize = 8.sp.responsive(),
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
+                }
 
-                    // Seen progress bar with glassmorphic track and neon cyan fill
-                    if (progress > 0f) {
-                        Spacer(modifier = Modifier.height(6.dp))
+                // Super fine watched progress bar running exactly at the bottom edge
+                if (progress > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.5.dp)
+                            .align(Alignment.BottomCenter)
+                            .background(Color.White.copy(alpha = 0.15f))
+                    ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(2.dp))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(progress)
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
-                                        ),
-                                        RoundedCornerShape(2.dp)
+                                .fillMaxHeight()
+                                .fillMaxWidth(progress)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
                                     )
-                            )
-                        }
+                                )
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun CatalogItemHomeCard(
+    item: CatalogItem,
+    layoutType: String = "Vertical",
+    isFavorite: Boolean = false,
+    progress: Float = 0f,
+    onFocus: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    LuminaPremiumCard(
+        item = item,
+        layoutType = layoutType,
+        isFavorite = isFavorite,
+        progress = progress,
+        onFocus = onFocus,
+        onClick = onClick,
+        modifier = modifier
+    )
 }
 
 data class ActorInfo(val name: String, val role: String, val photoUrl: String)
@@ -2993,241 +3008,15 @@ fun CatalogItemNumberedCard(
     onFocus: () -> Unit = {},
     onClick: () -> Unit
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.04f else 1.00f,
-        animationSpec = tween(durationMillis = 200),
-        label = "numbered_card_scale"
+    LuminaPremiumCard(
+        item = item,
+        layoutType = "Vertical",
+        isFavorite = isFavorite,
+        progress = progress,
+        rank = rank,
+        onFocus = onFocus,
+        onClick = onClick
     )
-    val borderWidth by animateDpAsState(
-        targetValue = if (isFocused) 2.5.dp else 1.dp,
-        animationSpec = tween(durationMillis = 200),
-        label = "numbered_card_border_width"
-    )
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isFocused) 12.dp else 0.dp,
-        animationSpec = tween(durationMillis = 200),
-        label = "numbered_card_shadow"
-    )
-
-    val imageAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1.0f else 0.82f,
-        animationSpec = tween(durationMillis = 200),
-        label = "numbered_image_alpha"
-    )
-
-    val borderBrush = remember(isFocused) {
-        if (isFocused) {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color(0xFF00E5FF),
-                    Color(0xFF3B82F6)
-                )
-            )
-        } else {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.08f),
-                    Color.White.copy(alpha = 0.08f)
-                )
-            )
-        }
-    }
-
-    LaunchedEffect(isFocused) {
-        if (isFocused) {
-            onFocus()
-        }
-    }
-
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    
-    Box(
-        modifier = Modifier
-            .width(185.dp.responsive())
-            .height(215.dp.responsive())
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused || focusState.hasFocus
-            }
-            .focusable(interactionSource = interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-    ) {
-        // 1. Giant Number Rank (Drawn FIRST on the bottom layer to stay behind the poster card)
-        val rankStr = rank.toString()
-        Text(
-            text = rankStr,
-            style = TextStyle(
-                fontSize = 115.sp,
-                fontWeight = FontWeight.Black,
-                fontStyle = FontStyle.Italic,
-                color = if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.98f) else Color.White.copy(alpha = 0.12f), // Highlight rank color dynamically!
-                letterSpacing = (-7).sp,
-                shadow = androidx.compose.ui.graphics.Shadow(
-                    color = Color.Black.copy(alpha = 0.95f),
-                    offset = androidx.compose.ui.geometry.Offset(4f, 4f),
-                    blurRadius = 8f
-                )
-            ),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = 2.dp, y = 14.dp) // Aligns beautifully with the bottom edge
-        )
-
-        // 2. Poster Card (Drawn SECOND on the top layer to overlap the giant rank number on the right)
-        Box(
-            modifier = Modifier
-                .width(135.dp.responsive())
-                .height(190.dp.responsive())
-                .align(Alignment.BottomEnd)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(14.dp)
-                    clip = true
-                }
-                .background(Color(0xFF060709), RoundedCornerShape(14.dp))
-                .border(
-                    width = borderWidth,
-                    brush = borderBrush,
-                    shape = RoundedCornerShape(14.dp)
-                )
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Movie/Show Poster
-                AsyncImage(
-                    model = item.posterUrl,
-                    contentDescription = item.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alpha = imageAlpha
-                )
-
-                // High-fidelity smooth vertical dark gradient overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.20f),
-                                    Color.Black.copy(alpha = 0.55f),
-                                    Color.Black.copy(alpha = 0.95f)
-                                )
-                            )
-                        )
-                )
-
-                // Floating Badges at the top (Favorite and Rating)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(6.dp)
-                        .align(Alignment.TopStart),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isFavorite) {
-                        Box(
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.65f), CircleShape)
-                                .border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape)
-                                .padding(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Favorite,
-                                contentDescription = "Favorito",
-                                tint = Color(0xFFFF2D55),
-                                modifier = Modifier.size(8.dp)
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.size(1.dp))
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(4.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(8.dp)
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = item.rating,
-                            color = Color.White,
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Dynamic Title and Year overlay & progress
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 10.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = item.title,
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 10.sp.responsive(),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black.copy(alpha = 0.9f),
-                                offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                blurRadius = 3f
-                            )
-                        )
-                    )
-                    Text(
-                        text = item.year,
-                        color = Color.White.copy(alpha = 0.65f),
-                        fontSize = 8.sp.responsive(),
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Seen progress bar
-                    if (progress > 0f) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.5.dp)
-                                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(2.dp))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(progress)
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
-                                        ),
-                                        RoundedCornerShape(2.dp)
-                                    )
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
