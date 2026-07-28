@@ -1437,37 +1437,38 @@ fun LuminaPremiumCard(
                     verticalArrangement = Arrangement.Bottom,
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // Movie Logo / Title
-                    val logoHeight = if (isHorizontal) 24.dp.responsive() else 32.dp.responsive()
-                    if (!item.logoUrl.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = item.logoUrl,
-                            contentDescription = item.title,
-                            modifier = Modifier
-                                .fillMaxWidth(0.85f)
-                                .height(logoHeight),
-                            alignment = Alignment.BottomStart,
-                            contentScale = ContentScale.Fit
-                        )
-                    } else {
-                        Text(
-                            text = item.title,
-                            color = Color.White,
-                            fontSize = (if (isHorizontal) 12 else 13).sp.responsive(),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(
-                                    color = Color.Black.copy(alpha = 0.85f),
-                                    offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                    blurRadius = 3f
+                    // Movie Logo / Title (Only shown when card uses a backdrop horizontal layout)
+                    if (isHorizontal) {
+                        val logoHeight = 24.dp.responsive()
+                        if (!item.logoUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = item.logoUrl,
+                                contentDescription = item.title,
+                                modifier = Modifier
+                                    .fillMaxWidth(0.85f)
+                                    .height(logoHeight),
+                                alignment = Alignment.BottomStart,
+                                contentScale = ContentScale.Fit
+                            )
+                        } else {
+                            Text(
+                                text = item.title,
+                                color = Color.White,
+                                fontSize = 12.sp.responsive(),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = TextStyle(
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.85f),
+                                        offset = androidx.compose.ui.geometry.Offset(1f, 1f),
+                                        blurRadius = 3f
+                                    )
                                 )
                             )
-                        )
+                        }
+                        Spacer(modifier = Modifier.height(5.dp))
                     }
-
-                    Spacer(modifier = Modifier.height(5.dp))
 
                     // Minimal, ultra-modern platform text & year
                     Row(
