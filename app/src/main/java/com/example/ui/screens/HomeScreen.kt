@@ -334,7 +334,7 @@ fun HomeScreen(
                     }
 
                     // --- 2. MAIN STRUCTURAL LAYOUT ---
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    Column(modifier = Modifier.fillMaxSize()) {
                         // A) Fixed Hero Banner (ONLY FOR TV / WIDE LAYOUT)
                         if (isWideLayout) {
                             currentMovie?.let { currentSafeMovie ->
@@ -360,17 +360,12 @@ fun HomeScreen(
                         // B) Scrollable Content Rows
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp.responsive()),
                             contentPadding = PaddingValues(bottom = 90.dp)
                         ) {
-                            // Spacer to let the first row start at the bottom of the Hero Banner
-                            if (isWideLayout) {
-                                item {
-                                    Spacer(modifier = Modifier.height(290.dp))
-                                }
-                            }
-
                             // EN TELÉFONO: Carrusel Destacado Vertical estilo móvil adentro de la lista scrollable
                             if (!isWideLayout) {
                                 item {

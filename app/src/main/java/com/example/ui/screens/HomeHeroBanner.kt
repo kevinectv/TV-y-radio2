@@ -243,12 +243,12 @@ fun HomeHeroBannerTv(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight()
-                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 76.dp),
+                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 8.dp.responsive(), top = 36.dp.responsive()),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp.responsive()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp.responsive()),
                     horizontalAlignment = Alignment.Start
                 ) {
                     Column(
@@ -287,7 +287,7 @@ fun HomeHeroBannerTv(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(80.dp.responsive()),
+                                .height(70.dp.responsive()),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (!richMeta.logoUrl.isNullOrBlank()) {
@@ -301,7 +301,7 @@ fun HomeHeroBannerTv(
                                         .build(),
                                     contentDescription = richMeta.title,
                                     modifier = Modifier
-                                        .heightIn(max = 80.dp.responsive())
+                                        .heightIn(max = 70.dp.responsive())
                                         .widthIn(max = 340.dp.responsive()),
                                     contentScale = ContentScale.Fit,
                                     alignment = Alignment.CenterStart,
@@ -378,14 +378,14 @@ fun HomeHeroBannerTv(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp.responsive()),
+                            .height(38.dp.responsive()),
                         contentAlignment = Alignment.TopStart
                     ) {
                         Text(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 13.sp.responsive(),
-                            maxLines = 3,
+                            maxLines = 2,
                             lineHeight = 18.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth()
@@ -479,26 +479,26 @@ fun HomeHeroBannerTv(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp.responsive()))
+                    Spacer(modifier = Modifier.height(2.dp.responsive()))
 
                     // 5. Botones de acción: Reproducir y + (Favoritos) con altura fija (Informativos, no interactivos para TV)
                     Row(
-                        modifier = Modifier.height(50.dp.responsive()),
+                        modifier = Modifier.height(42.dp.responsive()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Reproducir
                         Row(
                             modifier = Modifier
-                                .height(50.dp.responsive())
+                                .height(42.dp.responsive())
                                 .background(
                                     color = Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(25.dp)
+                                    shape = RoundedCornerShape(21.dp)
                                 )
                                 .border(
                                     width = 1.dp,
                                     color = Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(25.dp)
+                                    shape = RoundedCornerShape(21.dp)
                                 )
                                 .padding(horizontal = 24.dp.responsive()),
                             verticalAlignment = Alignment.CenterVertically,
@@ -508,13 +508,13 @@ fun HomeHeroBannerTv(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Reproducir",
                                 tint = Color.White,
-                                modifier = Modifier.size(22.dp.responsive())
+                                modifier = Modifier.size(20.dp.responsive())
                             )
                             Spacer(modifier = Modifier.width(6.dp.responsive()))
                             Text(
                                 text = "Reproducir",
                                 color = Color.White,
-                                fontSize = 14.sp.responsive(),
+                                fontSize = 13.sp.responsive(),
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -523,7 +523,7 @@ fun HomeHeroBannerTv(
                         val isFav = targetMovie.id in favoriteCatalogItems
                         Box(
                             modifier = Modifier
-                                .size(50.dp.responsive())
+                                .size(42.dp.responsive())
                                 .background(
                                     color = Color.White.copy(alpha = 0.15f),
                                     shape = CircleShape
@@ -540,7 +540,7 @@ fun HomeHeroBannerTv(
                                 imageVector = if (isFav) Icons.Filled.Check else Icons.Filled.Add,
                                 contentDescription = "Favorito",
                                 tint = if (isFav) Color(0xFF00FF87) else Color.White,
-                                modifier = Modifier.size(22.dp.responsive())
+                                modifier = Modifier.size(20.dp.responsive())
                             )
                         }
                     }
