@@ -405,8 +405,9 @@ fun HomeHeroBannerTv(
                                 modifier = Modifier
                                     .height(24.dp.responsive())
                                     .widthIn(max = 85.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 4.dp.responsive(), vertical = 1.dp.responsive()),
                                 contentAlignment = Alignment.Center
                             ) {
                                 coil.compose.AsyncImage(
@@ -420,8 +421,9 @@ fun HomeHeroBannerTv(
                             Box(
                                 modifier = Modifier
                                     .height(24.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive()),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -462,9 +464,9 @@ fun HomeHeroBannerTv(
                         val ageRating = targetMovie.classification?.ifBlank { null } ?: if ((richMeta.ratingImdb.toFloatOrNull() ?: 7.5f) >= 7.8f) "+16" else "+12"
                         Box(
                             modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
-                                .border(0.8.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 7.dp.responsive(), vertical = 2.5.dp.responsive()),
+                                .background(Color(0xFF0F0F15).copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                                .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp.responsive(), vertical = 1.dp.responsive()),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -479,42 +481,25 @@ fun HomeHeroBannerTv(
 
                     Spacer(modifier = Modifier.height(6.dp.responsive()))
 
-                    // 5. Botones de acción: Reproducir y + (Favoritos) con altura fija
+                    // 5. Botones de acción: Reproducir y + (Favoritos) con altura fija (Informativos, no interactivos para TV)
                     Row(
                         modifier = Modifier.height(50.dp.responsive()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val playInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                        val isPlayFocused = playInteractionSource.collectIsFocusedAsState().value
-                        val playScale by animateFloatAsState(
-                            targetValue = if (isPlayFocused) 1.04f else 1.0f,
-                            animationSpec = tween(durationMillis = 150),
-                            label = "playScale"
-                        )
-                        
+                        // Reproducir
                         Row(
                             modifier = Modifier
                                 .height(50.dp.responsive())
-                                .graphicsLayer {
-                                    scaleX = playScale
-                                    scaleY = playScale
-                                }
                                 .background(
-                                    color = if (isPlayFocused) Color.White else Color.White.copy(alpha = 0.15f),
+                                    color = Color.White.copy(alpha = 0.15f),
                                     shape = RoundedCornerShape(25.dp)
                                 )
                                 .border(
-                                    width = if (isPlayFocused) 2.dp else 1.dp,
-                                    color = if (isPlayFocused) Color.White else Color.White.copy(alpha = 0.15f),
+                                    width = 1.dp,
+                                    color = Color.White.copy(alpha = 0.15f),
                                     shape = RoundedCornerShape(25.dp)
                                 )
-                                .clickable(
-                                    interactionSource = playInteractionSource,
-                                    indication = null
-                                ) {
-                                    onTrailerClick(targetMovie)
-                                }
                                 .padding(horizontal = 24.dp.responsive()),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
@@ -522,55 +507,39 @@ fun HomeHeroBannerTv(
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Reproducir",
-                                tint = if (isPlayFocused) Color(0xFF0F0F1A) else Color.White,
+                                tint = Color.White,
                                 modifier = Modifier.size(22.dp.responsive())
                             )
                             Spacer(modifier = Modifier.width(6.dp.responsive()))
                             Text(
                                 text = "Reproducir",
-                                color = if (isPlayFocused) Color(0xFF0F0F1A) else Color.White,
+                                color = Color.White,
                                 fontSize = 14.sp.responsive(),
                                 fontWeight = FontWeight.Bold
-                              )
+                            )
                         }
 
-                        val favInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                        val isFavFocused = favInteractionSource.collectIsFocusedAsState().value
+                        // Favorito
                         val isFav = targetMovie.id in favoriteCatalogItems
-                        val favScale by animateFloatAsState(
-                            targetValue = if (isFavFocused) 1.04f else 1.0f,
-                            animationSpec = tween(durationMillis = 150),
-                            label = "favScale"
-                        )
-
                         Box(
                             modifier = Modifier
                                 .size(50.dp.responsive())
-                                .graphicsLayer {
-                                    scaleX = favScale
-                                    scaleY = favScale
-                                }
                                 .background(
-                                    color = if (isFavFocused) Color.White else Color.White.copy(alpha = 0.15f),
+                                    color = Color.White.copy(alpha = 0.15f),
                                     shape = CircleShape
                                 )
                                 .border(
-                                    width = if (isFavFocused) 2.dp else 1.dp,
-                                    color = if (isFavFocused) Color.White else Color.White.copy(alpha = 0.15f),
+                                    width = 1.dp,
+                                    color = Color.White.copy(alpha = 0.15f),
                                     shape = CircleShape
                                 )
-                                .clickable(
-                                    interactionSource = favInteractionSource,
-                                    indication = null
-                                ) {
-                                    viewModel.toggleCatalogItemFavorite(targetMovie.id)
-                                },
+                                .padding(4.dp.responsive()),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = if (isFav) Icons.Filled.Check else Icons.Filled.Add,
                                 contentDescription = "Favorito",
-                                tint = if (isFavFocused) Color(0xFF0F0F1A) else (if (isFav) Color(0xFF00FF87) else Color.White),
+                                tint = if (isFav) Color(0xFF00FF87) else Color.White,
                                 modifier = Modifier.size(22.dp.responsive())
                             )
                         }
@@ -773,8 +742,9 @@ fun HomeHeroBannerMobile(
                                 modifier = Modifier
                                     .height(22.dp)
                                     .widthIn(max = 75.dp)
-                                    .background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 coil.compose.AsyncImage(
@@ -788,8 +758,9 @@ fun HomeHeroBannerMobile(
                             Box(
                                 modifier = Modifier
                                     .height(22.dp)
-                                    .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 1.5.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(text = richMeta.platform, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)

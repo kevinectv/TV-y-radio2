@@ -261,8 +261,8 @@ fun HomeScreen(
     }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    // Adjust height for layout: TV uses cinematic banner (350.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
-    val bannerHeight = if (isWideLayout) 350.dp else 0.dp
+    // Adjust height for layout: TV uses cinematic banner (300.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
+    val bannerHeight = if (isWideLayout) 300.dp else 0.dp
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
@@ -334,7 +334,7 @@ fun HomeScreen(
                     }
 
                     // --- 2. MAIN STRUCTURAL LAYOUT ---
-                    Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.fillMaxSize()) {
                         // A) Fixed Hero Banner (ONLY FOR TV / WIDE LAYOUT)
                         if (isWideLayout) {
                             currentMovie?.let { currentSafeMovie ->
@@ -360,12 +360,17 @@ fun HomeScreen(
                         // B) Scrollable Content Rows
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(28.dp.responsive()),
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp.responsive()),
                             contentPadding = PaddingValues(bottom = 90.dp)
                         ) {
+                            // Spacer to let the first row start at the bottom of the Hero Banner
+                            if (isWideLayout) {
+                                item {
+                                    Spacer(modifier = Modifier.height(290.dp))
+                                }
+                            }
+
                             // EN TELÉFONO: Carrusel Destacado Vertical estilo móvil adentro de la lista scrollable
                             if (!isWideLayout) {
                                 item {
@@ -530,7 +535,7 @@ fun DrawCatalogRow(
     if (isSupportedRowType) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
+            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
         ) {
             items(catalog.items.take(catalog.numItems)) { item ->
                 CatalogItemHomeCard(
@@ -571,7 +576,7 @@ fun DrawCatalogRow(
     } else if (layoutToDraw == "Top Numerado" || layoutToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("Mejor Valorad", ignoreCase = true) || titleToDraw.contains("Top 250", ignoreCase = true)) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(4.dp.responsive()),
-            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
+            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
         ) {
             itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
                 CatalogItemNumberedCard(
@@ -599,7 +604,7 @@ fun DrawCatalogRow(
     } else {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
+            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
         ) {
             items(catalog.items.take(catalog.numItems)) { item ->
                 CatalogItemHomeCard(
@@ -763,8 +768,8 @@ fun HomeSectionRowHeader(
             .padding(
                 start = 20.dp.responsive(),
                 end = 20.dp.responsive(),
-                top = 26.dp.responsive(),
-                bottom = 8.dp.responsive()
+                top = 6.dp.responsive(),
+                bottom = 1.dp.responsive()
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {

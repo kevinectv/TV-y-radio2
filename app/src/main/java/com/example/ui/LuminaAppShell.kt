@@ -107,8 +107,10 @@ fun LuminaAppShell(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            horizontal = if (isWideLayout) 32.dp else 16.dp,
-                            vertical = if (isWideLayout) 16.dp else 10.dp
+                            start = if (isWideLayout) 24.dp else 12.dp,
+                            end = if (isWideLayout) 32.dp else 16.dp,
+                            top = if (isWideLayout) 16.dp else 10.dp,
+                            bottom = if (isWideLayout) 16.dp else 10.dp
                         ),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -197,16 +199,16 @@ fun LuminaAppShell(
                                     modifier = Modifier
                                         .scale(tabScale)
                                         .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
-                                        .clip(CircleShape)
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(tabBgColor)
                                         .border(
                                             width = if (isTabFocused || isSelected) 1.2.dp else 0.dp,
                                             color = tabBorderColor,
-                                            shape = CircleShape
+                                            shape = RoundedCornerShape(10.dp)
                                         )
                                         .clickable { viewModel.selectTab(tab) }
                                         .tvFocusEffect(
-                                            shape = CircleShape,
+                                            shape = RoundedCornerShape(10.dp),
                                             focusedBorderColor = Color.Transparent,
                                             unfocusedBorderColor = Color.Transparent,
                                             scaleAmount = 1.00f
