@@ -177,6 +177,8 @@ fun PosterSkeleton() {
     )
 }
 
+private var lastActiveHeroMovie: CatalogItem? = null
+
 @Composable
 fun HomeScreen(
     viewModel: MediaViewModel,
@@ -214,7 +216,7 @@ fun HomeScreen(
     val allChannels by viewModel.allChannels.collectAsState()
     // Showcase/Banner movies (Curated highlights from either the active catalogs or premium curated cinema highlights)
     val featuredMovies = remember(catalogs) {
-        catalogs.filter { it.isVisible && it.showInHome }.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() && !it.posterUrl.contains("unsplash.com") && !it.posterUrl.contains("images.unsplash") }.distinctBy { it.id }.shuffled().take(12)
+        catalogs.filter { it.isVisible && it.showInHome }.flatMap { it.items }.filter { it.posterUrl.isNotEmpty() && !it.posterUrl.contains("unsplash.com") && !it.posterUrl.contains("images.unsplash") }.distinctBy { it.id }.take(12)
     }
 
     val favoriteCatalogItems by viewModel.favoriteCatalogItems.collectAsState()
@@ -231,33 +233,32 @@ fun HomeScreen(
         list
     }
 
-    var activeHeroMovie by remember { mutableStateOf<CatalogItem?>(null) }
+    var activeHeroMovie by remember { mutableStateOf<CatalogItem?>(lastActiveHeroMovie) }
 
     val currentMovie = activeHeroMovie ?: featuredMovies.firstOrNull()
 
-    // Logo state
-    var activeHeroLogoUrl by remember { mutableStateOf<String?>(null) }
+    // Logo state initialized immediately from currentMovie (no delay/no flicker)
+    var activeHeroLogoUrl by remember(currentMovie) { mutableStateOf(currentMovie?.logoUrl) }
 
-    // Loaded dynamic properties (from TMDB real-time query) for the current movie
-    var activeHeroLoadedDetails by remember(currentMovie) { mutableStateOf<LoadedTmdbDetails?>(null) }
+    // Loaded details state initialized immediately from currentMovie (no delay/no flicker)
+    var activeHeroLoadedDetails by remember(currentMovie) {
+        mutableStateOf(
+            if (currentMovie == null) null else LoadedTmdbDetails(
+                description = currentMovie.description,
+                rating = currentMovie.rating,
+                year = currentMovie.year,
+                logoUrl = currentMovie.logoUrl,
+                backdropUrl = currentMovie.backdropUrl ?: "",
+                duration = currentMovie.duration,
+                genre = currentMovie.genre
+            )
+        )
+    }
     
     LaunchedEffect(currentMovie) {
-        activeHeroLogoUrl = null
-        activeHeroLoadedDetails = null
-
-        if (currentMovie == null) return@LaunchedEffect
-        
-        // Populate immediately using currentMovie's fields which are already enriched from Vercel backend
-        activeHeroLogoUrl = currentMovie.logoUrl
-        activeHeroLoadedDetails = LoadedTmdbDetails(
-            description = currentMovie.description,
-            rating = currentMovie.rating,
-            year = currentMovie.year,
-            logoUrl = currentMovie.logoUrl,
-            backdropUrl = currentMovie.backdropUrl ?: "",
-            duration = currentMovie.duration,
-            genre = currentMovie.genre
-        )
+        if (currentMovie != null) {
+            lastActiveHeroMovie = currentMovie
+        }
     }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
@@ -364,7 +365,10 @@ fun HomeScreen(
                                 .fillMaxWidth()
                                 .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp.responsive()),
-                            contentPadding = PaddingValues(bottom = 90.dp)
+                            contentPadding = PaddingValues(
+                                top = if (isWideLayout) 28.dp else 0.dp,
+                                bottom = 90.dp
+                            )
                         ) {
                             // EN TELÉFONO: Carrusel Destacado Vertical estilo móvil adentro de la lista scrollable
                             if (!isWideLayout) {
