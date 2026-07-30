@@ -43,6 +43,8 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -1244,37 +1246,47 @@ fun LuminaPremiumCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isHorizontal = layoutType in listOf(
-        "Horizontal Poster Row", "Horizontal", "Landscape Row", "Banner Row", "Large Featured Row", "Compact Row"
-    )
-
-    val targetWidth = if (isHorizontal) 248.dp.responsive() else 180.dp.responsive()
-    val targetHeight = if (isHorizontal) 138.dp.responsive() else 260.dp.responsive()
-
-    val imageUrl = remember(item, isHorizontal) {
-        if (isHorizontal) {
-            if (!item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl
-        } else {
-            item.posterUrl
-        }
-    }
-
     var isFocused by remember { mutableStateOf(false) }
 
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.045f else 1.0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "lumina_card_scale"
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val context = LocalContext.current
+    val screenWidthPixels = context.resources.displayMetrics.widthPixels
+
+    var cardLeftPx by remember { mutableStateOf(0f) }
+
+    val normalWidth = 170.dp.responsive()
+    val expandedWidth = 340.dp.responsive()
+    val cardHeight = 260.dp.responsive()
+    val delta = expandedWidth - normalWidth
+
+    val isNearRightEdge = remember(cardLeftPx, screenWidthPixels) {
+        val expandedWidthPx = with(density) { expandedWidth.toPx() }
+        cardLeftPx + expandedWidthPx > screenWidthPixels - with(density) { 24.dp.toPx() }
+    }
+
+    val animatedWidth by animateDpAsState(
+        targetValue = if (isFocused) expandedWidth else normalWidth,
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+        label = "lumina_card_width"
     )
+
+    val targetOffset = if (isFocused && isNearRightEdge) -delta else 0.dp
+    val animatedOffset by animateDpAsState(
+        targetValue = targetOffset,
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+        label = "lumina_card_offset"
+    )
+
+    val backdropAlpha by animateFloatAsState(
+        targetValue = if (isFocused) 1f else 0f,
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+        label = "backdrop_alpha"
+    )
+
     val shadowElevation by animateDpAsState(
-        targetValue = if (isFocused) 12.dp else 0.dp,
-        animationSpec = tween(durationMillis = 200),
+        targetValue = if (isFocused) 16.dp else 0.dp,
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
         label = "lumina_card_shadow"
-    )
-    val imageAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1.0f else 0.85f,
-        animationSpec = tween(durationMillis = 200),
-        label = "lumina_card_alpha"
     )
 
     val borderBrush = remember(isFocused) {
@@ -1305,17 +1317,21 @@ fun LuminaPremiumCard(
 
     Box(
         modifier = modifier
-            .width(targetWidth)
-            .height(targetHeight),
-        contentAlignment = Alignment.Center
+            .width(normalWidth)
+            .height(cardHeight)
+            .onGloballyPositioned { coordinates ->
+                val positionInWindow = coordinates.positionInWindow()
+                cardLeftPx = positionInWindow.x
+            },
+        contentAlignment = Alignment.CenterStart
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .zIndex(if (isFocused) 2f else 1f)
+                .offset(x = animatedOffset)
+                .width(animatedWidth)
+                .fillMaxHeight()
+                .zIndex(if (isFocused) 10f else 1f)
                 .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
                     this.shadowElevation = shadowElevation.value
                     shape = RoundedCornerShape(12.dp)
                     clip = true
@@ -1336,211 +1352,129 @@ fun LuminaPremiumCard(
                     onClick = onClick
                 )
         ) {
+            // Background Image Area
             Box(modifier = Modifier.fillMaxSize()) {
-                // Background Poster Image ( occupying practically the whole card )
+                // 1. Unfocused Vertical Poster (Always present as baseline/underlay or unfocused background)
                 AsyncImage(
-                    model = imageUrl,
+                    model = item.posterUrl,
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alpha = imageAlpha
+                    contentScale = ContentScale.Crop
                 )
 
-                // Elegant discrete bottom gradient overlay (not dark on top, only fading to solid black at the very bottom)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.35f),
-                                    Color.Black.copy(alpha = 0.92f)
-                                ),
-                                startY = 0.35f
-                            )
-                        )
-                )
+                // 2. Focused Backdrop (Smoothly fades in over the poster as the card expands)
+                if (isFocused) {
+                    val backdropModel = if (!item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl
+                    AsyncImage(
+                        model = backdropModel,
+                        contentDescription = item.title,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = backdropAlpha },
+                        contentScale = ContentScale.Crop
+                    )
 
-                // Top Floating Badges (Rating, Rank, or Favorite) - extremely clean, minimal
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .align(Alignment.TopStart),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (rank != null) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
+                    // Cinematic Gradient Overlay over the backdrop for superior contrast and brand feel
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = backdropAlpha }
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.45f),
+                                        Color.Black.copy(alpha = 0.95f)
                                     ),
-                                    RoundedCornerShape(4.dp)
+                                    startY = 0.35f
                                 )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "#$rank",
-                                color = Color.White,
-                                fontSize = 8.5.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold
                             )
-                        }
-                    } else if (isFavorite) {
-                        Box(
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                                .padding(5.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Favorite,
-                                contentDescription = "Favorito",
-                                tint = Color(0xFFFF2D55),
-                                modifier = Modifier.size(10.dp)
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.size(1.dp))
-                    }
-
-                    // Small rating star
-                    if (!item.rating.isNullOrEmpty() && item.rating != "0" && item.rating != "0.0") {
-                        Row(
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Star,
-                                contentDescription = "Rating",
-                                tint = Color(0xFFFFC107),
-                                modifier = Modifier.size(9.dp)
-                            )
-                            Text(
-                                text = item.rating,
-                                color = Color.White,
-                                fontSize = 8.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                    }
+                    )
                 }
+            }
 
-                // Bottom Content Area (Redesigned with the movie logo/title and stylized modern platform badge below)
+            // Foreground Content Area (Only shown in focused/expanded state)
+            if (isFocused) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomStart)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.Bottom,
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = backdropAlpha }
+                        .padding(14.dp.responsive()),
+                    verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // Movie Logo / Title (Only shown when card uses a backdrop horizontal layout)
-                    if (isHorizontal) {
-                        val logoHeight = 24.dp.responsive()
+                    // Top Row: Brand Streaming Platform Logo
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (!item.platformLogo.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = item.platformLogo,
+                                contentDescription = item.platform,
+                                modifier = Modifier
+                                    .height(20.dp.responsive())
+                                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else if (!item.platform.isNullOrEmpty()) {
+                            val brandColor = when {
+                                item.platform.contains("max", ignoreCase = true) -> Color(0xFF00E5FF)
+                                item.platform.contains("prime", ignoreCase = true) -> Color(0xFF00A8E1)
+                                item.platform.contains("netflix", ignoreCase = true) -> Color(0xFFE50914)
+                                item.platform.contains("disney", ignoreCase = true) -> Color(0xFF113CCF)
+                                item.platform.contains("amc", ignoreCase = true) -> Color(0xFF00FF87)
+                                else -> Color(0xFF00E5FF)
+                            }
+                            Text(
+                                text = item.platform.uppercase(),
+                                color = brandColor,
+                                fontSize = 9.sp.responsive(),
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp,
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    // Bottom Area: Official Content Logo
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(65.dp.responsive()),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
                         if (!item.logoUrl.isNullOrEmpty()) {
                             AsyncImage(
                                 model = item.logoUrl,
                                 contentDescription = item.title,
                                 modifier = Modifier
-                                    .fillMaxWidth(0.85f)
-                                    .height(logoHeight),
-                                alignment = Alignment.BottomStart,
-                                contentScale = ContentScale.Fit
+                                    .fillMaxWidth(0.9f)
+                                    .heightIn(max = 65.dp.responsive()),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.BottomStart
                             )
                         } else {
                             Text(
                                 text = item.title,
                                 color = Color.White,
-                                fontSize = 12.sp.responsive(),
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
+                                fontSize = 16.sp.responsive(),
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                                 style = TextStyle(
                                     shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.85f),
-                                        offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                                        blurRadius = 3f
+                                        color = Color.Black.copy(alpha = 0.95f),
+                                        offset = androidx.compose.ui.geometry.Offset(1.5f, 1.5f),
+                                        blurRadius = 4f
                                     )
                                 )
                             )
                         }
-                        Spacer(modifier = Modifier.height(5.dp))
-                    }
-
-                    // Minimal, ultra-modern platform text & year
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        val platformName = item.platform ?: ""
-                        if (platformName.isNotEmpty()) {
-                            val brandColor = when {
-                                platformName.contains("max", ignoreCase = true) -> Color(0xFF00E5FF)
-                                platformName.contains("prime", ignoreCase = true) -> Color(0xFF00A8E1)
-                                platformName.contains("netflix", ignoreCase = true) -> Color(0xFFE50914)
-                                platformName.contains("disney", ignoreCase = true) -> Color(0xFF113CCF)
-                                platformName.contains("amc", ignoreCase = true) -> Color(0xFF00FF87)
-                                else -> Color(0xFF00E5FF)
-                            }
-                            Text(
-                                text = platformName.lowercase(),
-                                color = brandColor,
-                                fontSize = 8.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 0.5.sp
-                            )
-                        } else if (!item.platformLogo.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = item.platformLogo,
-                                contentDescription = "Platform",
-                                modifier = Modifier.height(10.dp.responsive()),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-
-                        val yearOrGenre = if (item.year.isNotEmpty()) item.year else item.genre
-                        if (yearOrGenre.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .size(3.dp)
-                                    .background(Color.White.copy(alpha = 0.4f), CircleShape)
-                            )
-                            Text(
-                                text = yearOrGenre,
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 8.sp.responsive(),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-
-                // Super fine watched progress bar running exactly at the bottom edge
-                if (progress > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.5.dp)
-                            .align(Alignment.BottomCenter)
-                            .background(Color.White.copy(alpha = 0.15f))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(progress)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        colors = listOf(Color(0xFF00E5FF), Color(0xFF3B82F6))
-                                    )
-                                )
-                        )
                     }
                 }
             }
@@ -3320,18 +3254,16 @@ fun formatSeconds(ms: Int): String {
 
 private fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
     val cleanName = name.trim().lowercase()
-    return when {
-        cleanName.contains("tendencia") || cleanName.contains("trending") -> Pair("🔥 Tendencias", Icons.Filled.TrendingUp)
-        cleanName.contains("popular") -> Pair("🎬 Películas Populares", Icons.Filled.Movie)
-        cleanName.contains("cine") || cleanName.contains("película") || cleanName.contains("movie") -> Pair("🎥 Cine Estelar", Icons.Filled.Movie)
-        cleanName.contains("serie") || cleanName.contains("show") || cleanName.contains("tv") -> Pair("📺 Series Premium", Icons.Filled.Tv)
-        cleanName.contains("anime") -> Pair("🌸 Anime Estelar", Icons.Filled.Movie)
-        cleanName.contains("favorito") || cleanName.contains("lista") -> Pair("⭐ Mi Lista", Icons.Filled.Star)
-        cleanName.contains("recomenda") -> Pair("✨ Recomendados para ti", Icons.Filled.ThumbUp)
-        else -> {
-            val capitalized = name.split(" ").map { it.replaceFirstChar { char -> char.uppercase() } }.joinToString(" ")
-            Pair("🍿 $capitalized", Icons.Filled.VideoLibrary)
-        }
+    val icon = when {
+        cleanName.contains("tendencia") || cleanName.contains("trending") -> Icons.Filled.TrendingUp
+        cleanName.contains("popular") -> Icons.Filled.Movie
+        cleanName.contains("cine") || cleanName.contains("película") || cleanName.contains("movie") -> Icons.Filled.Movie
+        cleanName.contains("serie") || cleanName.contains("show") || cleanName.contains("tv") -> Icons.Filled.Tv
+        cleanName.contains("anime") -> Icons.Filled.Movie
+        cleanName.contains("favorito") || cleanName.contains("lista") -> Icons.Filled.Star
+        cleanName.contains("recomenda") -> Icons.Filled.ThumbUp
+        else -> Icons.Filled.VideoLibrary
     }
+    return Pair(name, icon)
 }
 

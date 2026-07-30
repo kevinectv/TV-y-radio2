@@ -687,8 +687,6 @@ fun CatalogItemCard(
 ) {
     val context = LocalContext.current
     val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
-    val isVertical = catalog.layoutType == "Vertical Poster Row" || catalog.layoutType == "Vertical"
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -757,18 +755,6 @@ fun CatalogItemCard(
                     onClick = { viewModel.moveCatalogDown(catalog.id) }
                 )
 
-                // ↔ Layout Mode Toggle (Horizontal / Vertical)
-                SquareActionButton(
-                    icon = if (isVertical) Icons.Default.SwapVert else Icons.Default.SwapHoriz,
-                    contentDescription = "Layout",
-                    onClick = {
-                        val newLayout = if (isVertical) "Horizontal Poster Row" else "Vertical Poster Row"
-                        sharedPrefs.edit().putString("layout_override_${catalog.id}", newLayout).apply()
-                        viewModel.updateCatalog(catalog.copy(layoutType = newLayout))
-                        Toast.makeText(context, "Diseño cambiado a: ${if (isVertical) "Horizontal" else "Vertical"}", Toast.LENGTH_SHORT).show()
-                    }
-                )
-
                 // 🗑 Delete
                 SquareActionButton(
                     icon = Icons.Default.Delete,
@@ -816,21 +802,6 @@ fun EditCatalogDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Name field
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Nombre del Catálogo") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF00E5FF),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
-                    ),
-                    modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = RoundedCornerShape(8.dp)),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                )
-
                 // URL field
                 OutlinedTextField(
                     value = url,
@@ -882,45 +853,21 @@ fun EditCatalogDialog(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Layout Choice selector (Edit)
-                Text("Diseño de Visualización (Home)", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val choices = listOf(
-                        listOf("Horizontal Poster Row", "Vertical Poster Row"),
-                        listOf("Landscape Row", "Banner Row")
-                    )
-                    choices.forEach { pair ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            pair.forEach { choice ->
-                                val selected = (layoutType == choice)
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
-                                        .clickable { layoutType = choice }
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = choice.uppercase(),
-                                        color = if (selected) Color.Black else Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 8.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                // Personalized Name field (Replacing the layout selector)
+                Text("Personalizar Nombre del Catálogo", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre Personalizado") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF00E5FF),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                    ),
+                    modifier = Modifier.fillMaxWidth().tvFocusEffect(shape = RoundedCornerShape(8.dp)),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+                )
 
                 Divider(color = Color.White.copy(alpha = 0.05f), modifier = Modifier.padding(vertical = 4.dp))
 
@@ -1376,34 +1323,7 @@ fun ManualAddCatalogForm(
             }
         }
 
-        // Layout choices
-        Text("Diseño Inicial", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val choices = listOf("Horizontal Poster Row", "Vertical Poster Row")
-            choices.forEach { choice ->
-                val selected = (layoutType == choice)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.05f))
-                        .clickable { layoutType = choice }
-                        .tvFocusEffect(shape = RoundedCornerShape(8.dp))
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = choice.uppercase(),
-                        color = if (selected) Color.Black else Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 9.sp
-                    )
-                }
-            }
-        }
+
 
         // URL input field (Pegar URL / Añadir URL)
         OutlinedTextField(

@@ -37,7 +37,7 @@ data class CatalogItemEntity(
 )
 
 fun CatalogItemEntity.toDomain(): CatalogItem {
-    android.util.Log.d("LuminaFlow_EntityToDomain", "toDomain() mapped - Title: $title, Logo: $logoUrl, PlatformLogo: $platformLogo, Backdrop: $backdropUrl, Cast: $castJson")
+    android.util.Log.d("LuminaFlow_EntityToDom", "toDomain() mapped - Title: $title, Logo: $logoUrl, PlatformLogo: $platformLogo, Backdrop: $backdropUrl, Cast: $castJson")
     return CatalogItem(
         id = id,
         title = title,
@@ -68,7 +68,7 @@ fun CatalogItemEntity.toDomain(): CatalogItem {
 }
 
 fun CatalogItem.toEntity(catalogId: String): CatalogItemEntity {
-    android.util.Log.d("LuminaFlow_DomainToEntity", "toEntity() mapped - Title: $title, Logo: $logoUrl, PlatformLogo: $platformLogo, Backdrop: $backdropUrl, Cast: $castJson")
+    android.util.Log.d("LuminaFlow_DomToEnt", "toEntity() mapped - Title: $title, Logo: $logoUrl, PlatformLogo: $platformLogo, Backdrop: $backdropUrl, Cast: $castJson")
     return CatalogItemEntity(
         catalogId = catalogId,
         id = id,
