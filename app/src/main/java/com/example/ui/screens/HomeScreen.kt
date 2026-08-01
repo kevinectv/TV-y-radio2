@@ -269,7 +269,8 @@ fun HomeScreen(
 
     // Control de carga (Skeleton)
     val isLoadingData = catalogs.isEmpty() || currentMovie == null
-    var progressRowFocusedId2 by remember { mutableStateOf<String?>(null) }
+    var progressRowFocusedIndex2 by remember { mutableStateOf<Int?>(null) }
+    var progressRowFocusedNearRight2 by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
         Crossfade(
@@ -367,9 +368,9 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 28.dp.responsive() else 8.dp.responsive()),
+                            verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
                             contentPadding = PaddingValues(
-                                top = if (isWideLayout) 28.dp else 0.dp,
+                                top = if (isWideLayout) 36.dp else 0.dp,
                                 bottom = 90.dp
                             )
                         ) {
@@ -406,28 +407,33 @@ fun HomeScreen(
                                             icon = Icons.Filled.PlayCircle,
                                             color = Color(0xFF00FF87)
                                         )
-                                        var progressRowFocusedId by remember { mutableStateOf<String?>(null) }
+                                        Spacer(modifier = Modifier.height(if (isWideLayout) 18.dp.responsive() else 12.dp.responsive()))
+                                        var progressRowFocusedIndex by remember { mutableStateOf<Int?>(null) }
+                                        var progressRowFocusedNearRight by remember { mutableStateOf(false) }
                                         LazyRow(
                                             horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-                                            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
+                                            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
                                         ) {
-                                            items(progressItems) { (item, progressVal) ->
+                                            itemsIndexed(progressItems) { index, (item, progressVal) ->
+                                                val fIndex = progressRowFocusedIndex
+                                                val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
                                                 CatalogItemHomeCard(
                                                     item = item,
                                                     layoutType = "Landscape Row",
                                                     isFavorite = item.id in favoriteCatalogItems,
                                                     progress = progressVal,
                                                     onFocus = { activeHeroMovie = item },
-                                                    onFocusChange = { isFocused ->
+                                                    onFocusChange = { isFocused, isNearRight ->
                                                         if (isFocused) {
-                                                            progressRowFocusedId = item.id
+                                                            progressRowFocusedIndex = index
+                                                            progressRowFocusedNearRight = isNearRight
                                                         } else {
-                                                            if (progressRowFocusedId == item.id) {
-                                                                progressRowFocusedId = null
+                                                            if (progressRowFocusedIndex == index) {
+                                                                progressRowFocusedIndex = null
                                                             }
                                                         }
                                                     },
-                                                    isOtherFocusedInRow = isWideLayout && progressRowFocusedId != null && progressRowFocusedId != item.id,
+                                                    isOtherFocusedInRow = isCovered,
                                                     onClick = {
                                                         activeHeroMovie = item
                                                         viewModel.selectedDetailsItem.value = item
@@ -465,27 +471,31 @@ fun HomeScreen(
                                                 icon = Icons.Filled.PlayCircle,
                                                 color = Color(0xFF00FF87)
                                             )
+                                            Spacer(modifier = Modifier.height(if (isWideLayout) 18.dp.responsive() else 12.dp.responsive()))
                                             LazyRow(
                                                 horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-                                                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 6.dp.responsive())
+                                                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
                                             ) {
-                                                items(progressItems) { (item, progressVal) ->
+                                                itemsIndexed(progressItems) { index, (item, progressVal) ->
+                                                    val fIndex2 = progressRowFocusedIndex2
+                                                    val isCovered = isCardCovered(index, fIndex2, progressRowFocusedNearRight2, isWideLayout)
                                                     CatalogItemHomeCard(
                                                         item = item,
                                                         layoutType = "Landscape Row",
                                                         isFavorite = item.id in favoriteCatalogItems,
                                                         progress = progressVal,
                                                         onFocus = { activeHeroMovie = item },
-                                                        onFocusChange = { isFocused ->
+                                                        onFocusChange = { isFocused, isNearRight ->
                                                             if (isFocused) {
-                                                                progressRowFocusedId2 = item.id
+                                                                progressRowFocusedIndex2 = index
+                                                                progressRowFocusedNearRight2 = isNearRight
                                                             } else {
-                                                                if (progressRowFocusedId2 == item.id) {
-                                                                    progressRowFocusedId2 = null
+                                                                if (progressRowFocusedIndex2 == index) {
+                                                                    progressRowFocusedIndex2 = null
                                                                 }
                                                             }
                                                         },
-                                                        isOtherFocusedInRow = isWideLayout && progressRowFocusedId2 != null && progressRowFocusedId2 != item.id,
+                                                        isOtherFocusedInRow = isCovered,
                                                         onClick = {
                                                             activeHeroMovie = item
                                                             viewModel.selectedDetailsItem.value = item
@@ -539,154 +549,167 @@ fun DrawCatalogRow(
         "MDBList" -> Icons.Filled.FilterAlt
         else -> Icons.Filled.VideoLibrary
     }
-    HomeSectionRowHeader(
-        title = titleToDraw.uppercase(),
-        icon = iconToDraw,
-        color = Color(0xFF00E5FF)
-    )
-
-    val isSupportedRowType = layoutToDraw in listOf(
-        "Horizontal Poster Row",
-        "Vertical Poster Row",
-        "Landscape Row",
-        "Banner Row",
-        "Large Featured Row",
-        "Compact Row",
-        "Horizontal"
-    )
 
     val context = LocalContext.current
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    var focusedItemId by remember { mutableStateOf<String?>(null) }
+    var focusedIndex by remember { mutableStateOf<Int?>(null) }
+    var isFocusedNearRight by remember { mutableStateOf(false) }
 
-    if (isSupportedRowType) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
-        ) {
-            items(catalog.items.take(catalog.numItems)) { item ->
-                CatalogItemHomeCard(
-                    item = item,
-                    layoutType = layoutToDraw,
-                    isFavorite = item.id in favoriteCatalogItems,
-                    progress = seenProgress[item.id] ?: 0f,
-                    onFocus = {
-                        onFocus(item)
-                    },
-                    onFocusChange = { isFocused ->
-                        if (isFocused) {
-                            focusedItemId = item.id
-                        } else {
-                            if (focusedItemId == item.id) {
-                                focusedItemId = null
-                            }
-                        }
-                    },
-                    isOtherFocusedInRow = isWideLayout && focusedItemId != null && focusedItemId != item.id,
-                    onClick = {
-                        onClick(item)
-                    }
-                )
-            }
-            item {
-                if (catalog.items.isNotEmpty()) {
-                    val rowHasFocusedCard = isWideLayout && focusedItemId != null
-                    val seeAllAlpha by animateFloatAsState(
-                        targetValue = if (rowHasFocusedCard) 0f else 1f,
-                        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                        label = "see_all_fade"
-                    )
-                    SeeAllHomeCard(
-                        layoutType = layoutToDraw,
-                        modifier = Modifier.graphicsLayer { alpha = seeAllAlpha },
-                        onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
-                    )
-                }
-            }
-        }
-    } else if (layoutToDraw == "Vertical") {
-        CatalogVerticalGrid(
-            items = catalog.items.take(catalog.numItems),
-            layoutType = "Vertical",
-            favoriteCatalogItems = favoriteCatalogItems,
-            seenProgress = seenProgress,
-            onItemFocus = { item ->
-                onFocus(item)
-            },
-            onClick = { item ->
-                onClick(item)
-            }
+    Column {
+        HomeSectionRowHeader(
+            title = titleToDraw.uppercase(),
+            icon = iconToDraw,
+            color = Color(0xFF00E5FF)
         )
-    } else if (layoutToDraw == "Top Numerado" || layoutToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("Mejor Valorad", ignoreCase = true) || titleToDraw.contains("Top 250", ignoreCase = true)) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(4.dp.responsive()),
-            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
-        ) {
-            itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
-                CatalogItemNumberedCard(
-                    item = item,
-                    rank = index + 1,
-                    isFavorite = item.id in favoriteCatalogItems,
-                    progress = seenProgress[item.id] ?: 0f,
-                    onFocus = {
-                        onFocus(item)
-                    },
-                    onClick = {
-                        onClick(item)
-                    }
-                )
-            }
-            item {
-                if (catalog.items.isNotEmpty()) {
-                    SeeAllHomeCard(
-                        layoutType = "Vertical",
-                        onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
+        Spacer(modifier = Modifier.height(if (isWideLayout) 18.dp.responsive() else 12.dp.responsive()))
+
+        val isSupportedRowType = layoutToDraw in listOf(
+            "Horizontal Poster Row",
+            "Vertical Poster Row",
+            "Landscape Row",
+            "Banner Row",
+            "Large Featured Row",
+            "Compact Row",
+            "Horizontal"
+        )
+
+        if (isSupportedRowType) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
+                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
+            ) {
+                itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                    val fIndex = focusedIndex
+                    val isCovered = isCardCovered(index, fIndex, isFocusedNearRight, isWideLayout)
+                    CatalogItemHomeCard(
+                        item = item,
+                        layoutType = layoutToDraw,
+                        isFavorite = item.id in favoriteCatalogItems,
+                        progress = seenProgress[item.id] ?: 0f,
+                        onFocus = {
+                            onFocus(item)
+                        },
+                        onFocusChange = { isFocused, isNearRight ->
+                            if (isFocused) {
+                                focusedIndex = index
+                                isFocusedNearRight = isNearRight
+                            } else {
+                                if (focusedIndex == index) {
+                                    focusedIndex = null
+                                }
+                            }
+                        },
+                        isOtherFocusedInRow = isCovered,
+                        onClick = {
+                            onClick(item)
+                        }
                     )
                 }
-            }
-        }
-    } else {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
-        ) {
-            items(catalog.items.take(catalog.numItems)) { item ->
-                CatalogItemHomeCard(
-                    item = item,
-                    layoutType = "Horizontal Poster Row",
-                    isFavorite = item.id in favoriteCatalogItems,
-                    progress = seenProgress[item.id] ?: 0f,
-                    onFocus = {
-                        onFocus(item)
-                    },
-                    onFocusChange = { isFocused ->
-                        if (isFocused) {
-                            focusedItemId = item.id
-                        } else {
-                            if (focusedItemId == item.id) {
-                                focusedItemId = null
-                            }
-                        }
-                    },
-                    isOtherFocusedInRow = isWideLayout && focusedItemId != null && focusedItemId != item.id,
-                    onClick = {
-                        onClick(item)
+                item {
+                    if (catalog.items.isNotEmpty()) {
+                        val N = catalog.items.take(catalog.numItems).size
+                        val isSeeAllCovered = isCardCovered(N, focusedIndex, isFocusedNearRight, isWideLayout)
+                        val seeAllAlpha by animateFloatAsState(
+                            targetValue = if (isSeeAllCovered) 0f else 1f,
+                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                            label = "see_all_fade"
+                        )
+                        SeeAllHomeCard(
+                            layoutType = layoutToDraw,
+                            modifier = Modifier.graphicsLayer { alpha = seeAllAlpha },
+                            onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
+                        )
                     }
-                )
+                }
             }
-            item {
-                if (catalog.items.isNotEmpty()) {
-                    val rowHasFocusedCard = isWideLayout && focusedItemId != null
-                    val seeAllAlpha by animateFloatAsState(
-                        targetValue = if (rowHasFocusedCard) 0f else 1f,
-                        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                        label = "see_all_fade_fallback"
+        } else if (layoutToDraw == "Vertical") {
+            CatalogVerticalGrid(
+                items = catalog.items.take(catalog.numItems),
+                layoutType = "Vertical",
+                favoriteCatalogItems = favoriteCatalogItems,
+                seenProgress = seenProgress,
+                onItemFocus = { item ->
+                    onFocus(item)
+                },
+                onClick = { item ->
+                    onClick(item)
+                }
+            )
+        } else if (layoutToDraw == "Top Numerado" || layoutToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("top", ignoreCase = true) || titleToDraw.contains("Mejor Valorad", ignoreCase = true) || titleToDraw.contains("Top 250", ignoreCase = true)) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp.responsive()),
+                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
+            ) {
+                itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                    CatalogItemNumberedCard(
+                        item = item,
+                        rank = index + 1,
+                        isFavorite = item.id in favoriteCatalogItems,
+                        progress = seenProgress[item.id] ?: 0f,
+                        onFocus = {
+                            onFocus(item)
+                        },
+                        onClick = {
+                            onClick(item)
+                        }
                     )
-                    SeeAllHomeCard(
+                }
+                item {
+                    if (catalog.items.isNotEmpty()) {
+                        SeeAllHomeCard(
+                            layoutType = "Vertical",
+                            onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
+                        )
+                    }
+                }
+            }
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
+                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
+            ) {
+                itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                    val fIndex = focusedIndex
+                    val isCovered = isCardCovered(index, fIndex, isFocusedNearRight, isWideLayout)
+                    CatalogItemHomeCard(
+                        item = item,
                         layoutType = "Horizontal Poster Row",
-                        modifier = Modifier.graphicsLayer { alpha = seeAllAlpha },
-                        onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
+                        isFavorite = item.id in favoriteCatalogItems,
+                        progress = seenProgress[item.id] ?: 0f,
+                        onFocus = {
+                            onFocus(item)
+                        },
+                        onFocusChange = { isFocused, isNearRight ->
+                            if (isFocused) {
+                                focusedIndex = index
+                                isFocusedNearRight = isNearRight
+                            } else {
+                                if (focusedIndex == index) {
+                                    focusedIndex = null
+                                }
+                            }
+                        },
+                        isOtherFocusedInRow = isCovered,
+                        onClick = {
+                            onClick(item)
+                        }
                     )
+                }
+                item {
+                    if (catalog.items.isNotEmpty()) {
+                        val N = catalog.items.take(catalog.numItems).size
+                        val isSeeAllCovered = isCardCovered(N, focusedIndex, isFocusedNearRight, isWideLayout)
+                        val seeAllAlpha by animateFloatAsState(
+                            targetValue = if (isSeeAllCovered) 0f else 1f,
+                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                            label = "see_all_fade_fallback"
+                        )
+                        SeeAllHomeCard(
+                            layoutType = "Horizontal Poster Row",
+                            modifier = Modifier.graphicsLayer { alpha = seeAllAlpha },
+                            onClick = { CatalogNavigation.activeCatalogForSeeAll = catalog }
+                        )
+                    }
                 }
             }
         }
@@ -701,19 +724,9 @@ fun SeeAllHomeCard(
 ) {
     val context = LocalContext.current
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val isHorizontal = layoutType in listOf("Horizontal Poster Row", "Horizontal", "Landscape Row", "Banner Row", "Large Featured Row", "Compact Row")
     
-    val targetWidth = if (isWideLayout) {
-        150.dp.responsive()
-    } else {
-        if (isHorizontal) 140.dp.responsive() else 120.dp.responsive()
-    }
-    
-    val targetHeight = if (isWideLayout) {
-        215.dp.responsive()
-    } else {
-        if (isHorizontal) 138.dp.responsive() else 260.dp.responsive()
-    }
+    val targetWidth = getNormalCardWidth(isWideLayout)
+    val targetHeight = getCardHeight(isWideLayout)
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -1308,6 +1321,37 @@ private fun CardColorGradientOverlay(color: Color): Brush {
 }
 
 @Composable
+private fun getNormalCardWidth(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
+    if (isWideLayout) 150.dp.responsive() else 145.dp.responsive()
+
+@Composable
+private fun getExpandedCardWidth(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
+    if (isWideLayout) 300.dp.responsive() else 290.dp.responsive()
+
+@Composable
+private fun getCardHeight(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
+    if (isWideLayout) 215.dp.responsive() else 220.dp.responsive()
+
+@Composable
+private fun isCardCovered(
+    index: Int,
+    focusedIndex: Int?,
+    isFocusedNearRight: Boolean,
+    isWideLayout: Boolean
+): Boolean {
+    if (!isWideLayout || focusedIndex == null || index == focusedIndex) return false
+    val normalWidth = getNormalCardWidth(true)
+    val expandedWidth = getExpandedCardWidth(true)
+    val delta = expandedWidth - normalWidth
+    val S = 16.dp.responsive()
+    val left_f = (normalWidth + S) * focusedIndex + (if (isFocusedNearRight) -delta else 0.dp)
+    val right_f = left_f + expandedWidth
+    val left_i = (normalWidth + S) * index
+    val right_i = left_i + normalWidth
+    return left_i.value < right_f.value && right_i.value > left_f.value
+}
+
+@Composable
 fun LuminaPremiumCard(
     item: CatalogItem,
     layoutType: String = "Horizontal Poster Row",
@@ -1317,7 +1361,7 @@ fun LuminaPremiumCard(
     onFocus: () -> Unit = {},
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onFocusChange: (Boolean) -> Unit = {},
+    onFocusChange: (Boolean, Boolean) -> Unit = { _, _ -> },
     isOtherFocusedInRow: Boolean = false
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -1329,9 +1373,9 @@ fun LuminaPremiumCard(
     var cardLeftPx by remember { mutableStateOf(0f) }
 
     val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val normalWidth = if (isWideLayout) 150.dp.responsive() else 170.dp.responsive()
-    val expandedWidth = if (isWideLayout) 250.dp.responsive() else 340.dp.responsive()
-    val cardHeight = if (isWideLayout) 215.dp.responsive() else 260.dp.responsive()
+    val normalWidth = getNormalCardWidth(isWideLayout)
+    val expandedWidth = getExpandedCardWidth(isWideLayout)
+    val cardHeight = getCardHeight(isWideLayout)
     val delta = expandedWidth - normalWidth
 
     val isNearRightEdge = remember(cardLeftPx, screenWidthPixels, expandedWidth) {
@@ -1341,26 +1385,26 @@ fun LuminaPremiumCard(
 
     val animatedWidth by animateDpAsState(
         targetValue = if (isFocused) expandedWidth else normalWidth,
-        animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
         label = "lumina_card_width"
     )
 
     val targetOffset = if (isFocused && isNearRightEdge) -delta else 0.dp
     val animatedOffset by animateDpAsState(
         targetValue = targetOffset,
-        animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
         label = "lumina_card_offset"
     )
 
     val backdropAlpha by animateFloatAsState(
         targetValue = if (isFocused) 1f else 0f,
-        animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
         label = "backdrop_alpha"
     )
 
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 16.dp else 0.dp,
-        animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
         label = "lumina_card_shadow"
     )
 
@@ -1388,9 +1432,12 @@ fun LuminaPremiumCard(
         }
     }
 
-    LaunchedEffect(isFocused) {
+    LaunchedEffect(isFocused, isNearRightEdge) {
         if (isFocused) {
             onFocus()
+            onFocusChange(true, isNearRightEdge)
+        } else {
+            onFocusChange(false, isNearRightEdge)
         }
     }
 
@@ -1398,7 +1445,7 @@ fun LuminaPremiumCard(
 
     Box(
         modifier = modifier
-            .width(animatedWidth)
+            .width(normalWidth)
             .height(cardHeight)
             .onGloballyPositioned { coordinates ->
                 val positionInWindow = coordinates.positionInWindow()
@@ -1430,7 +1477,6 @@ fun LuminaPremiumCard(
                     val focused = focusState.isFocused || focusState.hasFocus
                     if (isFocused != focused) {
                         isFocused = focused
-                        onFocusChange(focused)
                     }
                 }
                 .focusable(interactionSource = interactionSource)
@@ -1590,7 +1636,7 @@ fun CatalogItemHomeCard(
     progress: Float = 0f,
     onFocus: () -> Unit = {},
     modifier: Modifier = Modifier,
-    onFocusChange: (Boolean) -> Unit = {},
+    onFocusChange: (Boolean, Boolean) -> Unit = { _, _ -> },
     isOtherFocusedInRow: Boolean = false,
     onClick: () -> Unit
 ) {
