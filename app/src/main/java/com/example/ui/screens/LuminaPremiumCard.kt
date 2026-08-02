@@ -32,20 +32,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import coil.imageLoader
 import com.example.data.model.CatalogItem
 import com.example.ui.components.responsive
 
 @Composable
 private fun getLocalNormalCardWidth(isWideLayout: Boolean): Dp =
-    if (isWideLayout) 100.dp.responsive() else 115.dp.responsive()
+    if (isWideLayout) 125.dp.responsive() else 142.dp.responsive()
 
 @Composable
 private fun getLocalExpandedCardWidth(isWideLayout: Boolean): Dp =
-    if (isWideLayout) 200.dp.responsive() else 230.dp.responsive()
+    if (isWideLayout) 300.dp.responsive() else 345.dp.responsive()
 
 @Composable
 private fun getLocalCardHeight(isWideLayout: Boolean): Dp =
-    if (isWideLayout) 150.dp.responsive() else 172.dp.responsive()
+    if (isWideLayout) 187.dp.responsive() else 213.dp.responsive()
 
 /**
  * LuminaPremiumCard - Rebuilt from scratch to deliver an ultra-premium, modern, and highly-optimized
@@ -89,30 +90,49 @@ fun LuminaPremiumCard(
     val cardHeight = getLocalCardHeight(isWideLayout)
     val widthDelta = expandedWidth - normalWidth
 
-    // 1. High Performance Fluid Core Animations
+    // Smart Proactive Prefetching to keep all imagery warmed up in Memory/Disk cache
+    LaunchedEffect(item.backdropUrl, item.posterUrl, item.logoUrl) {
+        val backdrop = if (!item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl
+        if (!backdrop.isNullOrEmpty()) {
+            val req = coil.request.ImageRequest.Builder(context)
+                .data(backdrop)
+                .size(coil.size.Size.ORIGINAL)
+                .build()
+            context.imageLoader.enqueue(req)
+        }
+        if (!item.logoUrl.isNullOrEmpty()) {
+            val req = coil.request.ImageRequest.Builder(context)
+                .data(item.logoUrl)
+                .size(coil.size.Size.ORIGINAL)
+                .build()
+            context.imageLoader.enqueue(req)
+        }
+    }
+
+    // 1. High Performance Snappy Premium Animations
     val scaleOnFocus by animateFloatAsState(
         targetValue = if (isFocused) 1.05f else 1.0f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = 24000f
         ),
         label = "scale_focus"
     )
 
-    // Horizontal width expansion for Carousel rows
+    // Horizontal width expansion for Carousel rows - Snappy & Immediate
     val animatedWidth by animateDpAsState(
         targetValue = if (isFocused) expandedWidth else normalWidth,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            stiffness = 24000f
         ),
         label = "expanded_width"
     )
 
-    // Smooth backdrop crossfade on expansion
+    // Smooth snappy backdrop crossfade on expansion
     val backdropAlpha by animateFloatAsState(
         targetValue = if (isFocused) 1f else 0f,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 40, easing = LinearOutSlowInEasing),
         label = "crossfade_alpha"
     )
 
@@ -122,36 +142,42 @@ fun LuminaPremiumCard(
         initialValue = 0.98f,
         targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "aura_pulse"
     )
 
-    // 2. Neighboring Card Shift Dynamics (Carousel mode)
+    // 2. Neighboring Card Shift Dynamics (Carousel mode) - Coordinated Snappy Speeds
     val neighborScaleTarget = if (isOtherFocusedInRow) 0.94f else 1f
     val animatedNeighborScale by animateFloatAsState(
         targetValue = neighborScaleTarget,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = 24000f
+        ),
         label = "neighbor_scale"
     )
 
     val neighborAlphaTarget = if (isOtherFocusedInRow) 0.55f else 1f
     val animatedNeighborAlpha by animateFloatAsState(
         targetValue = neighborAlphaTarget,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 40, easing = LinearOutSlowInEasing),
         label = "neighbor_alpha"
     )
 
     val neighborShiftTarget = if (isOtherFocusedInRow && focusedIndex != null) {
         val direction = if (cardIndex > focusedIndex) 1f else -1f
-        14.dp * direction
+        16.dp * direction
     } else {
         0.dp
     }
     val animatedNeighborShift by animateDpAsState(
         targetValue = neighborShiftTarget,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = 24000f
+        ),
         label = "neighbor_shift"
     )
 
@@ -314,10 +340,10 @@ fun LuminaPremiumCard(
                                     .fillMaxHeight()
                                     .graphicsLayer { alpha = backdropAlpha },
                                 contentScale = ContentScale.Crop,
-                                alignment = Alignment.CenterStart
+                                alignment = Alignment.Center
                             )
 
-                            // Subtle overlay gradient on focused backdrop for cinema feel
+                            // High-contrast cinema gradient overlay to guarantee excellent readability for text/logo
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -325,13 +351,70 @@ fun LuminaPremiumCard(
                                     .background(
                                         Brush.verticalGradient(
                                             colors = listOf(
-                                                Color.Transparent,
-                                                Color.Black.copy(alpha = 0.7f)
-                                            ),
-                                            startY = 0.4f
+                                                Color.Black.copy(alpha = 0.2f),
+                                                Color.Black.copy(alpha = 0.85f)
+                                            )
                                         )
                                     )
                             )
+
+                            // Minimal clean information overlay: logo (or title fallback) + small synopsis
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(horizontal = 12.dp.responsive(), vertical = 10.dp.responsive())
+                                    .width(240.dp.responsive())
+                                    .graphicsLayer { alpha = backdropAlpha },
+                                verticalArrangement = Arrangement.spacedBy(4.dp.responsive())
+                            ) {
+                                val resolvedLogo = if (item.logoUrl.isNullOrBlank() || item.logoUrl == "null" || item.logoUrl == "NULL") null else item.logoUrl
+                                if (resolvedLogo != null) {
+                                    val context = LocalContext.current
+                                    coil.compose.SubcomposeAsyncImage(
+                                        model = coil.request.ImageRequest.Builder(context)
+                                            .data(resolvedLogo)
+                                            .crossfade(true)
+                                            .allowHardware(false)
+                                            .build(),
+                                        contentDescription = item.title,
+                                        modifier = Modifier
+                                            .height(38.dp.responsive())
+                                            .widthIn(max = 220.dp.responsive()),
+                                        contentScale = ContentScale.Fit,
+                                        alignment = Alignment.BottomStart,
+                                        loading = { },
+                                        error = {
+                                            Text(
+                                                text = item.title,
+                                                color = Color.White,
+                                                fontSize = 14.sp.responsive(),
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    )
+                                } else {
+                                    Text(
+                                        text = item.title,
+                                        color = Color.White,
+                                        fontSize = 14.sp.responsive(),
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Text(
+                                    text = item.description,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 9.sp.responsive(),
+                                    fontWeight = FontWeight.Normal,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = 12.sp.responsive()
+                                )
+                            }
                         }
                     }
                 }

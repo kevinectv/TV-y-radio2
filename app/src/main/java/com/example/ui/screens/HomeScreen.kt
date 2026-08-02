@@ -777,18 +777,18 @@ fun SeeAllHomeCard(
 
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused && !isWideLayout) 1.045f else 1.00f,
-        animationSpec = tween(durationMillis = 200),
+        targetValue = if (isFocused && !isWideLayout) 1.05f else 1.00f,
+        animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
         label = "see_all_scale"
     )
     val borderWidth by animateDpAsState(
         targetValue = if (isFocused) 2.dp else 1.dp,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
         label = "see_all_border"
     )
     val shadowElevation by animateDpAsState(
         targetValue = if (isFocused) 12.dp else 2.dp,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
         label = "see_all_shadow"
     )
 
@@ -1369,15 +1369,15 @@ private fun CardColorGradientOverlay(color: Color): Brush {
 
 @Composable
 private fun getNormalCardWidth(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
-    if (isWideLayout) 100.dp.responsive() else 115.dp.responsive()
+    if (isWideLayout) 115.dp.responsive() else 132.dp.responsive()
 
 @Composable
 private fun getExpandedCardWidth(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
-    if (isWideLayout) 200.dp.responsive() else 230.dp.responsive()
+    if (isWideLayout) 265.dp.responsive() else 304.dp.responsive()
 
 @Composable
 private fun getCardHeight(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
-    if (isWideLayout) 150.dp.responsive() else 172.dp.responsive()
+    if (isWideLayout) 172.dp.responsive() else 198.dp.responsive()
 
 @Composable
 private fun isCardCovered(

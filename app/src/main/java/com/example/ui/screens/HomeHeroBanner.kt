@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import androidx.compose.ui.focus.onFocusChanged
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -241,306 +242,218 @@ fun HomeHeroBannerTv(
             
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 8.dp.responsive(), top = 36.dp.responsive()),
+                    .fillMaxSize()
+                    .padding(start = 36.dp.responsive(), end = 48.dp, bottom = 12.dp.responsive(), top = 48.dp.responsive()),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp.responsive()),
+                    modifier = Modifier.fillMaxWidth(0.55f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp.responsive()),
-                        horizontalAlignment = Alignment.Start
+                    // 1. Logo or Title (large) with reserved space and elegant positioning
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp.responsive()),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        // 0. Badge TENDENCIA
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF2563EB).copy(alpha = 0.22f), RoundedCornerShape(6.dp))
-                                .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp.responsive(), vertical = 3.dp.responsive()),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp.responsive())
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Whatshot,
-                                    contentDescription = null,
-                                    tint = Color(0xFF93C5FD),
-                                    modifier = Modifier.size(11.dp.responsive())
-                                )
-                                Text(
-                                    text = "TENDENCIA",
-                                    color = Color(0xFF93C5FD),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 8.5.sp.responsive(),
-                                    letterSpacing = 0.8.sp
-                                )
-                            }
-                        }
-
-                        // 1. Logo o Título (grande) con altura fija reservada
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(70.dp.responsive()),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (!richMeta.logoUrl.isNullOrBlank()) {
-                                val context = LocalContext.current
-                                coil.compose.SubcomposeAsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(richMeta.logoUrl)
-                                        .crossfade(true)
-                                        .allowHardware(false)
-                                        .transformations(TrimTransparentPixelsTransformation())
-                                        .build(),
-                                    contentDescription = richMeta.title,
-                                    modifier = Modifier
-                                        .heightIn(max = 70.dp.responsive())
-                                        .widthIn(max = 340.dp.responsive()),
-                                    contentScale = ContentScale.Fit,
-                                    alignment = Alignment.CenterStart,
-                                    loading = { },
-                                    error = {
-                                        Text(
-                                            text = richMeta.title,
-                                            style = TextStyle(
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 28.sp.responsive(),
-                                                color = Color.White,
-                                                letterSpacing = (-1).sp,
-                                                shadow = androidx.compose.ui.graphics.Shadow(
-                                                    color = Color.Black.copy(alpha = 0.9f),
-                                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                    blurRadius = 8f
-                                                )
-                                            ),
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
+                        if (!richMeta.logoUrl.isNullOrBlank()) {
+                            val context = LocalContext.current
+                            coil.compose.SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(richMeta.logoUrl)
+                                    .crossfade(true)
+                                    .allowHardware(false)
+                                    .transformations(TrimTransparentPixelsTransformation())
+                                    .build(),
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = 80.dp.responsive())
+                                    .widthIn(max = 340.dp.responsive()),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart,
+                                loading = { },
+                                error = {
+                                    Text(
+                                        text = richMeta.title,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 32.sp.responsive(),
+                                            color = Color.White,
+                                            letterSpacing = (-1).sp,
+                                            shadow = androidx.compose.ui.graphics.Shadow(
+                                                color = Color.Black.copy(alpha = 0.9f),
+                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                blurRadius = 8f
+                                            )
                                         )
-                                    }
-                                )
-                            } else {
-                                Text(
-                                    text = richMeta.title,
-                                    style = TextStyle(
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 28.sp.responsive(),
-                                        color = Color.White,
-                                        letterSpacing = (-1).sp,
-                                        shadow = androidx.compose.ui.graphics.Shadow(
-                                            color = Color.Black.copy(alpha = 0.9f),
-                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                            blurRadius = 8f
-                                        )
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                                    )
+                                }
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 32.sp.responsive(),
+                                    color = Color.White,
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.9f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 8f
+                                    )
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
 
-                    // 2. Línea de metadatos: Año | Duración | Género (perfectamente ordenados) con altura fija
+                    // 2. Core Metadata Row: Year • Duration • Genre
                     Row(
-                        modifier = Modifier.height(20.dp.responsive()),
+                        modifier = Modifier.height(24.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
+                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
                     ) {
                         Text(
                             text = richMeta.year,
-                            color = Color.White,
+                            color = Color.White.copy(alpha = 0.65f),
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp.responsive()
                         )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp.responsive())
+                        Text(text = "•", color = Color.White.copy(alpha = 0.3f), fontSize = 13.sp.responsive())
                         Text(
                             text = richMeta.duration,
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = Color.White.copy(alpha = 0.65f),
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp.responsive()
                         )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp.responsive())
+                        Text(text = "•", color = Color.White.copy(alpha = 0.3f), fontSize = 13.sp.responsive())
                         Text(
                             text = if (richMeta.genres.isNotBlank()) richMeta.genres else "Cine / Drama",
-                            color = Color.White,
+                            color = Color.White.copy(alpha = 0.65f),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp.responsive()
                         )
                     }
 
-                    // 3. Sinopsis clara con altura fija reservada
+                    // 3. Short Synopsis / Description
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(38.dp.responsive()),
+                            .height(54.dp.responsive()),
                         contentAlignment = Alignment.TopStart
                     ) {
                         Text(
                             text = richMeta.description,
                             color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 13.sp.responsive(),
-                            maxLines = 2,
+                            fontSize = 14.sp.responsive(),
+                            maxLines = 3,
                             lineHeight = 18.sp.responsive(),
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
-                    // 4. Línea de metadatos 2: Logo Plataforma + Calificación IMDb + Clasificación por edad con altura fija
+                    Spacer(modifier = Modifier.height(8.dp.responsive()))
+
+                    // 4. Elegant TV-Optimized Capsule Buttons
                     Row(
-                        modifier = Modifier.height(26.dp.responsive()),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
-                    ) {
-                        // Logo de plataforma o badge de texto
-                        val platformLogoUrl = richMeta.platformLogoUrl
-                        if (!platformLogoUrl.isNullOrBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .height(24.dp.responsive())
-                                    .widthIn(max = 85.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 4.dp.responsive(), vertical = 1.dp.responsive()),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                coil.compose.AsyncImage(
-                                    model = platformLogoUrl,
-                                    contentDescription = richMeta.platform,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Fit
-                                )
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .height(24.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive()),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = richMeta.platform,
-                                    color = Color.White,
-                                    fontSize = 11.sp.responsive(),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp.responsive())
-
-                        // Badge IMDb
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
-                        ) {
-                            androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_imdb),
-                                contentDescription = "IMDb Logo",
-                                modifier = Modifier
-                                    .height(18.dp.responsive())
-                                    .width(36.dp.responsive()),
-                                contentScale = ContentScale.Fit
-                            )
-                            Text(
-                                text = richMeta.ratingImdb,
-                                color = Color.White,
-                                fontSize = 13.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-
-                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp.responsive())
-
-                        // Clasificación por edad (age rating / classification)
-                        val ageRating = targetMovie.classification?.ifBlank { null } ?: if ((richMeta.ratingImdb.toFloatOrNull() ?: 7.5f) >= 7.8f) "+16" else "+12"
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF0F0F15).copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp.responsive(), vertical = 1.dp.responsive()),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = ageRating,
-                                color = Color.White,
-                                fontSize = 9.sp.responsive(),
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.2.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp.responsive()))
-
-                    // 5. Botones de acción: Reproducir y + (Favoritos) con altura fija (Informativos, no interactivos para TV)
-                    Row(
-                        modifier = Modifier.height(42.dp.responsive()),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp.responsive()),
+                        modifier = Modifier.height(44.dp.responsive()),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp.responsive()),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Reproducir
+                        // Play Button (Reproducir) - White capsule, black text, filled style
+                        var isPlayFocused by remember { mutableStateOf(false) }
+                        val playBgColor by animateColorAsState(
+                            targetValue = if (isPlayFocused) Color(0xFF00E5FF) else Color.White,
+                            label = "play_bg"
+                        )
+                        val playScale by animateFloatAsState(
+                            targetValue = if (isPlayFocused) 1.05f else 1.0f,
+                            label = "play_scale"
+                        )
+
                         Row(
                             modifier = Modifier
-                                .height(42.dp.responsive())
-                                .background(
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(21.dp)
+                                .height(44.dp.responsive())
+                                .graphicsLayer {
+                                    scaleX = playScale
+                                    scaleY = playScale
+                                }
+                                .background(playBgColor, RoundedCornerShape(22.dp))
+                                .clickable { onTrailerClick(targetMovie) }
+                                .onFocusChanged { isPlayFocused = it.isFocused }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(22.dp)
                                 )
-                                .border(
-                                    width = 1.dp,
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(21.dp)
-                                )
-                                .padding(horizontal = 24.dp.responsive()),
+                                .padding(horizontal = 26.dp.responsive()),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Reproducir",
-                                tint = Color.White,
+                                tint = if (isPlayFocused) Color.White else Color.Black,
                                 modifier = Modifier.size(20.dp.responsive())
                             )
-                            Spacer(modifier = Modifier.width(6.dp.responsive()))
+                            Spacer(modifier = Modifier.width(8.dp.responsive()))
                             Text(
                                 text = "Reproducir",
-                                color = Color.White,
+                                color = if (isPlayFocused) Color.White else Color.Black,
                                 fontSize = 13.sp.responsive(),
                                 fontWeight = FontWeight.Bold
                             )
                         }
 
-                        // Favorito
+                        // My List Button (Mi Lista) - Transparent/outline style with focus border
                         val isFav = targetMovie.id in favoriteCatalogItems
-                        Box(
+                        var isListFocused by remember { mutableStateOf(false) }
+                        val listBgColor by animateColorAsState(
+                            targetValue = if (isListFocused) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.08f),
+                            label = "list_bg"
+                        )
+                        val listBorderColor by animateColorAsState(
+                            targetValue = if (isListFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.15f),
+                            label = "list_border"
+                        )
+                        val listScale by animateFloatAsState(
+                            targetValue = if (isListFocused) 1.05f else 1.0f,
+                            label = "list_scale"
+                        )
+
+                        Row(
                             modifier = Modifier
-                                .size(42.dp.responsive())
-                                .background(
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = CircleShape
+                                .height(44.dp.responsive())
+                                .graphicsLayer {
+                                    scaleX = listScale
+                                    scaleY = listScale
+                                }
+                                .background(listBgColor, RoundedCornerShape(22.dp))
+                                .border(1.dp, listBorderColor, RoundedCornerShape(22.dp))
+                                .clickable { viewModel.toggleCatalogItemFavorite(targetMovie.id) }
+                                .onFocusChanged { isListFocused = it.isFocused }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(22.dp)
                                 )
-                                .border(
-                                    width = 1.dp,
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = CircleShape
-                                )
-                                .padding(4.dp.responsive()),
-                            contentAlignment = Alignment.Center
+                                .padding(horizontal = 26.dp.responsive()),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
                                 imageVector = if (isFav) Icons.Filled.Check else Icons.Filled.Add,
-                                contentDescription = "Favorito",
-                                tint = if (isFav) Color(0xFF00FF87) else Color.White,
-                                modifier = Modifier.size(20.dp.responsive())
+                                contentDescription = "Mi Lista",
+                                tint = if (isFav) Color(0xFF00E5FF) else Color.White,
+                                modifier = Modifier.size(18.dp.responsive())
+                            )
+                            Spacer(modifier = Modifier.width(8.dp.responsive()))
+                            Text(
+                                text = "Mi Lista",
+                                color = Color.White,
+                                fontSize = 13.sp.responsive(),
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
