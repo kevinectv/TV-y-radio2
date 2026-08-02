@@ -407,7 +407,7 @@ fun HomeScreen(
                                             icon = Icons.Filled.PlayCircle,
                                             color = Color(0xFF00FF87)
                                         )
-                                        Spacer(modifier = Modifier.height(if (isWideLayout) 18.dp.responsive() else 12.dp.responsive()))
+                                        Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
                                         var progressRowFocusedIndex by remember { mutableStateOf<Int?>(null) }
                                         var progressRowFocusedNearRight by remember { mutableStateOf(false) }
                                         LazyRow(
@@ -437,7 +437,9 @@ fun HomeScreen(
                                                     onClick = {
                                                         activeHeroMovie = item
                                                         viewModel.selectedDetailsItem.value = item
-                                                    }
+                                                    },
+                                                    cardIndex = index,
+                                                    focusedIndex = fIndex
                                                 )
                                             }
                                         }
@@ -471,7 +473,7 @@ fun HomeScreen(
                                                 icon = Icons.Filled.PlayCircle,
                                                 color = Color(0xFF00FF87)
                                             )
-                                            Spacer(modifier = Modifier.height(if (isWideLayout) 18.dp.responsive() else 12.dp.responsive()))
+                                            Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
                                             LazyRow(
                                                 horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                                                 contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
@@ -499,7 +501,9 @@ fun HomeScreen(
                                                         onClick = {
                                                             activeHeroMovie = item
                                                             viewModel.selectedDetailsItem.value = item
-                                                        }
+                                                        },
+                                                        cardIndex = index,
+                                                        focusedIndex = fIndex2
                                                     )
                                                 }
                                             }
@@ -561,7 +565,7 @@ fun DrawCatalogRow(
             icon = iconToDraw,
             color = Color(0xFF00E5FF)
         )
-        Spacer(modifier = Modifier.height(if (isWideLayout) 18.dp.responsive() else 12.dp.responsive()))
+        Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
 
         val isSupportedRowType = layoutToDraw in listOf(
             "Horizontal Poster Row",
@@ -602,7 +606,9 @@ fun DrawCatalogRow(
                         isOtherFocusedInRow = isCovered,
                         onClick = {
                             onClick(item)
-                        }
+                        },
+                        cardIndex = index,
+                        focusedIndex = fIndex
                     )
                 }
                 item {
@@ -692,7 +698,9 @@ fun DrawCatalogRow(
                         isOtherFocusedInRow = isCovered,
                         onClick = {
                             onClick(item)
-                        }
+                        },
+                        cardIndex = index,
+                        focusedIndex = fIndex
                     )
                 }
                 item {
@@ -740,7 +748,7 @@ fun SeeAllHomeCard(
         label = "see_all_border"
     )
     val shadowElevation by animateDpAsState(
-        targetValue = if (isFocused) 12.dp else 0.dp,
+        targetValue = if (isFocused) 12.dp else 2.dp,
         animationSpec = tween(durationMillis = 200),
         label = "see_all_shadow"
     )
@@ -752,7 +760,7 @@ fun SeeAllHomeCard(
             )
         } else {
             Brush.linearGradient(
-                colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.08f))
+                colors = listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.06f))
             )
         }
     }
@@ -773,7 +781,7 @@ fun SeeAllHomeCard(
                     scaleX = scale
                     scaleY = scale
                     this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                     clip = true
                 }
                 .background(
@@ -781,15 +789,15 @@ fun SeeAllHomeCard(
                         colors = if (isFocused) {
                             listOf(Color(0xFF1B1B33), Color(0xFF0A0B14))
                         } else {
-                            listOf(Color(0xFF101124), Color(0xFF05060C))
+                            listOf(Color(0xFF101124), Color(0xFF0A0B14))
                         }
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                 )
                 .border(
                     width = borderWidth,
                     brush = borderBrush,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                 )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused || focusState.hasFocus
@@ -810,14 +818,14 @@ fun SeeAllHomeCard(
                 Text(
                     text = "Ver todos",
                     color = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.85f),
-                    fontSize = 12.sp.responsive(),
+                    fontSize = 11.sp.responsive(),
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Box(
                     modifier = Modifier
-                        .size(36.dp.responsive())
+                        .size(32.dp.responsive())
                         .background(
                             if (isFocused) Color(0xFF00E5FF).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.04f),
                             CircleShape
@@ -833,7 +841,7 @@ fun SeeAllHomeCard(
                         imageVector = Icons.Filled.ArrowForward,
                         contentDescription = "Ver todos",
                         tint = if (isFocused) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.75f),
-                        modifier = Modifier.size(16.dp.responsive())
+                        modifier = Modifier.size(14.dp.responsive())
                     )
                 }
             }
@@ -1322,15 +1330,15 @@ private fun CardColorGradientOverlay(color: Color): Brush {
 
 @Composable
 private fun getNormalCardWidth(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
-    if (isWideLayout) 150.dp.responsive() else 145.dp.responsive()
+    if (isWideLayout) 100.dp.responsive() else 115.dp.responsive()
 
 @Composable
 private fun getExpandedCardWidth(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
-    if (isWideLayout) 300.dp.responsive() else 290.dp.responsive()
+    if (isWideLayout) 200.dp.responsive() else 230.dp.responsive()
 
 @Composable
 private fun getCardHeight(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
-    if (isWideLayout) 215.dp.responsive() else 220.dp.responsive()
+    if (isWideLayout) 150.dp.responsive() else 172.dp.responsive()
 
 @Composable
 private fun isCardCovered(
@@ -1352,283 +1360,6 @@ private fun isCardCovered(
 }
 
 @Composable
-fun LuminaPremiumCard(
-    item: CatalogItem,
-    layoutType: String = "Horizontal Poster Row",
-    isFavorite: Boolean = false,
-    progress: Float = 0f,
-    rank: Int? = null,
-    onFocus: () -> Unit = {},
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    onFocusChange: (Boolean, Boolean) -> Unit = { _, _ -> },
-    isOtherFocusedInRow: Boolean = false
-) {
-    var isFocused by remember { mutableStateOf(false) }
-
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val context = LocalContext.current
-    val screenWidthPixels = context.resources.displayMetrics.widthPixels
-
-    var cardLeftPx by remember { mutableStateOf(0f) }
-
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val normalWidth = getNormalCardWidth(isWideLayout)
-    val expandedWidth = getExpandedCardWidth(isWideLayout)
-    val cardHeight = getCardHeight(isWideLayout)
-    val delta = expandedWidth - normalWidth
-
-    val isNearRightEdge = remember(cardLeftPx, screenWidthPixels, expandedWidth) {
-        val expandedWidthPx = with(density) { expandedWidth.toPx() }
-        cardLeftPx + expandedWidthPx > screenWidthPixels - with(density) { 24.dp.toPx() }
-    }
-
-    val animatedWidth by animateDpAsState(
-        targetValue = if (isFocused) expandedWidth else normalWidth,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "lumina_card_width"
-    )
-
-    val targetOffset = if (isFocused && isNearRightEdge) -delta else 0.dp
-    val animatedOffset by animateDpAsState(
-        targetValue = targetOffset,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "lumina_card_offset"
-    )
-
-    val backdropAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1f else 0f,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "backdrop_alpha"
-    )
-
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isFocused) 16.dp else 0.dp,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "lumina_card_shadow"
-    )
-
-    val rowAlpha by animateFloatAsState(
-        targetValue = if (isOtherFocusedInRow) 0f else 1f,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "row_card_fade"
-    )
-
-    val borderBrush = remember(isFocused) {
-        if (isFocused) {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color(0xFF00E5FF),
-                    Color(0xFF3B82F6)
-                )
-            )
-        } else {
-            Brush.linearGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.08f),
-                    Color.White.copy(alpha = 0.08f)
-                )
-            )
-        }
-    }
-
-    LaunchedEffect(isFocused, isNearRightEdge) {
-        if (isFocused) {
-            onFocus()
-            onFocusChange(true, isNearRightEdge)
-        } else {
-            onFocusChange(false, isNearRightEdge)
-        }
-    }
-
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-
-    Box(
-        modifier = modifier
-            .width(normalWidth)
-            .height(cardHeight)
-            .onGloballyPositioned { coordinates ->
-                val positionInWindow = coordinates.positionInWindow()
-                cardLeftPx = positionInWindow.x
-            }
-            .graphicsLayer {
-                alpha = rowAlpha
-            },
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Box(
-            modifier = Modifier
-                .offset(x = animatedOffset)
-                .width(animatedWidth)
-                .fillMaxHeight()
-                .zIndex(if (isFocused) 10f else 1f)
-                .graphicsLayer {
-                    this.shadowElevation = shadowElevation.value
-                    shape = RoundedCornerShape(12.dp)
-                    clip = true
-                }
-                .background(Color(0xFF07080F), RoundedCornerShape(12.dp))
-                .border(
-                    width = if (isFocused) 2.dp else 0.5.dp,
-                    brush = borderBrush,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .onFocusChanged { focusState ->
-                    val focused = focusState.isFocused || focusState.hasFocus
-                    if (isFocused != focused) {
-                        isFocused = focused
-                    }
-                }
-                .focusable(interactionSource = interactionSource)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick
-                )
-        ) {
-            // Background Image Area (Uses a fixed width of expandedWidth to completely eliminate image scaling or zoom)
-            Box(
-                modifier = Modifier
-                    .requiredWidth(expandedWidth)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                // 1. Unfocused Vertical Poster (Always present as baseline/underlay or unfocused background)
-                AsyncImage(
-                    model = item.posterUrl,
-                    contentDescription = item.title,
-                    modifier = Modifier
-                        .requiredWidth(normalWidth)
-                        .fillMaxHeight(),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.CenterStart
-                )
-
-                // 2. Focused Backdrop (Smoothly fades in over the poster as the card expands)
-                if (isFocused || backdropAlpha > 0f) {
-                    val backdropModel = if (!item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl
-                    AsyncImage(
-                        model = backdropModel,
-                        contentDescription = item.title,
-                        modifier = Modifier
-                            .requiredWidth(expandedWidth)
-                            .fillMaxHeight()
-                            .graphicsLayer { alpha = backdropAlpha },
-                        contentScale = ContentScale.Crop,
-                        alignment = Alignment.CenterStart
-                    )
-
-                    // Cinematic Gradient Overlay over the backdrop for superior contrast and brand feel
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { alpha = backdropAlpha }
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.45f),
-                                        Color.Black.copy(alpha = 0.95f)
-                                    ),
-                                    startY = if (isWideLayout) 0.5f else 0.35f
-                                )
-                            )
-                    )
-                }
-            }
-
-            // Foreground Content Area (Shown in focused/expanded state)
-            if (isFocused) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = backdropAlpha }
-                        .padding(if (isWideLayout) 16.dp.responsive() else 14.dp.responsive()),
-                    verticalArrangement = if (isWideLayout) Arrangement.Bottom else Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    // Top Row: Brand Streaming Platform Logo (Only on mobile/!isWideLayout)
-                    if (!isWideLayout) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (!item.platformLogo.isNullOrEmpty()) {
-                                AsyncImage(
-                                    model = item.platformLogo,
-                                    contentDescription = item.platform,
-                                    modifier = Modifier
-                                        .height(20.dp.responsive())
-                                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                            } else if (!item.platform.isNullOrEmpty()) {
-                                val brandColor = when {
-                                    item.platform.contains("max", ignoreCase = true) -> Color(0xFF00E5FF)
-                                    item.platform.contains("prime", ignoreCase = true) -> Color(0xFF00A8E1)
-                                    item.platform.contains("netflix", ignoreCase = true) -> Color(0xFFE50914)
-                                    item.platform.contains("disney", ignoreCase = true) -> Color(0xFF113CCF)
-                                    item.platform.contains("amc", ignoreCase = true) -> Color(0xFF00FF87)
-                                    else -> Color(0xFF00E5FF)
-                                }
-                                Text(
-                                    text = item.platform.uppercase(),
-                                    color = brandColor,
-                                    fontSize = 9.sp.responsive(),
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 1.sp,
-                                    modifier = Modifier
-                                        .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Bottom Area: Official Content Logo
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (isWideLayout) 55.dp.responsive() else 65.dp.responsive()),
-                        contentAlignment = Alignment.BottomStart
-                    ) {
-                        if (!item.logoUrl.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = item.logoUrl,
-                                contentDescription = item.title,
-                                modifier = Modifier
-                                    .fillMaxWidth(if (isWideLayout) 0.75f else 0.9f)
-                                    .heightIn(max = if (isWideLayout) 55.dp.responsive() else 65.dp.responsive()),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.BottomStart
-                            )
-                        } else {
-                            Text(
-                                text = item.title,
-                                color = Color.White,
-                                fontSize = if (isWideLayout) 15.sp.responsive() else 16.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                style = TextStyle(
-                                    shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.95f),
-                                        offset = androidx.compose.ui.geometry.Offset(1.5f, 1.5f),
-                                        blurRadius = 4f
-                                    )
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun CatalogItemHomeCard(
     item: CatalogItem,
     layoutType: String = "Vertical",
@@ -1638,7 +1369,9 @@ fun CatalogItemHomeCard(
     modifier: Modifier = Modifier,
     onFocusChange: (Boolean, Boolean) -> Unit = { _, _ -> },
     isOtherFocusedInRow: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    cardIndex: Int = 0,
+    focusedIndex: Int? = null
 ) {
     LuminaPremiumCard(
         item = item,
@@ -1649,7 +1382,9 @@ fun CatalogItemHomeCard(
         onFocusChange = onFocusChange,
         isOtherFocusedInRow = isOtherFocusedInRow,
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
+        cardIndex = cardIndex,
+        focusedIndex = focusedIndex
     )
 }
 
