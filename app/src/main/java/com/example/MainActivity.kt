@@ -57,43 +57,46 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            // Pre-warm the lazy viewModel and its catalog caches during the splash screen so home is warm instantly
+            // Mark as ready once Compose renders its first frame so the native splash is dismissed smoothly
             LaunchedEffect(Unit) {
-                val warmViewModel = viewModel
-                warmViewModel.refreshCatalogs()
                 isReady = true
             }
 
-            var showSplash by remember { mutableStateOf(true) }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF000000)) // Pure pitch-black to eliminate light/dark flashes
+            // Force high-comfort dark theme during the splash screen so startup is completely seamless
+            MyApplicationTheme(
+                darkTheme = true,
+                dynamicColor = false
             ) {
-                // 1. Render the main UI underneath the splash screen so it is pre-composed and fully loaded
-                MyApplicationTheme(
-                    darkTheme = viewModel.isDarkTheme,
-                    dynamicColor = false
-                ) {
-                    if (viewModel.showProfileSelector) {
-                        ProfileSelectionScreen(viewModel = viewModel)
-                    } else {
-                        LuminaAppShell(viewModel = viewModel)
-                    }
-                }
+                var showSplash by remember { mutableStateOf(true) }
+                var splashCompleted by remember { mutableStateOf(false) }
 
-                // 2. Overlay the beautiful Splash Screen on top. When it finishes, it fades out cleanly to reveal the fully-loaded UI underneath
-                AnimatedVisibility(
-                    visible = showSplash,
-                    enter = fadeIn(),
-                    exit = fadeOut(animationSpec = tween(350))
-                ) {
-                    SplashScreen(
-                        onSplashFinished = {
-                            showSplash = false
+                Box(modifier = Modifier.fillMaxSize().background(Color(0xFF020202))) {
+                    if (splashCompleted) {
+                        // Dynamically resolve user profile preferences only after the splash screen finishes
+                        MyApplicationTheme(
+                            darkTheme = viewModel.isDarkTheme,
+                            dynamicColor = false
+                        ) {
+                            if (viewModel.showProfileSelector) {
+                                ProfileSelectionScreen(viewModel = viewModel)
+                            } else {
+                                LuminaAppShell(viewModel = viewModel)
+                            }
                         }
-                    )
+                    }
+
+                    AnimatedVisibility(
+                        visible = showSplash,
+                        enter = fadeIn(),
+                        exit = fadeOut(animationSpec = tween(700))
+                    ) {
+                        SplashScreen(
+                            onSplashFinished = {
+                                showSplash = false
+                                splashCompleted = true
+                            }
+                        )
+                    }
                 }
             }
         }
