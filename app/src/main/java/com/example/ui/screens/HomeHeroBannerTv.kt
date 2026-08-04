@@ -367,12 +367,12 @@ fun HomeHeroBannerTv(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { onDetailsClick(targetMovie) }
-                    .padding(start = 56.dp, end = 48.dp, top = 36.dp, bottom = 20.dp),
+                    .padding(start = 40.dp, end = 48.dp, top = 48.dp, bottom = 28.dp),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth(0.62f)
+                        .fillMaxWidth(0.56f)
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.Start
@@ -627,8 +627,8 @@ fun HomeHeroBannerTv(
         // PERMANENT VISUAL FLOATING PLAY BUTTON (Purely design element, non-interactive)
         Box(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 80.dp, bottom = 48.dp)
+                .align(Alignment.CenterEnd)
+                .padding(end = 72.dp)
         ) {
             Surface(
                 color = Color.White,
@@ -657,7 +657,7 @@ fun HomeHeroBannerTv(
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp),
+                    .padding(bottom = 26.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
