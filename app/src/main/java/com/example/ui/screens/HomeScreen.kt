@@ -235,14 +235,11 @@ fun HomeScreen(
         list
     }
 
-    var activeHeroMovie by remember { mutableStateOf<CatalogItem?>(lastActiveHeroMovie) }
+    val isWideLayout = context.resources.configuration.screenWidthDp >= 580
+    val isTvDevice = remember(context) { isAndroidTvDevice(context) }
+    val bannerHeight = if (isTvDevice) 300.dp else 0.dp
 
-    val currentMovie = activeHeroMovie ?: featuredMovies.firstOrNull()
-
-    // Logo state initialized immediately from currentMovie (no delay/no flicker)
-    var activeHeroLogoUrl by remember(currentMovie) { mutableStateOf(currentMovie?.logoUrl) }
-
-    // Loaded details state initialized immediately from currentMovie (no delay/no flicker)
+    val currentMovie = featuredMovies.firstOrNull()
     var activeHeroLoadedDetails by remember(currentMovie) {
         mutableStateOf(
             if (currentMovie == null) null else LoadedTmdbDetails(
@@ -256,20 +253,9 @@ fun HomeScreen(
             )
         )
     }
-    
-    LaunchedEffect(currentMovie) {
-        if (currentMovie != null) {
-            lastActiveHeroMovie = currentMovie
-        }
-    }
-
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 580
-    val isTvDevice = remember(context) { isAndroidTvDevice(context) }
-    // Adjust height for layout: TV uses cinematic banner (300.dp), Mobile uses vertical spotlight inside list (0.dp fixed header)
-    val bannerHeight = if (isTvDevice) 300.dp else 0.dp
 
     // Control de carga (Skeleton)
-    val isLoadingData = catalogs.isEmpty() || currentMovie == null
+    val isLoadingData = catalogs.isEmpty() || featuredMovies.isEmpty()
     var progressRowFocusedIndex2 by remember { mutableStateOf<Int?>(null) }
     var progressRowFocusedNearRight2 by remember { mutableStateOf(false) }
 
@@ -283,86 +269,25 @@ fun HomeScreen(
             if (isLoading) {
                 HomeSkeleton(isWideLayout, bannerHeight)
             } else {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    // --- 1. NETFLIX-STYLE FULL-SCREEN BACKDROP COVERING THE BACKGROUND (ONLY ON ANDROID TV) ---
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // --- A) FIXED HERO BANNER (ONLY FOR ANDROID TV) - Completely independent state & strict visual boundaries ---
                     if (isTvDevice) {
-                        Crossfade(
-                            targetState = currentMovie,
-                            animationSpec = tween(750),
-                            label = "home_full_backdrop",
-                            modifier = Modifier.fillMaxSize()
-                        ) { movie ->
-                            movie?.let { currentSafeMovie ->
-                                val backdropUrlToUse = activeHeroLoadedDetails?.backdropUrl ?: currentSafeMovie.backdropUrl ?: ""
-
-                                Box(modifier = Modifier.fillMaxSize()) {
-                                    AsyncImage(
-                                        model = backdropUrlToUse,
-                                        contentDescription = currentSafeMovie.title,
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-
-                                    // Cinematic horizontal dark gradient to protect left-aligned text of Hero Banner
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(
-                                                Brush.horizontalGradient(
-                                                    colors = listOf(
-                                                        Color.Black.copy(alpha = 0.95f),
-                                                        Color.Black.copy(alpha = 0.82f),
-                                                        Color.Black.copy(alpha = 0.35f),
-                                                        Color.Transparent
-                                                    ),
-                                                    endX = 1200f
-                                                )
-                                            )
-                                    )
-
-                                    // Cinematic vertical dark gradient to smoothly fade to pure black at bottom
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(
-                                                Brush.verticalGradient(
-                                                    colors = listOf(
-                                                        Color.Black.copy(alpha = 0.30f),
-                                                        Color.Black.copy(alpha = 0.55f),
-                                                        Color(0xFF030406)
-                                                    )
-                                                )
-                                            )
-                                    )
-                                }
+                        HomeHeroBannerTv(
+                            featuredMovies = featuredMovies,
+                            favoriteCatalogItems = favoriteCatalogItems,
+                            bannerHeight = bannerHeight,
+                            viewModel = viewModel,
+                            scrollState = listState,
+                            onTrailerClick = { movie ->
+                                activeTrailerItem = movie
+                            },
+                            onDetailsClick = { movie ->
+                                viewModel.selectedDetailsItem.value = movie
                             }
-                        }
+                        )
                     }
 
-                    // --- 2. MAIN STRUCTURAL LAYOUT ---
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // A) Fixed Hero Banner (ONLY FOR ANDROID TV)
-                        if (isTvDevice) {
-                            currentMovie?.let { currentSafeMovie ->
-                                HomeHeroBannerTv(
-                                    currentMovie = currentSafeMovie,
-                                    activeHeroLoadedDetails = activeHeroLoadedDetails,
-                                    featuredMovies = featuredMovies,
-                                    favoriteCatalogItems = favoriteCatalogItems,
-                                    bannerHeight = bannerHeight,
-                                    viewModel = viewModel,
-                                    scrollState = listState,
-                                    onTrailerClick = { movie ->
-                                        activeTrailerItem = movie
-                                    },
-                                    onDetailsClick = { movie ->
-                                        viewModel.selectedDetailsItem.value = movie
-                                    }
-                                )
-                            }
-                        }
-
-                        // B) Scrollable Content Rows
+                    // --- B) SCROLLABLE CONTENT ROWS (Independent solid dark background Color(0xFF030406)) ---
                         LazyColumn(
                             state = listState,
                             modifier = Modifier
@@ -370,7 +295,7 @@ fun HomeScreen(
                                 .weight(1f),
                             verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
                             contentPadding = PaddingValues(
-                                top = if (isTvDevice) 36.dp else 0.dp,
+                                top = if (isTvDevice) 56.dp else 0.dp,
                                 bottom = 90.dp
                             )
                         ) {
@@ -422,7 +347,7 @@ fun HomeScreen(
                                                     layoutType = "Landscape Row",
                                                     isFavorite = item.id in favoriteCatalogItems,
                                                     progress = progressVal,
-                                                    onFocus = { activeHeroMovie = item },
+                                                    onFocus = {},
                                                     onFocusChange = { isFocused, isNearRight ->
                                                         if (isFocused) {
                                                             progressRowFocusedIndex = index
@@ -435,7 +360,6 @@ fun HomeScreen(
                                                     },
                                                     isOtherFocusedInRow = isCovered,
                                                     onClick = {
-                                                        activeHeroMovie = item
                                                         viewModel.selectedDetailsItem.value = item
                                                     },
                                                     cardIndex = index,
@@ -456,9 +380,8 @@ fun HomeScreen(
                                                 seenProgress = seenProgress,
                                                 customTitle = displayName,
                                                 customIcon = displayIcon,
-                                                onFocus = { activeHeroMovie = it },
+                                                onFocus = {},
                                                 onClick = { clickedItem ->
-                                                    activeHeroMovie = clickedItem
                                                     viewModel.selectedDetailsItem.value = clickedItem
                                                 }
                                             )
@@ -486,7 +409,7 @@ fun HomeScreen(
                                                         layoutType = "Landscape Row",
                                                         isFavorite = item.id in favoriteCatalogItems,
                                                         progress = progressVal,
-                                                        onFocus = { activeHeroMovie = item },
+                                                        onFocus = {},
                                                         onFocusChange = { isFocused, isNearRight ->
                                                             if (isFocused) {
                                                                 progressRowFocusedIndex2 = index
@@ -499,8 +422,7 @@ fun HomeScreen(
                                                         },
                                                         isOtherFocusedInRow = isCovered,
                                                         onClick = {
-                                                            activeHeroMovie = item
-                                                            viewModel.selectedDetailsItem.value = item
+                                                               viewModel.selectedDetailsItem.value = item
                                                         },
                                                         cardIndex = index,
                                                         focusedIndex = fIndex2
@@ -515,7 +437,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
     }
 
     val trailerToShow = activeTrailerItem ?: viewModel.activeTrailerItem

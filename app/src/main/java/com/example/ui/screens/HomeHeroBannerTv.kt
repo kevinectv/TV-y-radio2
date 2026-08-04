@@ -4,20 +4,26 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
@@ -30,6 +36,11 @@ import com.example.data.model.CatalogItem
 import com.example.ui.MediaViewModel
 import com.example.ui.components.responsive
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.KeyEventType
 import coil.request.ImageRequest
 import coil.transform.Transformation
 import android.graphics.Bitmap
@@ -169,361 +180,6 @@ fun resolveHeroMetadata(
     )
 }
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-fun HomeHeroBannerTv(
-    currentMovie: CatalogItem,
-    activeHeroLoadedDetails: LoadedTmdbDetails?,
-    featuredMovies: List<CatalogItem>,
-    favoriteCatalogItems: Set<String>,
-    bannerHeight: androidx.compose.ui.unit.Dp,
-    viewModel: MediaViewModel,
-    scrollState: LazyListState,
-    onTrailerClick: (CatalogItem) -> Unit,
-    onDetailsClick: (CatalogItem) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(bannerHeight)
-    ) {
-        Crossfade(
-            targetState = currentMovie,
-            animationSpec = tween(500),
-            label = "hero_content_fade"
-        ) { targetMovie ->
-            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
-            android.util.Log.d("LuminaHeroBanner", "Arrived at Hero Banner (TV) - Title: ${targetMovie.title}")
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(start = 16.dp.responsive(), end = 48.dp, bottom = 8.dp.responsive(), top = 36.dp.responsive()),
-                contentAlignment = Alignment.TopStart
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.58f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp.responsive()),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp.responsive()),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        // Badge TENDENCIA
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF2563EB).copy(alpha = 0.22f), RoundedCornerShape(6.dp))
-                                .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp.responsive(), vertical = 3.dp.responsive()),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp.responsive())
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Whatshot,
-                                    contentDescription = null,
-                                    tint = Color(0xFF93C5FD),
-                                    modifier = Modifier.size(11.dp.responsive())
-                                )
-                                Text(
-                                    text = "TENDENCIA",
-                                    color = Color(0xFF93C5FD),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 8.5.sp.responsive(),
-                                    letterSpacing = 0.8.sp
-                                )
-                            }
-                        }
-
-                        // Logo o Título (grande)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(70.dp.responsive()),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (!richMeta.logoUrl.isNullOrBlank()) {
-                                val context = LocalContext.current
-                                coil.compose.SubcomposeAsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(richMeta.logoUrl)
-                                        .crossfade(true)
-                                        .allowHardware(false)
-                                        .transformations(TrimTransparentPixelsTransformation())
-                                        .build(),
-                                    contentDescription = richMeta.title,
-                                    modifier = Modifier
-                                        .heightIn(max = 70.dp.responsive())
-                                        .widthIn(max = 340.dp.responsive()),
-                                    contentScale = ContentScale.Fit,
-                                    alignment = Alignment.CenterStart,
-                                    loading = { },
-                                    error = {
-                                        Text(
-                                            text = richMeta.title,
-                                            style = TextStyle(
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 28.sp.responsive(),
-                                                color = Color.White,
-                                                letterSpacing = (-1).sp,
-                                                shadow = androidx.compose.ui.graphics.Shadow(
-                                                    color = Color.Black.copy(alpha = 0.9f),
-                                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                    blurRadius = 8f
-                                                )
-                                            ),
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                )
-                            } else {
-                                Text(
-                                    text = richMeta.title,
-                                    style = TextStyle(
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 28.sp.responsive(),
-                                        color = Color.White,
-                                        letterSpacing = (-1).sp,
-                                        shadow = androidx.compose.ui.graphics.Shadow(
-                                            color = Color.Black.copy(alpha = 0.9f),
-                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                            blurRadius = 8f
-                                        )
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-
-                    // Año | Duración | Género
-                    Row(
-                        modifier = Modifier.height(20.dp.responsive()),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
-                    ) {
-                        Text(
-                            text = richMeta.year,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp.responsive()
-                        )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp.responsive())
-                        Text(
-                            text = richMeta.duration,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp.responsive()
-                        )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 13.sp.responsive())
-                        Text(
-                            text = if (richMeta.genres.isNotBlank()) richMeta.genres else "Cine / Drama",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp.responsive()
-                        )
-                    }
-
-                    // Sinopsis
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(38.dp.responsive()),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        Text(
-                            text = richMeta.description,
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 13.sp.responsive(),
-                            maxLines = 2,
-                            lineHeight = 18.sp.responsive(),
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    // Plataforma + IMDb + Clasificación
-                    Row(
-                        modifier = Modifier.height(26.dp.responsive()),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp.responsive())
-                    ) {
-                        val platformLogoUrl = richMeta.platformLogoUrl
-                        if (!platformLogoUrl.isNullOrBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .height(24.dp.responsive())
-                                    .widthIn(max = 85.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 4.dp.responsive(), vertical = 1.dp.responsive()),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                AsyncImage(
-                                    model = platformLogoUrl,
-                                    contentDescription = richMeta.platform,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Fit
-                                )
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .height(24.dp.responsive())
-                                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(4.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 6.dp.responsive(), vertical = 2.dp.responsive()),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = richMeta.platform,
-                                    color = Color.White,
-                                    fontSize = 11.sp.responsive(),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp.responsive())
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp.responsive())
-                        ) {
-                            androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_imdb),
-                                contentDescription = "IMDb Logo",
-                                modifier = Modifier
-                                    .height(18.dp.responsive())
-                                    .width(36.dp.responsive()),
-                                contentScale = ContentScale.Fit
-                            )
-                            Text(
-                                text = richMeta.ratingImdb,
-                                color = Color.White,
-                                fontSize = 13.sp.responsive(),
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-
-                        Text(text = "|", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp.responsive())
-
-                        val ageRating = targetMovie.classification?.ifBlank { null } ?: if ((richMeta.ratingImdb.toFloatOrNull() ?: 7.5f) >= 7.8f) "+16" else "+12"
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF0F0F15).copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp.responsive(), vertical = 1.dp.responsive()),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = ageRating,
-                                color = Color.White,
-                                fontSize = 9.sp.responsive(),
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.2.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp.responsive()))
-
-                    // Botones de acción TV
-                    Row(
-                        modifier = Modifier.height(42.dp.responsive()),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp.responsive()),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .height(42.dp.responsive())
-                                .background(
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(21.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(21.dp)
-                                )
-                                .padding(horizontal = 24.dp.responsive()),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Reproducir",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp.responsive())
-                            )
-                            Spacer(modifier = Modifier.width(6.dp.responsive()))
-                            Text(
-                                text = "Reproducir",
-                                color = Color.White,
-                                fontSize = 13.sp.responsive(),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        val isFav = targetMovie.id in favoriteCatalogItems
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp.responsive())
-                                .background(
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = CircleShape
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    shape = CircleShape
-                                )
-                                .padding(4.dp.responsive()),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isFav) Icons.Filled.Check else Icons.Filled.Add,
-                                contentDescription = "Favorito",
-                                tint = if (isFav) Color(0xFF00FF87) else Color.White,
-                                modifier = Modifier.size(20.dp.responsive())
-                            )
-                        }
-                    }
-                }
-            }
-
-            val currentIndex = featuredMovies.indexOfFirst { it.id == targetMovie.id }.coerceAtLeast(0)
-            if (featuredMovies.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 48.dp, bottom = 12.dp.responsive()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    featuredMovies.take(6).forEachIndexed { index, _ ->
-                        val isActive = index == currentIndex
-                        Box(
-                            modifier = Modifier
-                                .size(if (isActive) 8.dp.responsive() else 6.dp.responsive())
-                                .background(
-                                    color = if (isActive) Color(0xFF3B82F6) else Color.White.copy(alpha = 0.3f),
-                                    shape = CircleShape
-                                )
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 class TrimTransparentPixelsTransformation : Transformation {
     override val cacheKey: String = "TrimTransparentPixelsTransformation_v2"
 
@@ -572,3 +228,458 @@ class TrimTransparentPixelsTransformation : Transformation {
         }
     }
 }
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun HomeHeroBannerTv(
+    featuredMovies: List<CatalogItem>,
+    favoriteCatalogItems: Set<String>,
+    bannerHeight: androidx.compose.ui.unit.Dp,
+    viewModel: MediaViewModel,
+    scrollState: LazyListState,
+    onTrailerClick: (CatalogItem) -> Unit,
+    onDetailsClick: (CatalogItem) -> Unit
+) {
+    if (featuredMovies.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(bannerHeight)
+                .background(Color(0xFF030406))
+        )
+        return
+    }
+
+    var heroIndex by remember(featuredMovies) { mutableStateOf(0) }
+    var autoRotateTrigger by remember { mutableStateOf(0) }
+
+    // Automatic carousel rotation independent of cards, reset when manual navigation occurs
+    LaunchedEffect(autoRotateTrigger, featuredMovies) {
+        while (true) {
+            kotlinx.coroutines.delay(8500L)
+            if (featuredMovies.isNotEmpty()) {
+                heroIndex = (heroIndex + 1) % featuredMovies.size
+            }
+        }
+    }
+
+    val currentMovie = featuredMovies[heroIndex.coerceIn(0, featuredMovies.size - 1)]
+    val activeHeroLoadedDetails = remember(currentMovie.id) {
+        LoadedTmdbDetails(
+            description = currentMovie.description,
+            rating = currentMovie.rating,
+            year = currentMovie.year,
+            logoUrl = currentMovie.logoUrl,
+            backdropUrl = currentMovie.backdropUrl ?: "",
+            duration = currentMovie.duration,
+            genre = currentMovie.genre
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(bannerHeight)
+            .background(Color(0xFF030406))
+            .focusable()
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.key) {
+                        Key.DirectionLeft -> {
+                            heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
+                            autoRotateTrigger++
+                            true
+                        }
+                        Key.DirectionRight -> {
+                            heroIndex = (heroIndex + 1) % featuredMovies.size
+                            autoRotateTrigger++
+                            true
+                        }
+                        Key.DirectionCenter, Key.Enter, Key.Spacebar -> {
+                            onDetailsClick(currentMovie)
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            }
+    ) {
+        // Background Backdrop with crossfade for carousel changes
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(600),
+            label = "hero_tv_backdrop_fade"
+        ) { targetMovie ->
+            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = richMeta.backdropUrl.ifBlank { targetMovie.backdropUrl ?: targetMovie.posterUrl },
+                    contentDescription = richMeta.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Cinematic gradient overlays for professional streaming look
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.92f),
+                                    Color.Black.copy(alpha = 0.75f),
+                                    Color.Black.copy(alpha = 0.2f),
+                                    Color.Transparent
+                                ),
+                                endX = 1200f
+                            )
+                        )
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.4f),
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.85f),
+                                    Color(0xFF030406)
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
+        // Main Content Area with click for details
+        Crossfade(
+            targetState = currentMovie,
+            animationSpec = tween(500),
+            label = "hero_tv_content_fade"
+        ) { targetMovie ->
+            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onDetailsClick(targetMovie) }
+                    .padding(start = 56.dp, end = 48.dp, top = 36.dp, bottom = 20.dp),
+                contentAlignment = Alignment.TopStart
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.62f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        // Badge TENDENCIA / DESTACADO
+                        Surface(
+                            color = Color(0xFF3B82F6).copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(6.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF60A5FA).copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Whatshot,
+                                    contentDescription = null,
+                                    tint = Color(0xFF93C5FD),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = richMeta.trendPositionText ?: "TENDENCIA GLOBAL EN TV",
+                                    color = Color(0xFF93C5FD),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        }
+
+                        // Logo o Título Oficial
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(85.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (!richMeta.logoUrl.isNullOrBlank()) {
+                                val context = LocalContext.current
+                                coil.compose.SubcomposeAsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(richMeta.logoUrl)
+                                        .crossfade(true)
+                                        .allowHardware(false)
+                                        .transformations(TrimTransparentPixelsTransformation())
+                                        .build(),
+                                    contentDescription = richMeta.title,
+                                    modifier = Modifier
+                                        .heightIn(max = 80.dp)
+                                        .widthIn(max = 380.dp),
+                                    contentScale = ContentScale.Fit,
+                                    alignment = Alignment.CenterStart,
+                                    loading = { },
+                                    error = {
+                                        Text(
+                                            text = richMeta.title,
+                                            style = TextStyle(
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 34.sp,
+                                                color = Color.White,
+                                                letterSpacing = (-1).sp,
+                                                shadow = androidx.compose.ui.graphics.Shadow(
+                                                    color = Color.Black.copy(alpha = 0.9f),
+                                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                    blurRadius = 8f
+                                                )
+                                            ),
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                )
+                            } else {
+                                Text(
+                                    text = richMeta.title,
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 34.sp,
+                                        color = Color.White,
+                                        letterSpacing = (-1).sp,
+                                        shadow = androidx.compose.ui.graphics.Shadow(
+                                            color = Color.Black.copy(alpha = 0.9f),
+                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                            blurRadius = 8f
+                                        )
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        // Año | Duración | Géneros | Plataforma | IMDb | Clasificación
+                        Row(
+                            modifier = Modifier.height(26.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = richMeta.year,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
+                            Text(
+                                text = richMeta.duration,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
+                            Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
+                            Text(
+                                text = richMeta.genres,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        // Plataforma + IMDb + Clasificación independientes
+                        Row(
+                            modifier = Modifier.height(28.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val platformLogoUrl = richMeta.platformLogoUrl
+                            if (!platformLogoUrl.isNullOrBlank()) {
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .height(24.dp)
+                                            .widthIn(max = 85.dp)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AsyncImage(
+                                            model = platformLogoUrl,
+                                            contentDescription = richMeta.platform,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    }
+                                }
+                            } else {
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                                ) {
+                                    Text(
+                                        text = richMeta.platform,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_imdb),
+                                    contentDescription = "IMDb",
+                                    modifier = Modifier
+                                        .height(18.dp)
+                                        .width(36.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                                Text(
+                                    text = richMeta.ratingImdb,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+
+                            val ageRating = targetMovie.classification?.ifBlank { null } ?: "+16"
+                            Surface(
+                                color = Color(0xFF1F2937),
+                                shape = RoundedCornerShape(4.dp),
+                                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Text(
+                                    text = ageRating,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+
+                        // Sinopsis corta
+                        Text(
+                            text = richMeta.description,
+                            color = Color.White.copy(alpha = 0.82f),
+                            fontSize = 14.sp,
+                            maxLines = 2,
+                            lineHeight = 20.sp,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 45.dp)
+                        )
+                    }
+
+                    // Botón inferior secundario (ej. Más información / Ver detalles)
+                    Surface(
+                        color = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                        modifier = Modifier
+                            .clickable { onDetailsClick(targetMovie) }
+                            .padding(bottom = 12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Más información",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // PERMANENT VISUAL FLOATING PLAY BUTTON (Purely design element, non-interactive)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 80.dp, bottom = 48.dp)
+        ) {
+            Surface(
+                color = Color.White,
+                shape = CircleShape,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .size(64.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Reproducir",
+                        tint = Color.Black,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+        }
+
+        // Centered Carousel Indicators with active pill shape representing all banners
+        val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
+        if (featuredMovies.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                featuredMovies.forEachIndexed { index, _ ->
+                    val isActive = index == currentIndex
+                    Box(
+                        modifier = Modifier
+                            .height(6.dp)
+                            .width(if (isActive) 24.dp else 6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .clickable { 
+                                heroIndex = index 
+                                autoRotateTrigger++
+                            }
+                            .background(
+                                color = if (isActive) Color(0xFF3B82F6) else Color.White.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(3.dp)
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
