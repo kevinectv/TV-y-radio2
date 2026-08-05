@@ -279,7 +279,7 @@ fun HomeHeroBannerTv(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(bannerHeight + 120.dp)
+            .height(bannerHeight + 220.dp)
             .background(Color(0xFF030406))
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
@@ -366,8 +366,8 @@ fun HomeHeroBannerTv(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { onDetailsClick(targetMovie) }
-                    .padding(start = 56.dp, end = 48.dp, top = 40.dp, bottom = 40.dp),
-                contentAlignment = Alignment.CenterStart
+                    .padding(start = 48.dp, end = 48.dp, top = 40.dp, bottom = 52.dp),
+                contentAlignment = Alignment.BottomStart
             ) {
                 Column(
                     modifier = Modifier
