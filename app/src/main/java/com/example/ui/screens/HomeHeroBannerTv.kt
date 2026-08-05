@@ -366,257 +366,260 @@ fun HomeHeroBannerTv(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { onDetailsClick(targetMovie) }
-                    .padding(start = 28.dp, end = 48.dp, top = 120.dp, bottom = 48.dp),
-                contentAlignment = Alignment.TopStart
+                    .padding(start = 56.dp, end = 48.dp, top = 40.dp, bottom = 40.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth(0.52f)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .fillMaxWidth(0.38f)
+                        .wrapContentHeight(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        horizontalAlignment = Alignment.Start
+                    // 1. Logo oficial de la película (o título si no existe logo)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(85.dp),
+                        contentAlignment = Alignment.CenterStart
                     ) {
-                        // Badge TENDENCIA / DESTACADO
-                        Surface(
-                            color = Color(0xFF3B82F6).copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF60A5FA).copy(alpha = 0.5f))
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Whatshot,
-                                    contentDescription = null,
-                                    tint = Color(0xFF93C5FD),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = richMeta.trendPositionText ?: "TENDENCIA GLOBAL EN TV",
-                                    color = Color(0xFF93C5FD),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-                        }
-
-                        // Logo o Título Oficial
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(85.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (!richMeta.logoUrl.isNullOrBlank()) {
-                                val context = LocalContext.current
-                                coil.compose.SubcomposeAsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(richMeta.logoUrl)
-                                        .crossfade(true)
-                                        .allowHardware(false)
-                                        .transformations(TrimTransparentPixelsTransformation())
-                                        .build(),
-                                    contentDescription = richMeta.title,
-                                    modifier = Modifier
-                                        .heightIn(max = 80.dp)
-                                        .widthIn(max = 380.dp),
-                                    contentScale = ContentScale.Fit,
-                                    alignment = Alignment.CenterStart,
-                                    loading = { },
-                                    error = {
-                                        Text(
-                                            text = richMeta.title,
-                                            style = TextStyle(
-                                                fontWeight = FontWeight.Black,
-                                                fontSize = 34.sp,
-                                                color = Color.White,
-                                                letterSpacing = (-1).sp,
-                                                shadow = androidx.compose.ui.graphics.Shadow(
-                                                    color = Color.Black.copy(alpha = 0.9f),
-                                                    offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                    blurRadius = 8f
-                                                )
-                                            ),
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                )
-                            } else {
-                                Text(
-                                    text = richMeta.title,
-                                    style = TextStyle(
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 34.sp,
-                                        color = Color.White,
-                                        letterSpacing = (-1).sp,
-                                        shadow = androidx.compose.ui.graphics.Shadow(
-                                            color = Color.Black.copy(alpha = 0.9f),
-                                            offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                            blurRadius = 8f
-                                        )
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        // Año | Duración | Géneros | Plataforma | IMDb | Clasificación
-                        Row(
-                            modifier = Modifier.height(26.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(
-                                text = richMeta.year,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                            Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
-                            Text(
-                                text = richMeta.duration,
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp
-                            )
-                            Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
-                            Text(
-                                text = richMeta.genres,
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
-                            )
-                        }
-
-                        // Plataforma + IMDb + Clasificación independientes
-                        Row(
-                            modifier = Modifier.height(28.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            val platformLogoUrl = richMeta.platformLogoUrl
-                            if (!platformLogoUrl.isNullOrBlank()) {
-                                Surface(
-                                    color = Color.White.copy(alpha = 0.08f),
-                                    shape = RoundedCornerShape(4.dp),
-                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .height(24.dp)
-                                            .widthIn(max = 85.dp)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        AsyncImage(
-                                            model = platformLogoUrl,
-                                            contentDescription = richMeta.platform,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    }
-                                }
-                            } else {
-                                Surface(
-                                    color = Color.White.copy(alpha = 0.08f),
-                                    shape = RoundedCornerShape(4.dp),
-                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
-                                ) {
+                        if (!richMeta.logoUrl.isNullOrBlank()) {
+                            val context = LocalContext.current
+                            coil.compose.SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(richMeta.logoUrl)
+                                    .crossfade(true)
+                                    .allowHardware(false)
+                                    .transformations(TrimTransparentPixelsTransformation())
+                                    .build(),
+                                contentDescription = richMeta.title,
+                                modifier = Modifier
+                                    .heightIn(max = 80.dp)
+                                    .widthIn(max = 380.dp),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.CenterStart,
+                                loading = { },
+                                error = {
                                     Text(
-                                        text = richMeta.platform,
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        text = richMeta.title,
+                                        style = TextStyle(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 34.sp,
+                                            color = Color.White,
+                                            letterSpacing = (-1).sp,
+                                            shadow = androidx.compose.ui.graphics.Shadow(
+                                                color = Color.Black.copy(alpha = 0.9f),
+                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                                blurRadius = 8f
+                                            )
+                                        ),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_imdb),
-                                    contentDescription = "IMDb",
-                                    modifier = Modifier
-                                        .height(18.dp)
-                                        .width(36.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                                Text(
-                                    text = richMeta.ratingImdb,
+                            )
+                        } else {
+                            Text(
+                                text = richMeta.title,
+                                style = TextStyle(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 34.sp,
                                     color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-
-                            val ageRating = targetMovie.classification?.ifBlank { null } ?: "+16"
-                            Surface(
-                                color = Color(0xFF1F2937),
-                                shape = RoundedCornerShape(4.dp),
-                                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
-                            ) {
-                                Text(
-                                    text = ageRating,
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
+                                    letterSpacing = (-1).sp,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black.copy(alpha = 0.9f),
+                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
+                                        blurRadius = 8f
+                                    )
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
+                    }
 
-                        // Sinopsis corta
+                    // 2. Año • Duración • Géneros
+                    Row(
+                        modifier = Modifier.wrapContentWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text(
-                            text = richMeta.description,
-                            color = Color.White.copy(alpha = 0.82f),
-                            fontSize = 14.sp,
-                            maxLines = 2,
-                            lineHeight = 20.sp,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 45.dp)
+                            text = richMeta.year,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
+                        Text(
+                            text = richMeta.duration,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
+                        Text(
+                            text = richMeta.genres,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
                         )
                     }
 
-                    // Botón inferior secundario (ej. Más información / Ver detalles)
+                    // Plataforma + IMDb + Clasificación
+                    Row(
+                        modifier = Modifier.wrapContentWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val platformLogoUrl = richMeta.platformLogoUrl
+                        if (!platformLogoUrl.isNullOrBlank()) {
+                            Surface(
+                                color = Color.White.copy(alpha = 0.08f),
+                                shape = RoundedCornerShape(4.dp),
+                                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .height(24.dp)
+                                        .widthIn(max = 85.dp)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = platformLogoUrl,
+                                        contentDescription = richMeta.platform,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                            }
+                        } else {
+                            Surface(
+                                color = Color.White.copy(alpha = 0.08f),
+                                shape = RoundedCornerShape(4.dp),
+                                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                            ) {
+                                Text(
+                                    text = richMeta.platform,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_imdb),
+                                contentDescription = "IMDb",
+                                modifier = Modifier
+                                    .height(18.dp)
+                                    .width(36.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                            Text(
+                                text = richMeta.ratingImdb,
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+
+                        val ageRating = targetMovie.classification?.ifBlank { null } ?: "+16"
+                        Surface(
+                            color = Color(0xFF1F2937),
+                            shape = RoundedCornerShape(4.dp),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
+                        ) {
+                            Text(
+                                text = ageRating,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    // 3. Sinopsis corta
+                    Text(
+                        text = richMeta.description,
+                        color = Color.White.copy(alpha = 0.82f),
+                        fontSize = 14.sp,
+                        maxLines = 3,
+                        lineHeight = 20.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 4. Botón principal ("Reproducir", blanco, esquinas redondeadas, icono ▶ a la izquierda)
                     Surface(
-                        color = Color.White.copy(alpha = 0.15f),
+                        color = Color.White,
                         shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                         modifier = Modifier
-                            .clickable { onDetailsClick(targetMovie) }
-                            .padding(bottom = 12.dp)
+                            .clickable { onTrailerClick(targetMovie) }
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Info,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Reproducir",
+                                tint = Color.Black,
+                                modifier = Modifier.size(22.dp)
                             )
                             Text(
-                                text = "Más información",
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
+                                text = "Reproducir",
+                                color = Color.Black,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 5. Indicadores del carrusel (debajo del botón principal, centrados horizontalmente)
+                    val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
+                    if (featuredMovies.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                featuredMovies.forEachIndexed { index, _ ->
+                                    val isActive = index == currentIndex
+                                    Box(
+                                        modifier = Modifier
+                                            .height(6.dp)
+                                            .width(if (isActive) 24.dp else 6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .clickable { 
+                                                heroIndex = index 
+                                                autoRotateTrigger++
+                                            }
+                                            .background(
+                                                color = if (isActive) Color.White else Color.White.copy(alpha = 0.35f),
+                                                shape = RoundedCornerShape(3.dp)
+                                            )
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -645,36 +648,6 @@ fun HomeHeroBannerTv(
                         contentDescription = "Reproducir",
                         tint = Color.Black,
                         modifier = Modifier.size(36.dp)
-                    )
-                }
-            }
-        }
-
-        // Centered Carousel Indicators with active pill shape representing all banners
-        val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
-        if (featuredMovies.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 28.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                featuredMovies.forEachIndexed { index, _ ->
-                    val isActive = index == currentIndex
-                    Box(
-                        modifier = Modifier
-                            .height(6.dp)
-                            .width(if (isActive) 24.dp else 6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .clickable { 
-                                heroIndex = index 
-                                autoRotateTrigger++
-                            }
-                            .background(
-                                color = if (isActive) Color(0xFF3B82F6) else Color.White.copy(alpha = 0.35f),
-                                shape = RoundedCornerShape(3.dp)
-                            )
                     )
                 }
             }
