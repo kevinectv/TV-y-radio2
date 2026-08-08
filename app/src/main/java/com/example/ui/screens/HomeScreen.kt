@@ -8,6 +8,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.foundation.focusGroup
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.infiniteRepeatable
@@ -20,6 +24,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.focusable
+
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.KeyEventType
+import coil.request.ImageRequest
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListState
@@ -235,7 +246,10 @@ fun HomeScreen(
         list
     }
 
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 580
+    
+    val heroFocusRequester = remember { FocusRequester() }
+    val firstRowFocusRequester = remember { FocusRequester() }
+val isWideLayout = context.resources.configuration.screenWidthDp >= 580
     val isTvDevice = remember(context) { isAndroidTvDevice(context) }
     val bannerHeight = if (isTvDevice) 300.dp else 0.dp
 
@@ -269,176 +283,151 @@ fun HomeScreen(
             if (isLoading) {
                 HomeSkeleton(isWideLayout, bannerHeight)
             } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // --- A) FIXED HERO BANNER (ONLY FOR ANDROID TV) - Completely independent state & strict visual boundaries ---
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
+                    contentPadding = PaddingValues(
+                        top = 0.dp,
+                        bottom = 90.dp
+                    )
+                ) {
                     if (isTvDevice) {
-                        HomeHeroBannerTv(
-                            featuredMovies = featuredMovies,
-                            favoriteCatalogItems = favoriteCatalogItems,
-                            bannerHeight = bannerHeight,
-                            viewModel = viewModel,
-                            scrollState = listState,
-                            onTrailerClick = { movie ->
-                                activeTrailerItem = movie
-                            },
-                            onDetailsClick = { movie ->
-                                viewModel.selectedDetailsItem.value = movie
+                        item {
+                            androidx.compose.foundation.layout.Box(
+                                modifier = androidx.compose.ui.Modifier
+                                    .focusRequester(heroFocusRequester)
+                                    .focusProperties {
+                                        down = firstRowFocusRequester
+                                    }
+                                    .focusGroup()
+                            ) {
+                                HomeHeroBannerTv(
+                                    featuredMovies = featuredMovies,
+                                    favoriteCatalogItems = favoriteCatalogItems,
+                                    bannerHeight = bannerHeight,
+                                    viewModel = viewModel,
+                                    scrollState = listState,
+                                    onTrailerClick = { movie ->
+                                        activeTrailerItem = movie
+                                    },
+                                    onDetailsClick = { movie ->
+                                        viewModel.selectedDetailsItem.value = movie
+                                    }
+                                )
                             }
-                        )
+                        }
+                    } else {
+                        item {
+                            currentMovie?.let { currentSafeMovie ->
+                                HomeHeroBannerMobile(
+                                    currentMovie = currentSafeMovie,
+                                    activeHeroLoadedDetails = activeHeroLoadedDetails,
+                                    featuredMovies = featuredMovies,
+                                    favoriteCatalogItems = favoriteCatalogItems,
+                                    bannerHeight = 460.dp.responsive(),
+                                    viewModel = viewModel,
+                                    scrollState = listState,
+                                    onTrailerClick = { activeTrailerItem = it },
+                                    onDetailsClick = { viewModel.selectedDetailsItem.value = it }
+                                )
+                            }
+                        }
                     }
 
-                    // --- B) SCROLLABLE CONTENT ROWS (Independent solid dark background Color(0xFF030406)) ---
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
-                            contentPadding = PaddingValues(
-                                top = if (isTvDevice) 56.dp else 0.dp,
-                                bottom = 90.dp
-                            )
-                        ) {
-                            // EN TELÉFONO O TABLET: Carrusel Destacado Vertical estilo móvil adentro de la lista scrollable
-                            if (!isTvDevice) {
-                                item {
-                                    currentMovie?.let { currentSafeMovie ->
-                                        HomeHeroBannerMobile(
-                                            currentMovie = currentSafeMovie,
-                                            activeHeroLoadedDetails = activeHeroLoadedDetails,
-                                            featuredMovies = featuredMovies,
-                                            favoriteCatalogItems = favoriteCatalogItems,
-                                            bannerHeight = 460.dp.responsive(),
-                                            viewModel = viewModel,
-                                            scrollState = listState,
-                                            onTrailerClick = { movie ->
-                                                activeTrailerItem = movie
+                    if (progressItems.isNotEmpty()) {
+                        item {
+                            androidx.compose.foundation.layout.Box(
+                                modifier = androidx.compose.ui.Modifier
+                                    .focusRequester(firstRowFocusRequester)
+                                    .focusProperties {
+                                        up = heroFocusRequester
+                                    }
+                                    .focusGroup()
+                            ) {
+                                Column {
+                                    HomeSectionRowHeader(
+                                    title = "⏱️ CONTINUAR VIENDO",
+                                    icon = Icons.Filled.PlayCircle,
+                                    color = Color(0xFF00FF87)
+                                )
+                                Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
+                                var progressRowFocusedIndex by remember { mutableStateOf<Int?>(null) }
+                                var progressRowFocusedNearRight by remember { mutableStateOf(false) }
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
+                                    contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
+                                ) {
+                                    itemsIndexed(progressItems) { index, (item, progressVal) ->
+                                        val fIndex = progressRowFocusedIndex
+                                        val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
+                                        CatalogItemHomeCard(
+                                            item = item,
+                                            layoutType = "Landscape Row",
+                                            isFavorite = item.id in favoriteCatalogItems,
+                                            progress = progressVal,
+                                            onFocus = {},
+                                            onFocusChange = { isFocused, isNearRight ->
+                                                if (isFocused) {
+                                                    progressRowFocusedIndex = index
+                                                    progressRowFocusedNearRight = isNearRight
+                                                } else {
+                                                    if (progressRowFocusedIndex == index) {
+                                                        progressRowFocusedIndex = null
+                                                    }
+                                                }
                                             },
-                                            onDetailsClick = { movie ->
-                                                viewModel.selectedDetailsItem.value = movie
-                                            }
+                                            isOtherFocusedInRow = isCovered,
+                                            onClick = {
+                                                viewModel.selectedDetailsItem.value = item
+                                            },
+                                            cardIndex = index,
+                                            focusedIndex = fIndex
                                         )
                                     }
+                                }
                                 }
                             }
+                        }
+                    }
 
-                            val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
-
-                            if (homeCatalogs.isEmpty()) {
-                                if (progressItems.isNotEmpty()) {
-                                    item {
-                                        HomeSectionRowHeader(
-                                            title = "⏱️ CONTINUAR VIENDO",
-                                            icon = Icons.Filled.PlayCircle,
-                                            color = Color(0xFF00FF87)
-                                        )
-                                        Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
-                                        var progressRowFocusedIndex by remember { mutableStateOf<Int?>(null) }
-                                        var progressRowFocusedNearRight by remember { mutableStateOf(false) }
-                                        LazyRow(
-                                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-                                            contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
-                                        ) {
-                                            itemsIndexed(progressItems) { index, (item, progressVal) ->
-                                                val fIndex = progressRowFocusedIndex
-                                                val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
-                                                CatalogItemHomeCard(
-                                                    item = item,
-                                                    layoutType = "Landscape Row",
-                                                    isFavorite = item.id in favoriteCatalogItems,
-                                                    progress = progressVal,
-                                                    onFocus = {},
-                                                    onFocusChange = { isFocused, isNearRight ->
-                                                        if (isFocused) {
-                                                            progressRowFocusedIndex = index
-                                                            progressRowFocusedNearRight = isNearRight
-                                                        } else {
-                                                            if (progressRowFocusedIndex == index) {
-                                                                progressRowFocusedIndex = null
-                                                            }
-                                                        }
-                                                    },
-                                                    isOtherFocusedInRow = isCovered,
-                                                    onClick = {
-                                                        viewModel.selectedDetailsItem.value = item
-                                                    },
-                                                    cardIndex = index,
-                                                    focusedIndex = fIndex
-                                                )
+                    val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
+                    homeCatalogs.forEachIndexed { index, catalog ->
+                        if (catalog.items.isNotEmpty()) {
+                            item(key = "catalog_${catalog.name}") {
+                                val isFirstRow = progressItems.isEmpty() && index == 0
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = androidx.compose.ui.Modifier
+                                        .then(if (isFirstRow) androidx.compose.ui.Modifier.focusRequester(firstRowFocusRequester) else androidx.compose.ui.Modifier)
+                                        .focusProperties {
+                                            if (isFirstRow) {
+                                                up = heroFocusRequester
                                             }
                                         }
-                                    }
-                                }
-                            } else {
-                                homeCatalogs.forEachIndexed { index, catalog ->
-                                    if (catalog.items.isNotEmpty()) {
-                                        item {
-                                            val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
-                                            DrawCatalogRow(
-                                                catalog = catalog,
-                                                favoriteCatalogItems = favoriteCatalogItems,
-                                                seenProgress = seenProgress,
-                                                customTitle = displayName,
-                                                customIcon = displayIcon,
-                                                onFocus = {},
-                                                onClick = { clickedItem ->
-                                                    viewModel.selectedDetailsItem.value = clickedItem
-                                                }
-                                            )
+                                        .focusGroup()
+                                ) {
+                                    val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
+                                    DrawCatalogRow(
+                                        catalog = catalog,
+                                        favoriteCatalogItems = favoriteCatalogItems,
+                                        seenProgress = seenProgress,
+                                        customTitle = displayName,
+                                        customIcon = displayIcon,
+                                        onFocus = {},
+                                        onClick = { clickedItem ->
+                                            viewModel.selectedDetailsItem.value = clickedItem
                                         }
-                                    }
-
-                                    // Inject Continue Watching under the first dynamic row
-                                    if (index == 0 && progressItems.isNotEmpty()) {
-                                        item {
-                                            HomeSectionRowHeader(
-                                                title = "⏱️ CONTINUAR VIENDO",
-                                                icon = Icons.Filled.PlayCircle,
-                                                color = Color(0xFF00FF87)
-                                            )
-                                            Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-                                                contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
-                                            ) {
-                                                itemsIndexed(progressItems) { index, (item, progressVal) ->
-                                                    val fIndex2 = progressRowFocusedIndex2
-                                                    val isCovered = isCardCovered(index, fIndex2, progressRowFocusedNearRight2, isWideLayout)
-                                                    CatalogItemHomeCard(
-                                                        item = item,
-                                                        layoutType = "Landscape Row",
-                                                        isFavorite = item.id in favoriteCatalogItems,
-                                                        progress = progressVal,
-                                                        onFocus = {},
-                                                        onFocusChange = { isFocused, isNearRight ->
-                                                            if (isFocused) {
-                                                                progressRowFocusedIndex2 = index
-                                                                progressRowFocusedNearRight2 = isNearRight
-                                                            } else {
-                                                                if (progressRowFocusedIndex2 == index) {
-                                                                    progressRowFocusedIndex2 = null
-                                                                }
-                                                            }
-                                                        },
-                                                        isOtherFocusedInRow = isCovered,
-                                                        onClick = {
-                                                               viewModel.selectedDetailsItem.value = item
-                                                        },
-                                                        cardIndex = index,
-                                                        focusedIndex = fIndex2
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
+                                    )
                                 }
                             }
                         }
                     }
                 }
             }
+        }
     }
-
     val trailerToShow = activeTrailerItem ?: viewModel.activeTrailerItem
     if (trailerToShow != null) {
         TrailerYoutubePlayerDialog(
@@ -1262,7 +1251,7 @@ private fun getCardHeight(isWideLayout: Boolean): androidx.compose.ui.unit.Dp =
     if (isWideLayout) 150.dp.responsive() else 172.dp.responsive()
 
 @Composable
-private fun isCardCovered(
+fun isCardCovered(
     index: Int,
     focusedIndex: Int?,
     isFocusedNearRight: Boolean,
@@ -3058,7 +3047,7 @@ fun formatSeconds(ms: Int): String {
     return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
 }
 
-private fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
+fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.ui.graphics.vector.ImageVector> {
     val cleanName = name.trim().lowercase()
     val icon = when {
         cleanName.contains("tendencia") || cleanName.contains("trending") -> Icons.Filled.TrendingUp
@@ -3073,7 +3062,9 @@ private fun getCategoryDisplayInfo(name: String): Pair<String, androidx.compose.
     return Pair(name, icon)
 }
 
-private fun isAndroidTvDevice(context: android.content.Context): Boolean {
+
+
+fun isAndroidTvDevice(context: android.content.Context): Boolean {
     val uiModeManager = context.getSystemService(android.content.Context.UI_MODE_SERVICE) as? android.app.UiModeManager
     val packageManager = context.packageManager
     return uiModeManager?.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
