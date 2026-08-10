@@ -56,6 +56,9 @@ fun HomeTvScreen(
     val favoriteCatalogItems by viewModel.favoriteCatalogItems.collectAsState()
     val seenProgress by viewModel.seenProgress.collectAsState()
 
+    val homeCatalogs = remember(catalogs) { catalogs.filter { it.isVisible && it.showInHome } }
+    val firstNonEmptyCatalogIndex = remember(homeCatalogs) { homeCatalogs.indexOfFirst { it.items.isNotEmpty() } }
+    
     val progressItems = remember(seenProgress, catalogs) {
         val list = mutableListOf<Pair<CatalogItem, Float>>()
         catalogs.flatMap { it.items }.forEach { item ->
@@ -104,7 +107,9 @@ fun HomeTvScreen(
                             modifier = Modifier
                                 .focusRequester(heroFocusRequester)
                                 .focusProperties {
-                                    down = firstRowFocusRequester
+                                    if (progressItems.isNotEmpty() || firstNonEmptyCatalogIndex != -1) {
+                                        down = firstRowFocusRequester
+                                    }
                                 }
                                 .focusGroup()
                         ) {
@@ -182,11 +187,10 @@ fun HomeTvScreen(
                         }
                     }
 
-                    val homeCatalogs = catalogs.filter { it.isVisible && it.showInHome }
                     homeCatalogs.forEachIndexed { index, catalog ->
                         if (catalog.items.isNotEmpty()) {
                             item(key = "catalog_${catalog.name}") {
-                                val isFirstRow = progressItems.isEmpty() && index == 0
+                                val isFirstRow = progressItems.isEmpty() && index == firstNonEmptyCatalogIndex
                                 Box(
                                     modifier = Modifier
                                         .then(if (isFirstRow) Modifier.focusRequester(firstRowFocusRequester) else Modifier)

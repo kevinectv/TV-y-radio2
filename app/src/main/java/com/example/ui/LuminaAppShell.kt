@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -62,6 +64,9 @@ fun LuminaAppShell(
 ) {
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isWideLayout = configuration.screenWidthDp >= 580
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isTvDevice = remember(context) { com.example.ui.screens.isAndroidTvDevice(context) }
+    val contentFocusRequester = remember { FocusRequester() }
 
     // Current live Clock time string
     var timeString by remember { mutableStateOf("12:00 PM") }
@@ -94,160 +99,55 @@ fun LuminaAppShell(
             accentColorHex = backgroundAccent
         )
 
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (isWideLayout) {
+                TvSideMenu(
+                    currentTab = viewModel.currentTab,
+                    onTabSelected = { viewModel.selectTab(it) },
+                    contentFocusRequester = contentFocusRequester
+                )
+            }
+
         // Main structural Scaffold to support safe edges
         Scaffold(
-            containerColor = Color.Transparent,
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxHeight()
                 .statusBarsPadding()
                 .navigationBarsPadding(),
+            containerColor = Color.Transparent,
             topBar = {
                 // --- 2. BARRA SUPERIOR PREMIUM (NUEVA APARIENCIA DE ALTO NIVEL) ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            start = if (isWideLayout) 24.dp else 12.dp,
+                            start = if (isWideLayout) 0.dp else 12.dp,
                             end = if (isWideLayout) 32.dp else 16.dp,
                             top = if (isWideLayout) 16.dp else 10.dp,
                             bottom = if (isWideLayout) 16.dp else 10.dp
                         ),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = if (isWideLayout) Arrangement.End else Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Node: Branded Title "LUMINA" with a beautiful custom electric-blue styled 'A'
-                    Text(
-                        text = androidx.compose.ui.text.buildAnnotatedString {
-                            append("LUMIN")
-                            pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
-                            append("A")
-                            pop()
-                        },
-                        color = Color.White,
-                        fontSize = if (isWideLayout) 18.sp.responsive() else 15.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.5.sp,
-                        modifier = Modifier.padding(end = 16.dp)
-                    )
-
-                    // Central Node: Main Navigation Tabs Row - ONLY on Wide Screens
-                    if (isWideLayout) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f, fill = false)
-                        ) {
-                            // Render navigation options exactly (filtering out SETTINGS and SEARCH to place SEARCH on the right, matching the reference image)
-                            AppTab.values().filter { it != AppTab.SETTINGS && it != AppTab.SEARCH }.forEach { tab ->
-                                val isSelected = viewModel.currentTab == tab
-                                var isTabFocused by remember { mutableStateOf(false) }
-
-                                val displayLabel = when (tab) {
-                                    AppTab.HOME -> "Inicio"
-                                    AppTab.WATCHLIST -> "Mi lista"
-                                    AppTab.TV -> "IPTV"
-                                    AppTab.RADIO -> "Radio"
-                                    else -> tab.label
-                                }
-
-                                val tabBgColor by animateColorAsState(
-                                     targetValue = when {
-                                         isTabFocused && isSelected -> Color(0xFF151833).copy(alpha = 0.9f)
-                                         isTabFocused -> Color.White.copy(alpha = 0.12f)
-                                         isSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
-                                         else -> Color.Transparent
-                                     },
-                                     animationSpec = tween(durationMillis = 200),
-                                     label = "tab_bg"
-                                 )
-                                val tabBorderColor by animateColorAsState(
-                                     targetValue = when {
-                                         isTabFocused && isSelected -> Color(0xFF00E5FF)
-                                         isTabFocused -> Color.White.copy(alpha = 0.4f)
-                                         isSelected -> Color(0xFF2E3092).copy(alpha = 0.7f)
-                                         else -> Color.Transparent
-                                     },
-                                     animationSpec = tween(durationMillis = 200),
-                                     label = "tab_border"
-                                 )
-
-                                 val contentColor by animateColorAsState(
-                                     targetValue = when {
-                                         isTabFocused -> Color.White
-                                         isSelected -> Color.White
-                                         else -> Color.White.copy(alpha = 0.65f)
-                                     },
-                                     animationSpec = tween(durationMillis = 200),
-                                     label = "tab_content_color"
-                                 )
-
-                                 val tabScale by animateFloatAsState(
-                                     targetValue = if (isTabFocused) 1.05f else 1.0f,
-                                     animationSpec = tween(durationMillis = 200),
-                                     label = "tab_scale"
-                                 )
-
-                                val hasIcon = when (tab) {
-                                    AppTab.HOME -> true
-                                    AppTab.RADIO -> true
-                                    AppTab.WATCHLIST -> true
-                                    AppTab.TV -> true
-                                    else -> false
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .scale(tabScale)
-                                        .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(tabBgColor)
-                                        .border(
-                                            width = if (isTabFocused || isSelected) 1.2.dp else 0.dp,
-                                            color = tabBorderColor,
-                                            shape = RoundedCornerShape(10.dp)
-                                        )
-                                        .clickable { viewModel.selectTab(tab) }
-                                        .tvFocusEffect(
-                                            shape = RoundedCornerShape(10.dp),
-                                            focusedBorderColor = Color.Transparent,
-                                            unfocusedBorderColor = Color.Transparent,
-                                            scaleAmount = 1.00f
-                                        )
-                                        .padding(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive()),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        if (hasIcon) {
-                                            Icon(
-                                                imageVector = when (tab) {
-                                                    AppTab.HOME -> Icons.Filled.Home
-                                                    AppTab.WATCHLIST -> Icons.Filled.Favorite
-                                                    AppTab.RADIO -> Icons.Filled.Radio
-                                                    AppTab.TV -> Icons.Filled.LiveTv
-                                                    else -> Icons.Filled.Star
-                                                },
-                                                contentDescription = tab.label,
-                                                tint = contentColor,
-                                                modifier = Modifier.size(15.dp.responsive())
-                                            )
-                                        }
-
-                                        Text(
-                                            text = displayLabel,
-                                            color = contentColor,
-                                            fontSize = 12.5.sp.responsive(),
-                                            fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium,
-                                            letterSpacing = 0.3.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                    if (!isWideLayout) {
+                        // Left Node: Branded Title "LUMINA" with a beautiful custom electric-blue styled 'A'
+                        Text(
+                            text = androidx.compose.ui.text.buildAnnotatedString {
+                                append("LUMIN")
+                                pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
+                                append("A")
+                                pop()
+                            },
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.5.sp,
+                            modifier = Modifier.padding(end = 16.dp)
+                        )
                     }
 
+                    // Central Node Removed for TV (now in TvSideMenu)
                     // Right Node: Live Clock, Search Icon, Profile Avatar, and optional Settings Button
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -507,7 +407,19 @@ fun LuminaAppShell(
                 }
                 Box(modifier = Modifier.fillMaxSize().padding(tabPadding)) {
                     when (tab) {
-                        AppTab.HOME -> HomeScreen(viewModel = viewModel)
+                        AppTab.HOME -> {
+                            if (isTvDevice) {
+                                Box(
+                                    modifier = Modifier
+                                        .focusRequester(contentFocusRequester)
+                                        .focusGroup()
+                                ) {
+                                    com.example.ui.screens.HomeTvScreen(viewModel = viewModel)
+                                }
+                            } else {
+                                HomeScreen(viewModel = viewModel)
+                            }
+                        }
                         AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
                         AppTab.TV -> TvScreen(viewModel = viewModel)
                         AppTab.RADIO -> RadioScreen(viewModel = viewModel)
@@ -1042,14 +954,151 @@ fun SearchCenterOverlay(
                                             tint = Color.White,
                                             modifier = Modifier.size(18.dp)
                                         )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
 }
 
+
+@Composable
+fun TvSideMenu(
+    currentTab: AppTab,
+    onTabSelected: (AppTab) -> Unit,
+    contentFocusRequester: FocusRequester
+) {
+    var isMenuFocused by remember { mutableStateOf(false) }
+    val menuWidth by animateDpAsState(
+        targetValue = if (isMenuFocused) 180.dp else 64.dp,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "menu_width"
+    )
+    
+    var focusedTab by remember { mutableStateOf<AppTab?>(null) }
+
+    Column(
+        modifier = Modifier
+            .width(menuWidth)
+            .fillMaxHeight()
+            .background(Color(0xFF030406).copy(alpha = 0.6f))
+            .onFocusChanged { isMenuFocused = it.hasFocus }
+            .padding(vertical = 24.dp)
+            .focusGroup(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Logo
+        Row(
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = if (isMenuFocused) "LUMINA" else "L",
+                color = Color(0xFF00E5FF),
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp,
+                fontSize = if (isMenuFocused) 16.sp.responsive() else 18.sp.responsive()
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        val tabs = AppTab.values().filter { it != AppTab.SETTINGS && it != AppTab.SEARCH }
+        tabs.forEach { tab ->
+            val isSelected = currentTab == tab
+            val isTabFocused = focusedTab == tab
+            
+            val displayLabel = when (tab) {
+                AppTab.HOME -> "Inicio"
+                AppTab.WATCHLIST -> "Mi lista"
+                AppTab.TV -> "IPTV"
+                AppTab.RADIO -> "Radio"
+                else -> tab.label
+            }
+            
+            val icon = when (tab) {
+                AppTab.HOME -> Icons.Filled.Home
+                AppTab.WATCHLIST -> Icons.Filled.Favorite
+                AppTab.RADIO -> Icons.Filled.Radio
+                AppTab.TV -> Icons.Filled.LiveTv
+                else -> Icons.Filled.Star
+            }
+            
+            val tabBgColor by animateColorAsState(
+                targetValue = when {
+                    isTabFocused && isSelected -> Color(0xFF151833).copy(alpha = 0.9f)
+                    isTabFocused -> Color.White.copy(alpha = 0.12f)
+                    isSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
+                    else -> Color.Transparent
+                },
+                animationSpec = tween(durationMillis = 200),
+                label = "tab_bg"
+            )
+            
+            val contentColor by animateColorAsState(
+                targetValue = if (isTabFocused || isSelected) Color.White else Color.White.copy(alpha = 0.65f),
+                animationSpec = tween(durationMillis = 200),
+                label = "tab_content"
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if (isMenuFocused) Arrangement.Start else Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .onFocusChanged { state ->
+                        if (state.isFocused || state.hasFocus) {
+                            focusedTab = tab
+                        } else if (focusedTab == tab) {
+                            focusedTab = null
+                        }
+                    }
+                    .focusProperties {
+                        if (tab == AppTab.HOME) {
+                            right = contentFocusRequester
+                        }
+                    }
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(tabBgColor)
+                    .clickable { onTabSelected(tab) }
+                    .tvFocusEffect(
+                        shape = RoundedCornerShape(12.dp),
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        scaleAmount = 1.05f
+                    )
+                    .padding(horizontal = if (isMenuFocused) 16.dp else 0.dp, vertical = 12.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = displayLabel,
+                    tint = contentColor,
+                    modifier = Modifier.size(22.dp)
+                )
+                
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isMenuFocused,
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally()
+                ) {
+                    Row {
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = displayLabel,
+                            color = contentColor,
+                            fontSize = 13.sp.responsive(),
+                            fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium
+                        )
+}
+}
+}
+}
+}
+}

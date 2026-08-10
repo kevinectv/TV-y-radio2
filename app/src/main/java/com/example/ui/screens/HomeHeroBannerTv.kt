@@ -218,44 +218,6 @@ fun HomeHeroBannerTv(
         modifier = Modifier
             .fillMaxWidth()
             .height(effectiveHeight)
-            .focusable()
-            .onFocusChanged { focusState ->
-                if (focusState.hasFocus) {
-                    coroutineScope.launch {
-                        scrollState.animateScrollToItem(0)
-                    }
-                }
-            }
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.type == KeyEventType.KeyDown) {
-                    when (keyEvent.key) {
-                        Key.DirectionLeft -> {
-                            heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
-                            autoRotateTrigger++
-                            true
-                        }
-                        Key.DirectionRight -> {
-                            heroIndex = (heroIndex + 1) % featuredMovies.size
-                            autoRotateTrigger++
-                            true
-                        }
-                        Key.DirectionDown -> {
-                            false
-                        }
-                        Key.DirectionUp -> {
-                            // Allow focus to move up naturally to top menu
-                            false
-                        }
-                        Key.DirectionCenter, Key.Enter, Key.Spacebar -> {
-                            onDetailsClick(currentMovie)
-                            true
-                        }
-                        else -> false
-                    }
-                } else {
-                    false
-                }
-            }
     ) {
         // Background Backdrop with crossfade (light overlay for vivid backdrop)
         Crossfade(
@@ -435,6 +397,25 @@ fun HomeHeroBannerTv(
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .focusRequester(playButtonFocusRequester)
+                            .onKeyEvent { keyEvent ->
+                                if (keyEvent.type == KeyEventType.KeyDown) {
+                                    when (keyEvent.key) {
+                                        Key.DirectionLeft -> {
+                                            heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
+                                            autoRotateTrigger++
+                                            true
+                                        }
+                                        Key.DirectionRight -> {
+                                            heroIndex = (heroIndex + 1) % featuredMovies.size
+                                            autoRotateTrigger++
+                                            true
+                                        }
+                                        else -> false
+                                    }
+                                } else {
+                                    false
+                                }
+                            }
                             .focusable()
                             .clickable { onTrailerClick(targetMovie) }
                     ) {
@@ -480,10 +461,6 @@ fun HomeHeroBannerTv(
                                             .height(6.dp)
                                             .width(if (isActive) 24.dp else 6.dp)
                                             .clip(RoundedCornerShape(3.dp))
-                                            .clickable { 
-                                                heroIndex = index 
-                                                autoRotateTrigger++
-                                            }
                                             .background(
                                                 color = if (isActive) Color.White else Color.White.copy(alpha = 0.35f),
                                                 shape = RoundedCornerShape(3.dp)
