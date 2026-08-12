@@ -112,11 +112,13 @@ fun LuminaAppShell(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        // 1. Sombra muy discreta y suave como requested
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color(0xFF030406).copy(alpha = 0.85f),
-                                    Color(0xFF030406).copy(alpha = 0.5f),
+                                    Color(0xFF030406).copy(alpha = 0.90f),
+                                    Color(0xFF030406).copy(alpha = 0.65f),
+                                    Color(0xFF030406).copy(alpha = 0.20f),
                                     Color.Transparent
                                 )
                             )
@@ -133,7 +135,7 @@ fun LuminaAppShell(
                     // Left Node + Central Node (Logo and Tabs)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp) // Reducido para que el menú sea más compacto
                     ) {
                         // Logo
                         Text(
@@ -147,7 +149,7 @@ fun LuminaAppShell(
                             fontSize = 16.sp.responsive(),
                             fontWeight = FontWeight.Black,
                             letterSpacing = 1.5.sp,
-                            modifier = Modifier.padding(end = 16.dp)
+                            modifier = Modifier.padding(end = 20.dp) // Padding mantenido para separar el Logo de las opciones
                         )
 
                         // If wide layout, display tabs here (Central Node)
@@ -176,7 +178,7 @@ fun LuminaAppShell(
                                 val tabBgColor by animateColorAsState(
                                     targetValue = when {
                                         isTabFocused -> Color.White.copy(alpha = 0.15f)
-                                        isSelected -> Color.White.copy(alpha = 0.08f)
+                                        isSelected -> Color.White.copy(alpha = 0.12f) // Un poco más visible
                                         else -> Color.Transparent
                                     },
                                     animationSpec = tween(durationMillis = 200),
@@ -194,7 +196,7 @@ fun LuminaAppShell(
 
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 2.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -214,7 +216,7 @@ fun LuminaAppShell(
                                                 borderWidth = 1.dp,
                                                 scaleAmount = 1.05f
                                             )
-                                            .padding(horizontal = 18.dp, vertical = 8.dp),
+                                            .padding(horizontal = 14.dp, vertical = 8.dp), // Reducido horizontalmente
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Row(
@@ -225,9 +227,9 @@ fun LuminaAppShell(
                                                 imageVector = tabIcon,
                                                 contentDescription = displayLabel,
                                                 tint = contentColor,
-                                                modifier = Modifier.size(16.dp.responsive())
+                                                modifier = Modifier.size(15.dp.responsive())
                                             )
-                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Spacer(modifier = Modifier.width(4.dp)) // Más compacto
                                             Text(
                                                 text = displayLabel,
                                                 color = contentColor,

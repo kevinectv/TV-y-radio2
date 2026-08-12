@@ -148,16 +148,30 @@ tasks.register("copyApkToOutputFolders") {
     val buildDir = layout.buildDirectory
     val projectDir = layout.projectDirectory
     
-    inputs.file(buildDir.file("outputs/apk/debug/app-debug.apk"))
     outputs.dir(projectDir.dir("../build-outputs"))
     outputs.dir(projectDir.dir("../.build-outputs"))
     outputs.upToDateWhen { false }
     
     doLast {
-        val apkSource = buildDir.file("outputs/apk/debug/app-debug.apk").get().asFile
-        if (apkSource.exists()) {
+        val debugApkSource = buildDir.file("outputs/apk/debug/app-debug.apk").get().asFile
+        val releaseApkSource = buildDir.file("outputs/apk/release/app-release.apk").get().asFile
+        
+        // Pick the most recently modified APK, or release if both exist
+        val apkSource = if (releaseApkSource.exists() && (!debugApkSource.exists() || releaseApkSource.lastModified() >= debugApkSource.lastModified())) {
+            releaseApkSource
+        } else if (debugApkSource.exists()) {
+            debugApkSource
+        } else {
+            null
+        }
+
+        if (apkSource != null && apkSource.exists()) {
             val destVisibleDir = projectDir.dir("../build-outputs").asFile
             val destHiddenDir = projectDir.dir("../.build-outputs").asFile
+            
+            // Clean directories first to prevent incorrect states
+            if (destVisibleDir.exists()) destVisibleDir.deleteRecursively()
+            if (destHiddenDir.exists()) destHiddenDir.deleteRecursively()
             
             // Create directories if they do not exist
             destVisibleDir.mkdirs()
@@ -166,13 +180,16 @@ tasks.register("copyApkToOutputFolders") {
             val visApk = File(destVisibleDir, "app-debug.apk")
             val hidApk = File(destHiddenDir, "app-debug.apk")
             
-            // Legacy / Cached URL support targets
+            // Dynamic names and Legacy / Cached URL support targets
+            val versionApkName = "Lumina_IPTV_v${appVersion}.apk"
             val legacyNames = listOf(
                 "Lumina_IPTV_Latest.apk",
+                versionApkName,
+                "Lumina_IPTV_v2.0.3.apk",
                 "Lumina_IPTV_v2.0.2.apk",
                 "Lumina_IPTV_v2.0.1.apk",
                 "Lumina_IPTV_v2.0.0.apk"
-            )
+            ).distinct()
             
             // Copy default targets
             apkSource.copyTo(visApk, overwrite = true)
@@ -198,6 +215,8 @@ tasks.register("copyApkToOutputFolders") {
 
 afterEvaluate {
     tasks.findByName("assembleDebug")?.finalizedBy("copyApkToOutputFolders")
+    tasks.findByName("assembleRelease")?.finalizedBy("copyApkToOutputFolders")
     tasks.findByName("assemble")?.finalizedBy("copyApkToOutputFolders")
+    tasks.findByName("build")?.finalizedBy("copyApkToOutputFolders")
 }
 
