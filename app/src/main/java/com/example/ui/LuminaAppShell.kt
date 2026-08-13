@@ -17,6 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -112,49 +115,53 @@ fun LuminaAppShell(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        // 1. Sombra muy discreta y suave como requested
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF030406).copy(alpha = 0.90f),
-                                    Color(0xFF030406).copy(alpha = 0.65f),
-                                    Color(0xFF030406).copy(alpha = 0.20f),
-                                    Color.Transparent
-                                )
+                        // 1. Sombra muy sutil dibujada detrás sin afectar el layout (sin Spacer ni height extra)
+                        .drawBehind {
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.25f),
+                                        Color.Black.copy(alpha = 0.15f),
+                                        Color.Black.copy(alpha = 0.05f),
+                                        Color.Transparent
+                                    ),
+                                    startY = 0f,
+                                    endY = size.height + 120.dp.toPx() // Cae suavemente debajo del menú sin empujar el Hero
+                                ),
+                                size = Size(size.width, size.height + 120.dp.toPx())
                             )
-                        )
+                        }
                         .padding(
                             start = if (isWideLayout) 32.dp else 12.dp,
                             end = if (isWideLayout) 32.dp else 16.dp,
                             top = if (isWideLayout) 24.dp else 10.dp,
-                            bottom = if (isWideLayout) 24.dp else 10.dp
+                            bottom = if (isWideLayout) 20.dp else 10.dp // Padding normal, sin espacio extra
                         ),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Node + Central Node (Logo and Tabs)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp) // Reducido para que el menú sea más compacto
-                    ) {
-                        // Logo
-                        Text(
-                            text = androidx.compose.ui.text.buildAnnotatedString {
-                                append("LUMIN")
-                                pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
-                                append("A")
-                                pop()
-                            },
-                            color = Color.White,
-                            fontSize = 16.sp.responsive(),
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 1.5.sp,
-                            modifier = Modifier.padding(end = 20.dp) // Padding mantenido para separar el Logo de las opciones
-                        )
+                    // Left Node (Logo)
+                    Text(
+                        text = androidx.compose.ui.text.buildAnnotatedString {
+                            append("LUMIN")
+                            pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
+                            append("A")
+                            pop()
+                        },
+                        color = Color.White,
+                        fontSize = 16.sp.responsive(),
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp
+                    )
+                    
+                    Spacer(modifier = Modifier.weight(1f))
 
-                        // If wide layout, display tabs here (Central Node)
-                        if (isWideLayout) {
-                            val tabs = AppTab.values().filter { it != AppTab.SETTINGS && it != AppTab.SEARCH }
+                    // Central Node (Tabs)
+                    if (isWideLayout) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp) // Muy compacto y centrado
+                        ) {
+                            val tabs = AppTab.values().filter { it != AppTab.SETTINGS && it != AppTab.SEARCH && it != AppTab.RADIO }
                             tabs.forEach { tab ->
                                 val isSelected = viewModel.currentTab == tab
                                 var isTabFocused by remember { mutableStateOf(false) }
@@ -162,16 +169,18 @@ fun LuminaAppShell(
                                 val displayLabel = when (tab) {
                                     AppTab.HOME -> "Inicio"
                                     AppTab.WATCHLIST -> "Mi lista"
-                                    AppTab.TV -> "IPTV"
-                                    AppTab.RADIO -> "Radio"
+                                    AppTab.MOVIES -> "Películas"
+                                    AppTab.SERIES -> "Series"
+                                    AppTab.TV -> "TV"
                                     else -> tab.label
                                 }
                                 
                                 val tabIcon = when (tab) {
                                     AppTab.HOME -> Icons.Filled.Home
                                     AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                    AppTab.MOVIES -> Icons.Filled.Movie
+                                    AppTab.SERIES -> Icons.Filled.Tv
                                     AppTab.TV -> Icons.Filled.LiveTv
-                                    AppTab.RADIO -> Icons.Filled.Radio
                                     else -> Icons.Filled.Home
                                 }
 
@@ -216,7 +225,7 @@ fun LuminaAppShell(
                                                 borderWidth = 1.dp,
                                                 scaleAmount = 1.05f
                                             )
-                                            .padding(horizontal = 14.dp, vertical = 8.dp), // Reducido horizontalmente
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Row(
@@ -227,14 +236,15 @@ fun LuminaAppShell(
                                                 imageVector = tabIcon,
                                                 contentDescription = displayLabel,
                                                 tint = contentColor,
-                                                modifier = Modifier.size(15.dp.responsive())
+                                                modifier = Modifier.size(16.dp.responsive())
                                             )
-                                            Spacer(modifier = Modifier.width(4.dp)) // Más compacto
+                                            Spacer(modifier = Modifier.width(6.dp))
                                             Text(
                                                 text = displayLabel,
                                                 color = contentColor,
                                                 fontSize = 13.sp.responsive(),
-                                                fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium
+                                                fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium,
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                             )
                                         }
                                     }
@@ -264,6 +274,8 @@ fun LuminaAppShell(
                             }
                         }
                     }
+                    
+                    Spacer(modifier = Modifier.weight(1f))
 
                     // Right Node: Live Clock, Search Icon, Profile Avatar, and optional Settings Button
                     Row(
@@ -449,7 +461,7 @@ fun LuminaAppShell(
             bottomBar = {
                 if (!isWideLayout) {
                     NavigationBar(
-                        containerColor = Color.Black.copy(alpha = 0.85f),
+                        containerColor = Color.Black.copy(alpha = 0.60f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(12.dp)
@@ -457,7 +469,7 @@ fun LuminaAppShell(
                             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(20.dp)),
                         tonalElevation = 8.dp
                     ) {
-                        AppTab.values().forEach { tab ->
+                        AppTab.values().filter { it != AppTab.RADIO }.forEach { tab ->
                             val isSelected = viewModel.currentTab == tab
                             NavigationBarItem(
                                 selected = isSelected,
@@ -474,6 +486,8 @@ fun LuminaAppShell(
                                         imageVector = when (tab) {
                                             AppTab.HOME -> Icons.Filled.Home
                                             AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                            AppTab.MOVIES -> Icons.Filled.Movie
+                                            AppTab.SERIES -> Icons.Filled.Tv
                                             AppTab.TV -> Icons.Filled.LiveTv
                                             AppTab.RADIO -> Icons.Filled.Radio
                                             AppTab.SEARCH -> Icons.Filled.Search
@@ -485,9 +499,11 @@ fun LuminaAppShell(
                                 },
                                 label = {
                                     val labelStr = when (tab) {
-                                        AppTab.HOME -> "Home"
+                                        AppTab.HOME -> "Inicio"
                                         AppTab.WATCHLIST -> "Favoritos"
-                                        AppTab.TV -> "TV"
+                                        AppTab.MOVIES -> "Películas"
+                                        AppTab.SERIES -> "Series"
+                                        AppTab.TV -> "IPTV"
                                         AppTab.RADIO -> "Radio"
                                         AppTab.SEARCH -> "Buscar"
                                         AppTab.SETTINGS -> "Ajustes"
@@ -538,6 +554,8 @@ fun LuminaAppShell(
                             }
                         }
                         AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
+                        AppTab.MOVIES -> MoviesScreen(viewModel = viewModel)
+                        AppTab.SERIES -> SeriesScreen(viewModel = viewModel)
                         AppTab.TV -> TvScreen(viewModel = viewModel)
                         AppTab.RADIO -> RadioScreen(viewModel = viewModel)
                         AppTab.SEARCH -> SearchScreen(viewModel = viewModel)
@@ -657,7 +675,7 @@ fun SearchCenterOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
+            .background(Color.Black.copy(alpha = 0.60f))
             .clickable { onDismiss() }
             .padding(horizontal = 24.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center

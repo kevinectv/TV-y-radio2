@@ -30,6 +30,8 @@ import java.util.UUID
 enum class AppTab(val label: String) {
     HOME("Home"),
     WATCHLIST("Watchlist"),
+    MOVIES("Películas"),
+    SERIES("Series"),
     TV("IPTV TV"),
     RADIO("Radio"),
     SEARCH("Buscar"),

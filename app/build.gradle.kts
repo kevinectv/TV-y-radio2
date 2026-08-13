@@ -170,8 +170,12 @@ tasks.register("copyApkToOutputFolders") {
             val destHiddenDir = projectDir.dir("../.build-outputs").asFile
             
             // Clean directories first to prevent incorrect states
-            if (destVisibleDir.exists()) destVisibleDir.deleteRecursively()
-            if (destHiddenDir.exists()) destHiddenDir.deleteRecursively()
+            if (destVisibleDir.exists()) {
+                destVisibleDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
+            }
+            if (destHiddenDir.exists()) {
+                destHiddenDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
+            }
             
             // Create directories if they do not exist
             destVisibleDir.mkdirs()

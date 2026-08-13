@@ -292,7 +292,7 @@ fun HomeHeroBannerTv(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(76.dp),
+                            .height(96.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (!richMeta.logoUrl.isNullOrBlank()) {
@@ -306,8 +306,8 @@ fun HomeHeroBannerTv(
                                     .build(),
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 72.dp)
-                                    .widthIn(max = 340.dp),
+                                    .heightIn(max = 86.dp)
+                                    .widthIn(max = 400.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart,
                                 loading = { },
@@ -316,7 +316,7 @@ fun HomeHeroBannerTv(
                                         text = richMeta.title,
                                         style = TextStyle(
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 32.sp,
+                                            fontSize = 38.sp,
                                             color = Color.White,
                                             letterSpacing = (-1).sp,
                                             shadow = androidx.compose.ui.graphics.Shadow(
@@ -335,7 +335,7 @@ fun HomeHeroBannerTv(
                                 text = richMeta.title,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 32.sp,
+                                    fontSize = 38.sp,
                                     color = Color.White,
                                     letterSpacing = (-1).sp,
                                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -474,32 +474,6 @@ fun HomeHeroBannerTv(
             }
         }
 
-        // Floating Play Button on the right (decorative, non-focusable)
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 80.dp)
-                .focusable(false)
-        ) {
-            Surface(
-                color = Color.White,
-                shape = CircleShape,
-                shadowElevation = 8.dp,
-                modifier = Modifier
-                    .size(68.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
-            }
-        }
+
     }
 }
