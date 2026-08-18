@@ -4,45 +4,7 @@ file_path = "app/src/main/java/com/example/ui/screens/HomeHeroBannerTv.kt"
 with open(file_path, "r") as f:
     content = f.read()
 
-# 1. Update logo sizes
-target_logo_box = """                    // 1. Logo or Title
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(76.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {"""
-replacement_logo_box = """                    // 1. Logo or Title
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(96.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {"""
-
-target_logo_image = """                                modifier = Modifier
-                                    .heightIn(max = 72.dp)
-                                    .widthIn(max = 340.dp),"""
-replacement_logo_image = """                                modifier = Modifier
-                                    .heightIn(max = 86.dp)
-                                    .widthIn(max = 400.dp),"""
-
-target_logo_text_1 = """                                        style = TextStyle(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 32.sp,"""
-replacement_logo_text_1 = """                                        style = TextStyle(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 38.sp,"""
-
-target_logo_text_2 = """                                style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 32.sp,"""
-replacement_logo_text_2 = """                                style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 38.sp,"""
-
-# 2. Update Play Button and Indicators
-target_button_indicators = """                    // 4. Primary Play Button
+target = """                    // 4. Primary Play Button
                     Surface(
                         color = Color.White,
                         shape = RoundedCornerShape(8.dp),
@@ -122,18 +84,19 @@ target_button_indicators = """                    // 4. Primary Play Button
                         }
                     }"""
 
-replacement_button_indicators = """                    // 4. Primary Play Button & Carousel Indicators
+replacement = """                    // 4. Primary Play Button (Restored Circular) & Carousel Indicators
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(32.dp)
                     ) {
+                        // Circular Play Button Restored
                         Surface(
                             color = Color.White,
                             shape = CircleShape,
                             shadowElevation = 8.dp,
                             modifier = Modifier
-                                .size(56.dp)
+                                .size(68.dp)
                                 .focusRequester(playButtonFocusRequester)
                                 .onKeyEvent { keyEvent ->
                                     if (keyEvent.type == KeyEventType.KeyDown) {
@@ -165,12 +128,12 @@ replacement_button_indicators = """                    // 4. Primary Play Button
                                     imageVector = Icons.Filled.PlayArrow,
                                     contentDescription = "Reproducir",
                                     tint = Color.Black,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(38.dp)
                                 )
                             }
                         }
                         
-                        // 5. Carousel Indicators
+                        // 5. Carousel Indicators placed next to the Play Button
                         val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
                         if (featuredMovies.isNotEmpty()) {
                             Row(
@@ -194,44 +157,11 @@ replacement_button_indicators = """                    // 4. Primary Play Button
                         }
                     }"""
 
-target_floating_button = """        // Floating Play Button on the right (decorative, non-focusable)
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 80.dp)
-                .focusable(false)
-        ) {
-            Surface(
-                color = Color.White,
-                shape = CircleShape,
-                shadowElevation = 8.dp,
-                modifier = Modifier
-                    .size(68.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
-            }
-        }"""
+if target in content:
+    content = content.replace(target, replacement)
+    with open(file_path, "w") as f:
+        f.write(content)
+    print("Replaced successfully.")
+else:
+    print("Target not found.")
 
-replacement_floating_button = ""
-
-content = content.replace(target_logo_box, replacement_logo_box)
-content = content.replace(target_logo_image, replacement_logo_image)
-content = content.replace(target_logo_text_1, replacement_logo_text_1)
-content = content.replace(target_logo_text_2, replacement_logo_text_2)
-content = content.replace(target_button_indicators, replacement_button_indicators)
-content = content.replace(target_floating_button, replacement_floating_button)
-
-with open(file_path, "w") as f:
-    f.write(content)
-
-print("Replaced successfully.")

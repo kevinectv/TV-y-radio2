@@ -213,11 +213,36 @@ fun HomeHeroBannerTv(
     }
 
     val effectiveHeight = bannerHeight + 220.dp
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(effectiveHeight)
+            .focusRequester(playButtonFocusRequester)
+            .onKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.key) {
+                        Key.DirectionLeft -> {
+                            if (heroIndex == 0) {
+                                false // Let focus bubble up to the drawer
+                            } else {
+                                heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
+                                autoRotateTrigger++
+                                true
+                            }
+                        }
+                        Key.DirectionRight -> {
+                            heroIndex = (heroIndex + 1) % featuredMovies.size
+                            autoRotateTrigger++
+                            true
+                        }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            }
+            .focusable()
+            .clickable { onDetailsClick(currentMovie) }
     ) {
         // Background Backdrop with crossfade (light overlay for vivid backdrop)
         Crossfade(
@@ -241,11 +266,11 @@ fun HomeHeroBannerTv(
                         .background(
                             Brush.horizontalGradient(
                                 colors = listOf(
-                                    Color.Black.copy(alpha = 0.45f),
-                                    Color.Black.copy(alpha = 0.2f),
+                                    Color.Black.copy(alpha = 0.8f),
+                                    Color.Black.copy(alpha = 0.4f),
                                     Color.Transparent
                                 ),
-                                endX = 1000f
+                                endX = 1200f
                             )
                         )
                 )
@@ -306,8 +331,8 @@ fun HomeHeroBannerTv(
                                     .build(),
                                 contentDescription = richMeta.title,
                                 modifier = Modifier
-                                    .heightIn(max = 86.dp)
-                                    .widthIn(max = 400.dp),
+                                    .heightIn(max = 110.dp)
+                                    .widthIn(max = 480.dp),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.CenterStart,
                                 loading = { },
@@ -316,7 +341,7 @@ fun HomeHeroBannerTv(
                                         text = richMeta.title,
                                         style = TextStyle(
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 38.sp,
+                                            fontSize = 44.sp,
                                             color = Color.White,
                                             letterSpacing = (-1).sp,
                                             shadow = androidx.compose.ui.graphics.Shadow(
@@ -335,7 +360,7 @@ fun HomeHeroBannerTv(
                                 text = richMeta.title,
                                 style = TextStyle(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 38.sp,
+                                    fontSize = 44.sp,
                                     color = Color.White,
                                     letterSpacing = (-1).sp,
                                     shadow = androidx.compose.ui.graphics.Shadow(
@@ -386,73 +411,51 @@ fun HomeHeroBannerTv(
                         maxLines = 3,
                         lineHeight = 20.sp,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // 4. Primary Play Button
-                    Surface(
-                        color = Color.White,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .focusRequester(playButtonFocusRequester)
-                            .onKeyEvent { keyEvent ->
-                                if (keyEvent.type == KeyEventType.KeyDown) {
-                                    when (keyEvent.key) {
-                                        Key.DirectionLeft -> {
-                                            heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
-                                            autoRotateTrigger++
-                                            true
-                                        }
-                                        Key.DirectionRight -> {
-                                            heroIndex = (heroIndex + 1) % featuredMovies.size
-                                            autoRotateTrigger++
-                                            true
-                                        }
-                                        else -> false
-                                    }
-                                } else {
-                                    false
-                                }
-                            }
-                            .focusable()
-                            .clickable { onTrailerClick(targetMovie) }
+                    // 4. Primary Play Button & Carousel Indicators
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(48.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Reproducir",
-                                tint = Color.Black,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Text(
-                                text = "Reproducir",
-                                color = Color.Black,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-
-                    // 5. Generous spacing before indicators (strictly below button, never above/touching)
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // 6. Carousel Indicators
-                    val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
-                    if (featuredMovies.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
+                        // Original Rectangular Play Button
+                        Surface(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .clickable { onTrailerClick(targetMovie) }
                         ) {
                             Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = "Reproducir",
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Text(
+                                    text = "Reproducir",
+                                    color = Color.Black,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                        
+                        // 5. Carousel Indicators
+                        val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
+                        if (featuredMovies.isNotEmpty()) {
+                            Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.align(Alignment.CenterVertically).offset(y = 4.dp)
                             ) {
                                 featuredMovies.forEachIndexed { index, _ ->
                                     val isActive = index == currentIndex
@@ -473,7 +476,33 @@ fun HomeHeroBannerTv(
                 }
             }
         }
-
-
+        
+        // Floating Play Button on the right (decorative, non-focusable)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 138.dp, end = 80.dp)
+                .focusable(false)
+        ) {
+            Surface(
+                color = Color.White,
+                shape = CircleShape,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .size(68.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(38.dp)
+                    )
+                }
+            }
+        }
     }
 }

@@ -39,6 +39,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.KeyEventType
+
 import coil.compose.rememberAsyncImagePainter
 import com.example.ui.components.ElegantBackground
 import com.example.ui.components.tvFocusEffect
@@ -70,6 +76,7 @@ fun LuminaAppShell(
     val context = androidx.compose.ui.platform.LocalContext.current
     val isTvDevice = remember(context) { com.example.ui.screens.isAndroidTvDevice(context) }
     val contentFocusRequester = remember { FocusRequester() }
+    val drawerFocusRequester = remember { FocusRequester() }
 
     // Current live Clock time string
     var timeString by remember { mutableStateOf("12:00 PM") }
@@ -102,11 +109,13 @@ fun LuminaAppShell(
             accentColorHex = backgroundAccent
         )
 
+        var isDrawerFocused by remember { mutableStateOf(false) }
+
         // Main structural Scaffold to support safe edges
         Scaffold(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 0.dp)
+                .padding(start = if (isWideLayout) 68.dp else 0.dp) // Leave space for collapsed drawer!
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             containerColor = Color.Transparent,
@@ -126,16 +135,16 @@ fun LuminaAppShell(
                                         Color.Transparent
                                     ),
                                     startY = 0f,
-                                    endY = size.height + 120.dp.toPx() // Cae suavemente debajo del menú sin empujar el Hero
+                                    endY = size.height + 120.dp.toPx()
                                 ),
                                 size = Size(size.width, size.height + 120.dp.toPx())
                             )
                         }
                         .padding(
-                            start = if (isWideLayout) 32.dp else 12.dp,
+                            start = if (isWideLayout) 24.dp else 12.dp,
                             end = if (isWideLayout) 32.dp else 16.dp,
                             top = if (isWideLayout) 24.dp else 10.dp,
-                            bottom = if (isWideLayout) 20.dp else 10.dp // Padding normal, sin espacio extra
+                            bottom = if (isWideLayout) 20.dp else 10.dp
                         ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -148,305 +157,19 @@ fun LuminaAppShell(
                             pop()
                         },
                         color = Color.White,
-                        fontSize = 16.sp.responsive(),
+                        fontSize = 18.sp.responsive(), // Slightly larger as requested
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.5.sp
                     )
                     
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Central Node (Tabs)
-                    if (isWideLayout) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp) // Muy compacto y centrado
-                        ) {
-                            val tabs = AppTab.values().filter { it != AppTab.SETTINGS && it != AppTab.SEARCH && it != AppTab.RADIO }
-                            tabs.forEach { tab ->
-                                val isSelected = viewModel.currentTab == tab
-                                var isTabFocused by remember { mutableStateOf(false) }
-                                
-                                val displayLabel = when (tab) {
-                                    AppTab.HOME -> "Inicio"
-                                    AppTab.WATCHLIST -> "Mi lista"
-                                    AppTab.MOVIES -> "Películas"
-                                    AppTab.SERIES -> "Series"
-                                    AppTab.TV -> "TV"
-                                    else -> tab.label
-                                }
-                                
-                                val tabIcon = when (tab) {
-                                    AppTab.HOME -> Icons.Filled.Home
-                                    AppTab.WATCHLIST -> Icons.Filled.Favorite
-                                    AppTab.MOVIES -> Icons.Filled.Movie
-                                    AppTab.SERIES -> Icons.Filled.Tv
-                                    AppTab.TV -> Icons.Filled.LiveTv
-                                    else -> Icons.Filled.Home
-                                }
-
-                                val tabBgColor by animateColorAsState(
-                                    targetValue = when {
-                                        isTabFocused -> Color.White.copy(alpha = 0.15f)
-                                        isSelected -> Color.White.copy(alpha = 0.12f) // Un poco más visible
-                                        else -> Color.Transparent
-                                    },
-                                    animationSpec = tween(durationMillis = 200),
-                                    label = "tab_bg"
-                                )
-                                
-                                val contentColor by animateColorAsState(
-                                    targetValue = when {
-                                        isTabFocused || isSelected -> Color.White
-                                        else -> Color.White.copy(alpha = 0.65f)
-                                    },
-                                    animationSpec = tween(durationMillis = 200),
-                                    label = "tab_content"
-                                )
-
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(horizontal = 2.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
-                                            .focusProperties {
-                                                if (tab == AppTab.HOME) {
-                                                    down = contentFocusRequester
-                                                }
-                                            }
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(tabBgColor)
-                                            .clickable { viewModel.selectTab(tab) }
-                                            .tvFocusEffect(
-                                                shape = RoundedCornerShape(16.dp),
-                                                focusedBorderColor = if (isTabFocused) Color.White.copy(alpha = 0.3f) else Color.Transparent,
-                                                unfocusedBorderColor = Color.Transparent,
-                                                borderWidth = 1.dp,
-                                                scaleAmount = 1.05f
-                                            )
-                                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = tabIcon,
-                                                contentDescription = displayLabel,
-                                                tint = contentColor,
-                                                modifier = Modifier.size(16.dp.responsive())
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = displayLabel,
-                                                color = contentColor,
-                                                fontSize = 13.sp.responsive(),
-                                                fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium,
-                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                            )
-                                        }
-                                    }
-                                    
-                                    // Subtle indicator for selected tab
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(20.dp)
-                                            .height(3.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                if (isSelected) {
-                                                    Brush.horizontalGradient(
-                                                        colors = listOf(
-                                                            Color(0xFF00E5FF).copy(alpha = 0.8f),
-                                                            Color(0xFF00E5FF)
-                                                        )
-                                                    )
-                                                } else {
-                                                    Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
-                                                }
-                                            )
-                                            .shadow(if (isSelected) 4.dp else 0.dp, CircleShape, ambientColor = Color(0xFF00E5FF), spotColor = Color(0xFF00E5FF))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Right Node: Live Clock, Search Icon, Profile Avatar, and optional Settings Button
+                    // Right Node: Live Clock ONLY
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // 1. Buscador (Search) - Styled EXACTLY like the reference image on the right next to the avatar!
-                        if (isWideLayout) {
-                            val isSearchSelected = viewModel.currentTab == AppTab.SEARCH
-                            var isSearchFocused by remember { mutableStateOf(false) }
-
-                            val searchBgColor by animateColorAsState(
-                                 targetValue = when {
-                                     isSearchFocused && isSearchSelected -> Color(0xFF151833).copy(alpha = 0.9f)
-                                     isSearchFocused -> Color.White.copy(alpha = 0.12f)
-                                     isSearchSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
-                                     else -> Color.Transparent
-                                 },
-                                 animationSpec = tween(durationMillis = 200),
-                                 label = "search_bg"
-                             )
-                            val searchBorderColor by animateColorAsState(
-                                 targetValue = when {
-                                     isSearchFocused && isSearchSelected -> Color(0xFF00E5FF)
-                                     isSearchFocused -> Color.White.copy(alpha = 0.4f)
-                                     isSearchSelected -> Color(0xFF2E3092).copy(alpha = 0.7f)
-                                     else -> Color.Transparent
-                                 },
-                                 animationSpec = tween(durationMillis = 200),
-                                 label = "search_border"
-                             )
-                            val searchColor by animateColorAsState(
-                                 targetValue = when {
-                                     isSearchFocused || isSearchSelected -> Color.White
-                                     else -> Color.White.copy(alpha = 0.65f)
-                                 },
-                                 animationSpec = tween(durationMillis = 200),
-                                 label = "search_color"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .onFocusChanged { isSearchFocused = it.isFocused || it.hasFocus }
-                                    .clip(CircleShape)
-                                    .background(searchBgColor)
-                                    .border(
-                                        width = if (isSearchFocused || isSearchSelected) 1.2.dp else 0.dp,
-                                        color = searchBorderColor,
-                                        shape = CircleShape
-                                    )
-                                    .clickable { viewModel.selectTab(AppTab.SEARCH) }
-                                    .tvFocusEffect(
-                                        shape = CircleShape,
-                                        focusedBorderColor = Color.Transparent,
-                                        unfocusedBorderColor = Color.Transparent,
-                                        scaleAmount = 1.05f
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Search,
-                                    contentDescription = "Buscar",
-                                    tint = searchColor,
-                                    modifier = Modifier.size(18.dp.responsive())
-                                )
-                            }
-                        }
-
-                        // 2. Settings icon in top right - ONLY on Wide Screens (on Mobile it is in the Bottom Bar!)
-                        if (isWideLayout) {
-                            val isSettingsSelected = viewModel.currentTab == AppTab.SETTINGS
-                            var isSettingsFocused by remember { mutableStateOf(false) }
-                            val settingsRotation by animateFloatAsState(
-                                targetValue = if (isSettingsFocused) 180f else 0f,
-                                animationSpec = androidx.compose.animation.core.tween(durationMillis = 350, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-                                label = "settings_rotation"
-                            )
-
-                            val settingsBgColor by animateColorAsState(
-                                 targetValue = when {
-                                     isSettingsFocused && isSettingsSelected -> Color(0xFF151833).copy(alpha = 0.9f)
-                                     isSettingsFocused -> Color.White.copy(alpha = 0.12f)
-                                     isSettingsSelected -> Color(0xFF0D0B21).copy(alpha = 0.75f)
-                                     else -> Color.Transparent
-                                 },
-                                 animationSpec = tween(durationMillis = 200),
-                                 label = "settings_bg"
-                             )
-                            val settingsBorderColor by animateColorAsState(
-                                 targetValue = when {
-                                     isSettingsFocused && isSettingsSelected -> Color(0xFF00E5FF)
-                                     isSettingsFocused -> Color.White.copy(alpha = 0.4f)
-                                     isSettingsSelected -> Color(0xFF2E3092).copy(alpha = 0.7f)
-                                     else -> Color.Transparent
-                                 },
-                                 animationSpec = tween(durationMillis = 200),
-                                 label = "settings_border"
-                             )
-                            val settingsColor by animateColorAsState(
-                                 targetValue = when {
-                                     isSettingsFocused || isSettingsSelected -> Color.White
-                                     else -> Color.White.copy(alpha = 0.65f)
-                                 },
-                                 animationSpec = tween(durationMillis = 200),
-                                 label = "settings_color"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .onFocusChanged { isSettingsFocused = it.isFocused || it.hasFocus }
-                                    .clip(CircleShape)
-                                    .background(settingsBgColor)
-                                    .border(
-                                        width = if (isSettingsFocused || isSettingsSelected) 1.2.dp else 0.dp,
-                                        color = settingsBorderColor,
-                                        shape = CircleShape
-                                    )
-                                    .clickable { viewModel.selectTab(AppTab.SETTINGS) }
-                                    .tvFocusEffect(
-                                        shape = CircleShape,
-                                        focusedBorderColor = Color.Transparent,
-                                        unfocusedBorderColor = Color.Transparent,
-                                        scaleAmount = 1.05f
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Settings,
-                                    contentDescription = "Settings Icon Toggle",
-                                    tint = settingsColor,
-                                    modifier = Modifier
-                                        .size(18.dp)
-                                        .graphicsLayer {
-                                            rotationZ = settingsRotation
-                                        }
-                                )
-                            }
-                        }
-
-                        // 3. User Profile Avatar Button - Styled as a perfect circle matching the image
-                        val activeColorHex = viewModel.activeProfile?.profileColor ?: "#00E5FF"
-                        var isAvatarFocused by remember { mutableStateOf(false) }
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .onFocusChanged { isAvatarFocused = it.isFocused || it.hasFocus }
-                                .clip(CircleShape)
-                                .border(
-                                    width = if (isAvatarFocused) 2.dp else 1.5.dp,
-                                    color = if (isAvatarFocused) Color(0xFF00E5FF) else Color(android.graphics.Color.parseColor(activeColorHex)),
-                                    shape = CircleShape
-                                )
-                                .clickable { viewModel.logoutProfile() }
-                                .tvFocusEffect(
-                                    shape = CircleShape,
-                                    focusedBorderColor = Color.Transparent,
-                                    unfocusedBorderColor = Color.Transparent,
-                                    scaleAmount = 1.05f
-                                )
-                        ) {
-                            viewModel.activeProfile?.let { profile ->
-                                ProfileAvatar(
-                                    profile = profile,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-
-                        // 4. Digital Clock displaying 12-hour AM/PM format (Subtle elegance, no background container)
+                        // 4. Digital Clock displaying 12-hour AM/PM format
                         Text(
                             text = timeString,
                             color = Color.White,
@@ -503,7 +226,7 @@ fun LuminaAppShell(
                                         AppTab.WATCHLIST -> "Favoritos"
                                         AppTab.MOVIES -> "Películas"
                                         AppTab.SERIES -> "Series"
-                                        AppTab.TV -> "IPTV"
+                                        AppTab.TV -> "TV"
                                         AppTab.RADIO -> "Radio"
                                         AppTab.SEARCH -> "Buscar"
                                         AppTab.SETTINGS -> "Ajustes"
@@ -521,50 +244,332 @@ fun LuminaAppShell(
             }
         ) { innerPadding ->
             // --- 3. SCENE CONTENT WITH MODERN CROSSFADE SLIDE ANIMATIONS ---
-            AnimatedContent(
-                targetState = viewModel.currentTab,
-                transitionSpec = {
-                    slideInHorizontally(
-                        initialOffsetX = { x -> if (targetState.ordinal > initialState.ordinal) x else -x }
-                    ) + fadeIn() with slideOutHorizontally(
-                        targetOffsetX = { x -> if (targetState.ordinal > initialState.ordinal) -x else x }
-                    ) + fadeOut()
-                },
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-            ) { tab ->
-                val tabPadding = if (isWideLayout && tab == AppTab.HOME) {
-                    PaddingValues(top = 0.dp, bottom = innerPadding.calculateBottomPadding())
-                } else {
-                    innerPadding
-                }
-                Box(modifier = Modifier.fillMaxSize().padding(tabPadding)) {
-                    when (tab) {
-                        AppTab.HOME -> {
-                            if (isTvDevice) {
-                                Box(
-                                    modifier = Modifier
-                                        .focusRequester(contentFocusRequester)
-                                        .focusGroup()
-                                ) {
+                    .focusRequester(contentFocusRequester)
+                    .focusGroup()
+                    .focusProperties { left = drawerFocusRequester }
+            ) {
+                AnimatedContent(
+                    targetState = viewModel.currentTab,
+                    transitionSpec = {
+                        slideInHorizontally(
+                            initialOffsetX = { x -> if (targetState.ordinal > initialState.ordinal) x else -x }
+                        ) + fadeIn() togetherWith slideOutHorizontally(
+                            targetOffsetX = { x -> if (targetState.ordinal > initialState.ordinal) -x else x }
+                        ) + fadeOut()
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) { tab ->
+                    val tabPadding = if (isWideLayout && tab == AppTab.HOME) {
+                        PaddingValues(top = 0.dp, bottom = innerPadding.calculateBottomPadding())
+                    } else {
+                        innerPadding
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(tabPadding)
+                    ) {
+                        when (tab) {
+                            AppTab.HOME -> {
+                                if (isTvDevice) {
                                     com.example.ui.screens.HomeTvScreen(viewModel = viewModel)
+                                } else {
+                                    HomeScreen(viewModel = viewModel)
                                 }
-                            } else {
-                                HomeScreen(viewModel = viewModel)
+                            }
+                            AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
+                            AppTab.MOVIES -> MoviesScreen(viewModel = viewModel)
+                            AppTab.SERIES -> SeriesScreen(viewModel = viewModel)
+                            AppTab.TV -> TvScreen(viewModel = viewModel)
+                            AppTab.RADIO -> RadioScreen(viewModel = viewModel)
+                            AppTab.SEARCH -> SearchScreen(viewModel = viewModel)
+                            AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                        }
+                    }
+                }
+                
+                // Overlay dim background over the CONTENT ONLY when drawer is expanded
+                val overlayAlpha by animateFloatAsState(
+                    targetValue = if (isDrawerFocused) 0.65f else 0f,
+                    animationSpec = tween(durationMillis = 300),
+                    label = "drawer_overlay"
+                )
+                
+                if (overlayAlpha > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = overlayAlpha))
+                    )
+                }
+            }
+        }
+        
+        // --- 4. NAVIGATION DRAWER (Left Aligned Overlay) ---
+        if (isWideLayout) {
+            val drawerWidth by animateDpAsState(
+                targetValue = if (isDrawerFocused) 260.dp else 68.dp,
+                animationSpec = tween(durationMillis = 250, easing = androidx.compose.animation.core.LinearOutSlowInEasing),
+                label = "drawer_width"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(drawerWidth)
+                    .onFocusChanged { isDrawerFocused = it.hasFocus }
+                    .focusProperties {
+                        right = contentFocusRequester
+                    }
+                    .onKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionRight) {
+                            // Enforce focus return to content and consume the Right arrow key
+                            // to prevent any accidental Back action or app exit.
+                            contentFocusRequester.requestFocus()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.85f),
+                                Color.Black.copy(alpha = 0.60f),
+                                Color.Transparent
+                            )
+                        ),
+                        shape = RoundedCornerShape(topEnd = 0.dp, bottomEnd = 0.dp)
+                    )
+                    .padding(vertical = 24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Profile section
+                    Box(modifier = Modifier.height(80.dp), contentAlignment = Alignment.Center) {
+                        var isProfileFocused by remember { mutableStateOf(false) }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp)
+                                .onFocusChanged { isProfileFocused = it.isFocused || it.hasFocus }
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(if (isProfileFocused) Color.White.copy(alpha = 0.15f) else Color.Transparent)
+                                .clickable { viewModel.logoutProfile() }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(24.dp),
+                                    focusedBorderColor = Color.White.copy(alpha = 0.3f),
+                                    unfocusedBorderColor = Color.Transparent,
+                                    borderWidth = 1.dp,
+                                    scaleAmount = 1.05f
+                                )
+                                .padding(horizontal = 6.dp, vertical = 6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .border(
+                                        width = if (isProfileFocused) 1.5.dp else 0.dp,
+                                        color = if (isProfileFocused) Color(0xFF00E5FF) else Color.Transparent,
+                                        shape = CircleShape
+                                    )
+                            ) {
+                                viewModel.activeProfile?.let { profile ->
+                                    ProfileAvatar(
+                                        profile = profile,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } ?: Icon(
+                                    imageVector = Icons.Filled.Person,
+                                    contentDescription = "Perfil",
+                                    tint = Color.White,
+                                    modifier = Modifier.fillMaxSize().padding(4.dp)
+                                )
+                            }
+                            
+                            AnimatedVisibility(
+                                visible = isDrawerFocused,
+                                enter = fadeIn() + expandHorizontally(),
+                                exit = fadeOut() + shrinkHorizontally()
+                            ) {
+                                Column(modifier = Modifier.padding(start = 12.dp)) {
+                                    Text(
+                                        text = viewModel.activeProfile?.name ?: "Perfil",
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "Cambiar cuenta",
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
-                        AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
-                        AppTab.MOVIES -> MoviesScreen(viewModel = viewModel)
-                        AppTab.SERIES -> SeriesScreen(viewModel = viewModel)
-                        AppTab.TV -> TvScreen(viewModel = viewModel)
-                        AppTab.RADIO -> RadioScreen(viewModel = viewModel)
-                        AppTab.SEARCH -> SearchScreen(viewModel = viewModel)
-                        AppTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Navigation Tabs
+                    val tabs = listOf(AppTab.SEARCH, AppTab.HOME, AppTab.WATCHLIST, AppTab.MOVIES, AppTab.SERIES, AppTab.TV)
+                    
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        tabs.forEach { tab ->
+                            val isSelected = viewModel.currentTab == tab
+                            var isTabFocused by remember { mutableStateOf(false) }
+
+                            val displayLabel = when (tab) {
+                                AppTab.SEARCH -> "Buscar"
+                                AppTab.HOME -> "Inicio"
+                                AppTab.WATCHLIST -> "Mi lista"
+                                AppTab.MOVIES -> "Películas"
+                                AppTab.SERIES -> "Series"
+                                AppTab.TV -> "TV"
+                                else -> tab.label
+                            }
+
+                            val tabIcon = when (tab) {
+                                AppTab.SEARCH -> Icons.Filled.Search
+                                AppTab.HOME -> Icons.Filled.Home
+                                AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                AppTab.MOVIES -> Icons.Filled.Movie
+                                AppTab.SERIES -> Icons.Filled.Tv
+                                AppTab.TV -> Icons.Filled.LiveTv
+                                else -> Icons.Filled.Home
+                            }
+
+                            val tabBgColor by animateColorAsState(
+                                targetValue = when {
+                                    isTabFocused -> Color.White.copy(alpha = 0.15f)
+                                    isSelected -> Color.White.copy(alpha = 0.1f)
+                                    else -> Color.Transparent
+                                },
+                                animationSpec = tween(200), label = "bg"
+                            )
+
+                            val contentColor by animateColorAsState(
+                                targetValue = when {
+                                    isTabFocused || isSelected -> Color.White
+                                    else -> Color.White.copy(alpha = 0.5f)
+                                },
+                                animationSpec = tween(200), label = "color"
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .padding(horizontal = 12.dp)
+                                    .onFocusChanged { isTabFocused = it.isFocused || it.hasFocus }
+                                    .focusRequester(if (tab == AppTab.HOME) drawerFocusRequester else FocusRequester())
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(tabBgColor)
+                                    .clickable { viewModel.selectTab(tab) }
+                                    .tvFocusEffect(
+                                        shape = RoundedCornerShape(24.dp),
+                                        focusedBorderColor = if (isTabFocused) Color.White.copy(alpha = 0.3f) else Color.Transparent,
+                                        unfocusedBorderColor = Color.Transparent,
+                                        borderWidth = 1.dp,
+                                        scaleAmount = 1.05f
+                                    )
+                                    .padding(horizontal = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = tabIcon,
+                                    contentDescription = displayLabel,
+                                    tint = contentColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                AnimatedVisibility(
+                                    visible = isDrawerFocused,
+                                    enter = fadeIn() + expandHorizontally(),
+                                    exit = fadeOut() + shrinkHorizontally()
+                                ) {
+                                    Text(
+                                        text = displayLabel,
+                                        color = contentColor,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected || isTabFocused) FontWeight.Bold else FontWeight.Medium,
+                                        modifier = Modifier.padding(start = 16.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Settings at bottom
+                    Box(modifier = Modifier.height(80.dp), contentAlignment = Alignment.Center) {
+                        val isSettingsSelected = viewModel.currentTab == AppTab.SETTINGS
+                        var isSettingsFocused by remember { mutableStateOf(false) }
+                        val settingsColor by animateColorAsState(
+                            targetValue = when {
+                                isSettingsFocused || isSettingsSelected -> Color.White
+                                else -> Color.White.copy(alpha = 0.5f)
+                            },
+                            animationSpec = tween(200), label = "settings_color"
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .padding(horizontal = 12.dp)
+                                .onFocusChanged { isSettingsFocused = it.isFocused || it.hasFocus }
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(if (isSettingsFocused) Color.White.copy(alpha = 0.15f) else if (isSettingsSelected) Color.White.copy(alpha = 0.1f) else Color.Transparent)
+                                .clickable { viewModel.selectTab(AppTab.SETTINGS) }
+                                .tvFocusEffect(
+                                    shape = RoundedCornerShape(24.dp),
+                                    focusedBorderColor = if (isSettingsFocused) Color.White.copy(alpha = 0.3f) else Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    borderWidth = 1.dp,
+                                    scaleAmount = 1.05f
+                                )
+                                .padding(horizontal = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = "Ajustes",
+                                tint = settingsColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            AnimatedVisibility(
+                                visible = isDrawerFocused,
+                                enter = fadeIn() + expandHorizontally(),
+                                exit = fadeOut() + shrinkHorizontally()
+                            ) {
+                                Text(
+                                    text = "Ajustes",
+                                    color = settingsColor,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSettingsSelected || isSettingsFocused) FontWeight.Bold else FontWeight.Medium,
+                                    modifier = Modifier.padding(start = 16.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
-
         // 4. TRANSICIÓN ULTRA-ELEGANTE AL REPRODUCTOR EN PANTALLA COMPLETA INTEGRADO
         AnimatedVisibility(
             visible = viewModel.isFullscreenPlayerActive,
