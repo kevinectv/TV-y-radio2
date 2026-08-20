@@ -209,7 +209,6 @@ tasks.register("copyApkToOutputFolders") {
             println("Source size: ${apkSource.length()} bytes")
             println("Copied visible APK to: ${visApk.absolutePath} (${visApk.length()} bytes)")
             println("Copied hidden APK to: ${hidApk.absolutePath} (${hidApk.length()} bytes)")
-            println("And populated legacy/cached names: ${legacyNames.joinToString(", ")}")
             println("----------------------------")
         } else {
             println("--- APK COPY FAILED: Source file not found ---")

@@ -38,7 +38,7 @@ fun ElegantBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF000000)) // Pure obsidian black base
+            .background(Color(0xFF06090E)) // Very dark navy/slate base to allow translucent overlays to be visible
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
