@@ -248,7 +248,18 @@ fun HomeHeroBannerTv(
         Crossfade(
             targetState = currentMovie,
             animationSpec = tween(600),
-            label = "hero_tv_backdrop_fade"
+            label = "hero_tv_backdrop_fade",
+            modifier = Modifier.layout { measurable, constraints ->
+                val shift = 68.dp.roundToPx()
+                val newWidth = constraints.maxWidth + shift
+                val placeable = measurable.measure(constraints.copy(
+                    minWidth = newWidth,
+                    maxWidth = newWidth
+                ))
+                layout(placeable.width, placeable.height) {
+                    placeable.place(-shift, 0)
+                }
+            }
         ) { targetMovie ->
             val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
             Box(modifier = Modifier.fillMaxSize()) {

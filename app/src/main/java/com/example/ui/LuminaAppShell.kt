@@ -115,7 +115,7 @@ fun LuminaAppShell(
         Scaffold(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = if (isTvDevice) 68.dp else 0.dp) // Leave space for collapsed drawer!
+                // Scaffold no longer has start padding so Hero banner can go full bleed
                 .statusBarsPadding()
                 .navigationBarsPadding(),
             containerColor = Color.Transparent,
@@ -123,6 +123,7 @@ fun LuminaAppShell(
                 // --- 2. BARRA SUPERIOR PREMIUM (NUEVA APARIENCIA DE ALTO NIVEL) ---
                 Row(
                     modifier = Modifier
+                        .padding(start = if (isTvDevice) 68.dp else 0.dp)
                         .fillMaxWidth()
                         // 1. Sombra muy sutil dibujada detrás sin afectar el layout (sin Spacer ni height extra)
                         .drawBehind {
@@ -262,6 +263,7 @@ fun LuminaAppShell(
                     },
                     modifier = Modifier.fillMaxSize()
                 ) { tab ->
+                    val tvStartPadding = if (isTvDevice && tab != AppTab.HOME) 68.dp else 0.dp
                     val tabPadding = if (isWideLayout && tab == AppTab.HOME) {
                         PaddingValues(top = 0.dp, bottom = innerPadding.calculateBottomPadding())
                     } else {
@@ -270,6 +272,7 @@ fun LuminaAppShell(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .padding(start = tvStartPadding)
                             .padding(tabPadding)
                     ) {
                         when (tab) {

@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import com.example.ui.screens.isAndroidTvDevice
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,8 +51,8 @@ fun RadioScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 600
-    if (isWideLayout) {
+    val isTvDevice = remember(context) { isAndroidTvDevice(context) }
+    if (isTvDevice) {
         RadioScreenTv(viewModel, modifier)
     } else {
         RadioScreenMobile(viewModel, modifier)

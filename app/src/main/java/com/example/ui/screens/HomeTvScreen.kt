@@ -98,6 +98,7 @@ fun HomeTvScreen(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
                     contentPadding = PaddingValues(
+                        start = 68.dp,
                         top = 0.dp,
                         bottom = 90.dp
                     )

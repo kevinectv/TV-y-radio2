@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.ui.platform.LocalContext
+import com.example.ui.screens.isAndroidTvDevice
 
 
 import androidx.compose.animation.*
@@ -47,8 +48,8 @@ fun SearchScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 600
-    if (isWideLayout) {
+    val isTvDevice = remember(context) { isAndroidTvDevice(context) }
+    if (isTvDevice) {
         SearchScreenTv(viewModel, modifier)
     } else {
         SearchScreenMobile(viewModel, modifier)
