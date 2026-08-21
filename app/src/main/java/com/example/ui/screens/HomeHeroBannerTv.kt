@@ -251,7 +251,9 @@ fun HomeHeroBannerTv(
             label = "hero_tv_backdrop_fade",
             modifier = Modifier.layout { measurable, constraints ->
                 val shift = 68.dp.roundToPx()
-                val newWidth = constraints.maxWidth + shift
+                // Extend generously to the right to cover any system insets, nav bars, or parent paddings
+                val rightExtension = 120.dp.roundToPx() 
+                val newWidth = constraints.maxWidth + shift + rightExtension
                 val placeable = measurable.measure(constraints.copy(
                     minWidth = newWidth,
                     maxWidth = newWidth
