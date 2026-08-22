@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.components.responsive
+
+
 import androidx.compose.ui.layout.layout
 import kotlin.math.roundToInt
 import androidx.compose.animation.Crossfade
@@ -189,6 +192,20 @@ fun HomeHeroBannerTv(
     val coroutineScope = rememberCoroutineScope()
     val playButtonFocusRequester = remember { FocusRequester() }
 
+    // Live Clock ticker for the Hero header
+    var timeString by remember { mutableStateOf("12:00 PM") }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val calendar = java.util.Calendar.getInstance()
+            val rawHour = calendar.get(java.util.Calendar.HOUR)
+            val min = calendar.get(java.util.Calendar.MINUTE)
+            val hour = if (rawHour == 0) 12 else rawHour
+            val amPm = if (calendar.get(java.util.Calendar.AM_PM) == java.util.Calendar.AM) "AM" else "PM"
+            timeString = String.format("%d:%02d %s", hour, min, amPm)
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
     // Automatic carousel rotation independent of cards, reset when manual navigation occurs
     LaunchedEffect(autoRotateTrigger, featuredMovies) {
         while (true) {
@@ -244,6 +261,42 @@ fun HomeHeroBannerTv(
             .focusable()
             .clickable { onDetailsClick(currentMovie) }
     ) {
+        // Top Header Row (Logo LUMINA + Clock) integrated into the top of the Hero banner scroll area
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isWideLayout = configuration.screenWidthDp >= 580
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = if (isWideLayout) 24.dp else 12.dp,
+                    end = if (isWideLayout) 32.dp else 16.dp,
+                    top = if (isWideLayout) 24.dp else 10.dp
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Prepared Logo image using R.drawable.img_lumina_logo_user_v2 (fully prepared for user's logo file replacement)
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_lumina_logo_user_v2),
+                contentDescription = "Lumina Logo",
+                modifier = Modifier
+                    .height(32.dp)
+                    .widthIn(max = 160.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Live Clock
+            Text(
+                text = timeString,
+                color = Color.White,
+                fontSize = if (isWideLayout) 13.sp.responsive() else 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+
         // Background Backdrop with crossfade (light overlay for vivid backdrop)
         Crossfade(
             targetState = currentMovie,

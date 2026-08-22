@@ -120,65 +120,66 @@ fun LuminaAppShell(
                 .navigationBarsPadding(),
             containerColor = Color.Transparent,
             topBar = {
-                // --- 2. BARRA SUPERIOR PREMIUM (NUEVA APARIENCIA DE ALTO NIVEL) ---
-                Row(
-                    modifier = Modifier
-                        .padding(start = if (isTvDevice) 68.dp else 0.dp)
-                        .fillMaxWidth()
-                        // 1. Sombra muy sutil dibujada detrás sin afectar el layout (sin Spacer ni height extra)
-                        .drawBehind {
-                            drawRect(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = 0.25f),
-                                        Color.Black.copy(alpha = 0.15f),
-                                        Color.Black.copy(alpha = 0.05f),
-                                        Color.Transparent
+                if (!(isTvDevice && viewModel.currentTab == AppTab.HOME)) {
+                    // --- 2. BARRA SUPERIOR PREMIUM (NUEVA APARIENCIA DE ALTO NIVEL) ---
+                    Row(
+                        modifier = Modifier
+                            .padding(start = if (isTvDevice) 68.dp else 0.dp)
+                            .fillMaxWidth()
+                            // 1. Sombra muy sutil dibujada detrás sin afectar el layout (sin Spacer ni height extra)
+                            .drawBehind {
+                                drawRect(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Black.copy(alpha = 0.25f),
+                                            Color.Black.copy(alpha = 0.15f),
+                                            Color.Black.copy(alpha = 0.05f),
+                                            Color.Transparent
+                                        ),
+                                        startY = 0f,
+                                        endY = size.height + 120.dp.toPx()
                                     ),
-                                    startY = 0f,
-                                    endY = size.height + 120.dp.toPx()
-                                ),
-                                size = Size(size.width, size.height + 120.dp.toPx())
+                                    size = Size(size.width, size.height + 120.dp.toPx())
+                                )
+                            }
+                            .padding(
+                                start = if (isWideLayout) 24.dp else 12.dp,
+                                end = if (isWideLayout) 32.dp else 16.dp,
+                                top = if (isWideLayout) 24.dp else 10.dp,
+                                bottom = if (isWideLayout) 20.dp else 10.dp
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left Node (Logo)
+                        Text(
+                            text = androidx.compose.ui.text.buildAnnotatedString {
+                                append("LUMIN")
+                                pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
+                                append("A")
+                                pop()
+                            },
+                            color = Color.White,
+                            fontSize = 18.sp.responsive(), // Slightly larger as requested
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.5.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        // Right Node: Live Clock ONLY
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            // 4. Digital Clock displaying 12-hour AM/PM format
+                            Text(
+                                text = timeString,
+                                color = Color.White,
+                                fontSize = if (isWideLayout) 13.sp.responsive() else 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp,
+                                modifier = Modifier.padding(start = 4.dp)
                             )
                         }
-                        .padding(
-                            start = if (isWideLayout) 24.dp else 12.dp,
-                            end = if (isWideLayout) 32.dp else 16.dp,
-                            top = if (isWideLayout) 24.dp else 10.dp,
-                            bottom = if (isWideLayout) 20.dp else 10.dp
-                        ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left Node (Logo)
-                    Text(
-                        text = androidx.compose.ui.text.buildAnnotatedString {
-                            append("LUMIN")
-                            pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF00E5FF)))
-                            append("A")
-                            pop()
-                        },
-                        color = Color.White,
-                        fontSize = 18.sp.responsive(), // Slightly larger as requested
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.5.sp
-                    )
-                    
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Right Node: Live Clock ONLY
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        // 4. Digital Clock displaying 12-hour AM/PM format
-                        Text(
-                            text = timeString,
-                            color = Color.White,
-                            fontSize = if (isWideLayout) 13.sp.responsive() else 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
                     }
                 }
             },
