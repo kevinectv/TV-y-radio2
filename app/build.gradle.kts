@@ -38,12 +38,22 @@ android {
   }
 
   signingConfigs {
+    val uploadKeystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+    val uploadKeystoreFile = file(uploadKeystorePath)
+    val hasUploadKeystore = uploadKeystoreFile.exists()
+
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      if (hasUploadKeystore) {
+        storeFile = uploadKeystoreFile
+        storePassword = System.getenv("STORE_PASSWORD") ?: "android"
+        keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+        keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+      } else {
+        storeFile = file("${rootDir}/debug.keystore")
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
       enableV1Signing = true
       enableV2Signing = true
     }
@@ -144,52 +154,54 @@ dependencies {
 }
 
 tasks.register("copyApkToOutputFolders") {
-    val appVersion = android.defaultConfig.versionName ?: "2.0.0"
     val buildDir = layout.buildDirectory
     val projectDir = layout.projectDirectory
     
     outputs.dir(projectDir.dir("../build-outputs"))
+    outputs.dir(projectDir.dir("../.build-outputs"))
     outputs.upToDateWhen { false }
     
     doLast {
-        val debugApkSource = buildDir.file("outputs/apk/debug/app-debug.apk").get().asFile
-        val releaseApkSource = buildDir.file("outputs/apk/release/app-release.apk").get().asFile
+        val destVisibleDir = projectDir.dir("../build-outputs").asFile
+        val destHiddenDir = projectDir.dir("../.build-outputs").asFile
         
-        val apkSource = if (releaseApkSource.exists() && (!debugApkSource.exists() || releaseApkSource.lastModified() >= debugApkSource.lastModified())) {
-            releaseApkSource
-        } else if (debugApkSource.exists()) {
-            debugApkSource
+        if (!destVisibleDir.exists()) destVisibleDir.mkdirs()
+        if (!destHiddenDir.exists()) destHiddenDir.mkdirs()
+
+        val apkDir = buildDir.dir("outputs/apk").get().asFile
+        val foundApks = if (apkDir.exists()) {
+            apkDir.walkTopDown().filter { it.isFile && it.extension == "apk" }.toList()
         } else {
-            null
+            emptyList()
         }
 
-        if (apkSource != null && apkSource.exists()) {
-            val destVisibleDir = projectDir.dir("../build-outputs").asFile
-            val destHiddenDir = projectDir.dir("../.build-outputs").asFile
-            
-            // Clean directories first
-            if (destVisibleDir.exists()) {
-                destVisibleDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
-            } else {
-                destVisibleDir.mkdirs()
+        if (foundApks.isNotEmpty()) {
+            // Clean previous APK files
+            destVisibleDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
+            destHiddenDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
+
+            // Copy each found APK
+            foundApks.forEach { apkFile ->
+                val visTarget = File(destVisibleDir, apkFile.name)
+                val hiddenTarget = File(destHiddenDir, apkFile.name)
+                apkFile.copyTo(visTarget, overwrite = true)
+                apkFile.copyTo(hiddenTarget, overwrite = true)
+                println("--- COPIED APK: ${apkFile.name} (${apkFile.length()} bytes) ---")
             }
-            if (destHiddenDir.exists()) {
-                destHiddenDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
-            } else {
-                destHiddenDir.mkdirs()
+
+            // Ensure app-debug.apk is always available as default download target
+            val defaultDebug = File(destVisibleDir, "app-debug.apk")
+            val defaultHiddenDebug = File(destHiddenDir, "app-debug.apk")
+            if (!defaultDebug.exists()) {
+                val fallbackSource = foundApks.first()
+                fallbackSource.copyTo(defaultDebug, overwrite = true)
+                fallbackSource.copyTo(defaultHiddenDebug, overwrite = true)
+                println("--- CREATED DEFAULT app-debug.apk from ${fallbackSource.name} ---")
             }
-            
-            // Only output a single app-debug.apk to avoid zip timeouts and platform confusion
-            val visApk = File(destVisibleDir, "app-debug.apk")
-            val hiddenApk = File(destHiddenDir, "app-debug.apk")
-            apkSource.copyTo(visApk, overwrite = true)
-            apkSource.copyTo(hiddenApk, overwrite = true)
-            
-            println("--- APK COPY SUCCESSFUL ---")
-            println("Copied APK to: ${visApk.absolutePath} (${visApk.length()} bytes)")
-            println("Copied APK to: ${hiddenApk.absolutePath} (${hiddenApk.length()} bytes)")
+
+            println("--- APK COPY TO OUTPUT FOLDERS COMPLETED SUCCESSFULLY ---")
         } else {
-            println("--- APK COPY FAILED: Source file not found ---")
+            println("--- APK COPY WARNING: No APK files found in ${apkDir.absolutePath} ---")
         }
     }
 }
@@ -198,6 +210,8 @@ afterEvaluate {
     tasks.findByName("assembleDebug")?.finalizedBy("copyApkToOutputFolders")
     tasks.findByName("assembleRelease")?.finalizedBy("copyApkToOutputFolders")
     tasks.findByName("assemble")?.finalizedBy("copyApkToOutputFolders")
+    tasks.findByName("packageDebug")?.finalizedBy("copyApkToOutputFolders")
+    tasks.findByName("packageRelease")?.finalizedBy("copyApkToOutputFolders")
     tasks.findByName("build")?.finalizedBy("copyApkToOutputFolders")
 }
 
