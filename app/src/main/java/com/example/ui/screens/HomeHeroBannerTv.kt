@@ -3,6 +3,7 @@ package com.example.ui.screens
 import com.example.ui.components.responsive
 
 
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.layout
 import kotlin.math.roundToInt
 import androidx.compose.animation.Crossfade
@@ -266,6 +267,7 @@ fun HomeHeroBannerTv(
         val isWideLayout = configuration.screenWidthDp >= 580
         Row(
             modifier = Modifier
+                .zIndex(1f)
                 .fillMaxWidth()
                 .padding(
                     start = if (isWideLayout) 24.dp else 12.dp,

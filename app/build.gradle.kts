@@ -165,20 +165,29 @@ tasks.register("copyApkToOutputFolders") {
 
         if (apkSource != null && apkSource.exists()) {
             val destVisibleDir = projectDir.dir("../build-outputs").asFile
+            val destHiddenDir = projectDir.dir("../.build-outputs").asFile
             
-            // Clean directory first
+            // Clean directories first
             if (destVisibleDir.exists()) {
                 destVisibleDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
             } else {
                 destVisibleDir.mkdirs()
             }
+            if (destHiddenDir.exists()) {
+                destHiddenDir.listFiles()?.forEach { if (it.name.endsWith(".apk")) it.delete() }
+            } else {
+                destHiddenDir.mkdirs()
+            }
             
             // Only output a single app-debug.apk to avoid zip timeouts and platform confusion
             val visApk = File(destVisibleDir, "app-debug.apk")
+            val hiddenApk = File(destHiddenDir, "app-debug.apk")
             apkSource.copyTo(visApk, overwrite = true)
+            apkSource.copyTo(hiddenApk, overwrite = true)
             
             println("--- APK COPY SUCCESSFUL ---")
             println("Copied APK to: ${visApk.absolutePath} (${visApk.length()} bytes)")
+            println("Copied APK to: ${hiddenApk.absolutePath} (${hiddenApk.length()} bytes)")
         } else {
             println("--- APK COPY FAILED: Source file not found ---")
         }

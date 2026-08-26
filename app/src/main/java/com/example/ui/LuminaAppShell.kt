@@ -120,7 +120,7 @@ fun LuminaAppShell(
                 .navigationBarsPadding(),
             containerColor = Color.Transparent,
             topBar = {
-                if (!(isTvDevice && viewModel.currentTab == AppTab.HOME)) {
+                if (!isTvDevice) {
                     // --- 2. BARRA SUPERIOR PREMIUM (NUEVA APARIENCIA DE ALTO NIVEL) ---
                     Row(
                         modifier = Modifier
