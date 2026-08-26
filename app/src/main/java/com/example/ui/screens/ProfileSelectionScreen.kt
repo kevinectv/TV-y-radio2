@@ -168,14 +168,14 @@ fun ProfileSelectionScreen(
         ) {
             // --- HEADER ---
             if (screenMode == ProfileScreenMode.SELECT || screenMode == ProfileScreenMode.MANAGE) {
-                Text(
-                    text = "LUMINA",
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = 6.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_lumina_logo_user_v2),
+                    contentDescription = "LUMINA",
+                    modifier = Modifier
+                        .height(48.dp)
+                        .widthIn(max = 260.dp)
+                        .padding(bottom = 12.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
 
                 Text(

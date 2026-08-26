@@ -281,8 +281,8 @@ fun HomeHeroBannerTv(
                 painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_lumina_logo_user_v2),
                 contentDescription = "Lumina Logo",
                 modifier = Modifier
-                    .height(32.dp)
-                    .widthIn(max = 160.dp),
+                    .height(if (isWideLayout) 48.dp else 36.dp)
+                    .widthIn(max = if (isWideLayout) 260.dp else 190.dp),
                 contentScale = ContentScale.Fit
             )
 
