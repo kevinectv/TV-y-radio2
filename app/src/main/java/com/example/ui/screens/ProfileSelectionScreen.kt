@@ -169,7 +169,7 @@ fun ProfileSelectionScreen(
             // --- HEADER ---
             if (screenMode == ProfileScreenMode.SELECT || screenMode == ProfileScreenMode.MANAGE) {
                 Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_lumina_logo_user_v2),
+                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.lumina_logo_custom),
                     contentDescription = "LUMINA",
                     modifier = Modifier
                         .height(48.dp)

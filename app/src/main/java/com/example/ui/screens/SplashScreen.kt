@@ -46,7 +46,7 @@ fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.img_lumina_logo_user_v2),
+            painter = painterResource(id = R.drawable.lumina_logo_custom),
             contentDescription = "Lumina Logo",
             modifier = Modifier
                 .width(if (isTvOrWide) 380.dp else 280.dp)

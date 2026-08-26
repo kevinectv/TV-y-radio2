@@ -276,9 +276,9 @@ fun HomeHeroBannerTv(
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Prepared Logo image using R.drawable.img_lumina_logo_user_v2 (fully prepared for user's logo file replacement)
+            // Prepared Logo image using R.drawable.lumina_logo_custom (user's custom logo)
             androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_lumina_logo_user_v2),
+                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.lumina_logo_custom),
                 contentDescription = "Lumina Logo",
                 modifier = Modifier
                     .height(if (isWideLayout) 48.dp else 36.dp)
