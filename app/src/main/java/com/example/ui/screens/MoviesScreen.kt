@@ -64,7 +64,7 @@ fun MoviesScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
                     contentPadding = PaddingValues(
-                        top = if (isWideLayout) 120.dp else 80.dp,
+                        top = if (isWideLayout) 28.dp else 16.dp,
                         bottom = 90.dp
                     )
                 ) {

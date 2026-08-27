@@ -38,6 +38,11 @@ import com.example.data.model.CatalogItem
 import com.example.ui.MediaViewModel
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest
+import androidx.compose.ui.zIndex
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.ui.components.responsive
+import com.example.R
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -52,12 +57,65 @@ fun HomeHeroBannerMobile(
     onTrailerClick: (CatalogItem) -> Unit,
     onDetailsClick: (CatalogItem) -> Unit
 ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isWideLayout = configuration.screenWidthDp >= 580
+
+    var timeString by remember { mutableStateOf("12:00 PM") }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val calendar = java.util.Calendar.getInstance()
+            var hour = calendar.get(java.util.Calendar.HOUR)
+            if (hour == 0) hour = 12
+            val min = calendar.get(java.util.Calendar.MINUTE)
+            val amPm = if (calendar.get(java.util.Calendar.AM_PM) == java.util.Calendar.AM) "AM" else "PM"
+            timeString = String.format("%d:%02d %s", hour, min, amPm)
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(bannerHeight)
             .background(Color(0xFF030406))
     ) {
+        // Top Header Row (Logo LUMINA + Live Clock) integrated into the top of the mobile Hero Banner scroll content
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .zIndex(10f)
+                .fillMaxWidth()
+                .padding(
+                    start = if (isWideLayout) 24.dp else 16.dp,
+                    end = if (isWideLayout) 32.dp else 16.dp,
+                    top = if (isWideLayout) 20.dp else 10.dp,
+                    bottom = if (isWideLayout) 16.dp else 8.dp
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // User's custom logo
+            Image(
+                painter = painterResource(id = R.drawable.lumina_logo_custom),
+                contentDescription = "Lumina Logo",
+                modifier = Modifier
+                    .height(if (isWideLayout) 36.dp else 26.dp)
+                    .widthIn(max = if (isWideLayout) 200.dp else 145.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Live Clock
+            Text(
+                text = timeString,
+                color = Color.White,
+                fontSize = if (isWideLayout) 13.sp.responsive() else 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+
         Crossfade(
             targetState = currentMovie,
             animationSpec = tween(600),
