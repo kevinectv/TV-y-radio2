@@ -7,6 +7,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -16,12 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.data.model.CatalogItem
 import com.example.ui.MediaViewModel
 import com.example.ui.components.responsive
+
+import androidx.compose.material.icons.filled.SportsSoccer
+import com.example.data.model.SportMatch
 
 @Composable
 fun HomeTvScreen(
@@ -32,6 +37,8 @@ fun HomeTvScreen(
     val listState = rememberLazyListState()
 
     val rawCatalogs by viewModel.catalogsStateFlow.collectAsState()
+    val sportsFeatured by viewModel.featuredSportsMatches.collectAsState()
+    var selectedSportMatchForDetails by remember { mutableStateOf<SportMatch?>(null) }
     val sharedPrefs = remember { context.getSharedPreferences("lumina_prefs", android.content.Context.MODE_PRIVATE) }
     
     val catalogs = remember(rawCatalogs) {
@@ -81,7 +88,11 @@ fun HomeTvScreen(
     var activeTrailerItem by remember { mutableStateOf<CatalogItem?>(null) }
     val trailerToShow = activeTrailerItem ?: viewModel.activeTrailerItem
 
-    Box(modifier = modifier.fillMaxSize().background(Color(0xFF030406))) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         Crossfade(
             targetState = isLoadingData,
             animationSpec = tween(700),
@@ -96,10 +107,10 @@ fun HomeTvScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 36.dp.responsive() else 16.dp.responsive()),
+                    verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 28.dp.responsive() else 18.dp.responsive()),
                     contentPadding = PaddingValues(
                         start = 68.dp,
-                        top = 0.dp,
+                        top = 4.dp,
                         bottom = 90.dp
                     )
                 ) {
@@ -155,7 +166,10 @@ fun HomeTvScreen(
                                         horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                                         contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
                                     ) {
-                                        itemsIndexed(progressItems) { index, (item, progressVal) ->
+                                        itemsIndexed(
+                                            items = progressItems,
+                                            key = { _, (item, _) -> item.id }
+                                        ) { index, (item, progressVal) ->
                                             val fIndex = progressRowFocusedIndex
                                             val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
                                             CatalogItemHomeCard(
@@ -188,10 +202,53 @@ fun HomeTvScreen(
                         }
                     }
 
+                    // ⚽ DEPORTES DESTACADOS (New independent Sports Row)
+                    if (sportsFeatured.isNotEmpty()) {
+                        item(key = "home_sports_row") {
+                            val isFirstRow = progressItems.isEmpty()
+                            Box(
+                                modifier = Modifier
+                                    .then(if (isFirstRow) Modifier.focusRequester(firstRowFocusRequester) else Modifier)
+                                    .focusProperties {
+                                        if (isFirstRow) {
+                                            up = heroFocusRequester
+                                        }
+                                    }
+                                    .focusGroup()
+                            ) {
+                                Column {
+                                    HomeSectionRowHeader(
+                                        title = "⚽ PARTIDOS DESTACADOS",
+                                        icon = Icons.Filled.SportsSoccer,
+                                        color = Color(0xFF00E5FF)
+                                    )
+                                    Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
+                                        contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
+                                    ) {
+                                        items(
+                                            items = sportsFeatured,
+                                            key = { "home_sport_${it.id}" }
+                                        ) { match ->
+                                            SportCardTv(
+                                                match = match,
+                                                onClick = {
+                                                    selectedSportMatchForDetails = match
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     homeCatalogs.forEachIndexed { index, catalog ->
                         if (catalog.items.isNotEmpty()) {
                             item(key = "catalog_${catalog.name}") {
-                                val isFirstRow = progressItems.isEmpty() && index == firstNonEmptyCatalogIndex
+                                val isFirstRow = progressItems.isEmpty() && sportsFeatured.isEmpty() && index == firstNonEmptyCatalogIndex
                                 Box(
                                     modifier = Modifier
                                         .then(if (isFirstRow) Modifier.focusRequester(firstRowFocusRequester) else Modifier)
@@ -221,6 +278,16 @@ fun HomeTvScreen(
                 }
             }
         }
+    }
+
+    // Sport Match Details Dialog
+    selectedSportMatchForDetails?.let { match ->
+        SportMatchDetailsScreenTv(
+            match = match,
+            onDismiss = {
+                selectedSportMatchForDetails = null
+            }
+        )
     }
 
     if (trailerToShow != null) {

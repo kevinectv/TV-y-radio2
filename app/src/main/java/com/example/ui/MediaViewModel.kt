@@ -25,11 +25,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.example.data.database.ProfileEntity
 import com.example.data.util.ApiConfig
+import com.example.data.SportsRepository
+import com.example.data.model.SportMatch
+import com.example.data.model.SportsLeagueSection
 import java.util.UUID
 
 enum class AppTab(val label: String) {
     HOME("Home"),
     WATCHLIST("Watchlist"),
+    SPORTS("Deportes"),
     MOVIES("Películas"),
     SERIES("Series"),
     TV("IPTV TV"),
@@ -43,6 +47,36 @@ class MediaViewModel(
     val settingsManager: com.example.data.SettingsManager,
     private val sharedPreferences: android.content.SharedPreferences? = null
 ) : ViewModel() {
+
+    // Sports Repository & State Flows (Independent Architecture)
+    val sportsRepository: SportsRepository = SportsRepository()
+
+    val sportsMatches: kotlinx.coroutines.flow.StateFlow<List<SportMatch>>
+        get() = sportsRepository.allMatches
+
+    val liveSportsMatches: kotlinx.coroutines.flow.StateFlow<List<SportMatch>>
+        get() = sportsRepository.liveMatches
+
+    val featuredSportsMatches: kotlinx.coroutines.flow.StateFlow<List<SportMatch>>
+        get() = sportsRepository.featuredMatches
+
+    val sportsLeagueSections: kotlinx.coroutines.flow.StateFlow<List<SportsLeagueSection>>
+        get() = sportsRepository.leagueSections
+
+    val isSportsLoading: kotlinx.coroutines.flow.StateFlow<Boolean>
+        get() = sportsRepository.isLoading
+
+    fun startSportsPolling() {
+        sportsRepository.startLivePolling()
+    }
+
+    fun stopSportsPolling() {
+        sportsRepository.stopLivePolling()
+    }
+
+    suspend fun refreshSportsData() {
+        sportsRepository.refreshMatches()
+    }
 
     // In-app Update Manager (Assigned on Activity creation)
     var updateManager: com.example.data.util.UpdateManager? = null

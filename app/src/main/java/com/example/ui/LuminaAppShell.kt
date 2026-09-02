@@ -121,32 +121,50 @@ fun LuminaAppShell(
             containerColor = Color.Transparent,
             bottomBar = {
                 if (!isTvDevice) {
-                    NavigationBar(
-                        containerColor = Color.Black.copy(alpha = 0.60f),
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(20.dp)),
-                        tonalElevation = 8.dp
+                            .drawBehind {
+                                // Subtle hairline separation at top edge
+                                drawLine(
+                                    color = Color.White.copy(alpha = 0.08f),
+                                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                    end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                                    strokeWidth = 1.dp.toPx()
+                                )
+                            },
+                        color = Color(0xFF030406).copy(alpha = 0.80f),
+                        tonalElevation = 0.dp
                     ) {
-                        AppTab.values().filter { it != AppTab.RADIO }.forEach { tab ->
-                            val isSelected = viewModel.currentTab == tab
-                            NavigationBarItem(
-                                selected = isSelected,
-                                onClick = { viewModel.selectTab(tab) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color.Black,
-                                    selectedTextColor = Color.White,
-                                    indicatorColor = Color.White,
-                                    unselectedIconColor = Color.White.copy(alpha = 0.5f),
-                                    unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                                ),
-                                icon = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            AppTab.values().filter { it != AppTab.RADIO && it != AppTab.SPORTS }.forEach { tab ->
+                                val isSelected = viewModel.currentTab == tab
+                                val activeAccent = Color(0xFF00E5FF)
+                                val inactiveColor = Color.White.copy(alpha = 0.45f)
+
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .clickable { viewModel.selectTab(tab) }
+                                        .padding(vertical = 4.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+
                                     Icon(
                                         imageVector = when (tab) {
                                             AppTab.HOME -> Icons.Filled.Home
                                             AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                            AppTab.SPORTS -> Icons.Filled.SportsSoccer
                                             AppTab.MOVIES -> Icons.Filled.Movie
                                             AppTab.SERIES -> Icons.Filled.Tv
                                             AppTab.TV -> Icons.Filled.LiveTv
@@ -155,13 +173,14 @@ fun LuminaAppShell(
                                             AppTab.SETTINGS -> Icons.Filled.Settings
                                         },
                                         contentDescription = tab.label,
+                                        tint = if (isSelected) Color.White else inactiveColor,
                                         modifier = Modifier.size(20.dp)
                                     )
-                                },
-                                label = {
+
                                     val labelStr = when (tab) {
                                         AppTab.HOME -> "Inicio"
                                         AppTab.WATCHLIST -> "Favoritos"
+                                        AppTab.SPORTS -> "Deportes"
                                         AppTab.MOVIES -> "Películas"
                                         AppTab.SERIES -> "Series"
                                         AppTab.TV -> "TV"
@@ -172,10 +191,24 @@ fun LuminaAppShell(
                                     Text(
                                         text = labelStr,
                                         fontSize = 10.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isSelected) Color.White else inactiveColor,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    // Subtle 3dp active indicator
+                                    Box(
+                                        modifier = Modifier
+                                            .width(if (isSelected) 18.dp else 0.dp)
+                                            .height(3.dp)
+                                            .clip(RoundedCornerShape(1.5.dp))
+                                            .background(
+                                                if (isSelected) activeAccent else Color.Transparent
+                                            )
                                     )
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -221,6 +254,7 @@ fun LuminaAppShell(
                                 }
                             }
                             AppTab.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
+                            AppTab.SPORTS -> com.example.ui.screens.SportsScreenTv(viewModel = viewModel)
                             AppTab.MOVIES -> MoviesScreen(viewModel = viewModel)
                             AppTab.SERIES -> SeriesScreen(viewModel = viewModel)
                             AppTab.TV -> TvScreen(viewModel = viewModel)
@@ -298,7 +332,7 @@ fun LuminaAppShell(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     // Navigation Tabs
-                    val tabs = listOf(AppTab.SEARCH, AppTab.HOME, AppTab.MOVIES, AppTab.SERIES, AppTab.TV, AppTab.SETTINGS)
+                    val tabs = listOf(AppTab.SEARCH, AppTab.HOME, AppTab.SPORTS, AppTab.MOVIES, AppTab.SERIES, AppTab.TV, AppTab.SETTINGS)
                     
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         tabs.forEach { tab ->
@@ -309,6 +343,7 @@ fun LuminaAppShell(
                                 AppTab.SEARCH -> "Buscar"
                                 AppTab.HOME -> "Inicio"
                                 AppTab.WATCHLIST -> "Mi lista"
+                                AppTab.SPORTS -> "Deportes"
                                 AppTab.MOVIES -> "Películas"
                                 AppTab.SERIES -> "Series"
                                 AppTab.TV -> "TV"
@@ -320,6 +355,7 @@ fun LuminaAppShell(
                                 AppTab.SEARCH -> Icons.Filled.Search
                                 AppTab.HOME -> Icons.Filled.Home
                                 AppTab.WATCHLIST -> Icons.Filled.Favorite
+                                AppTab.SPORTS -> Icons.Filled.SportsSoccer
                                 AppTab.MOVIES -> Icons.Filled.Movie
                                 AppTab.SERIES -> Icons.Filled.Tv
                                 AppTab.TV -> Icons.Filled.LiveTv

@@ -116,18 +116,6 @@ fun LuminaPremiumCard(
         label = "crossfade_alpha"
     )
 
-    // Pulse animation for the soft radial focus aura behind the focused card
-    val infiniteTransition = rememberInfiniteTransition(label = "aura_pulse_transition")
-    val breathePulse by infiniteTransition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "aura_pulse"
-    )
-
     // 2. Neighboring Card Shift Dynamics (Carousel mode)
     val neighborScaleTarget = if (isOtherFocusedInRow) 0.94f else 1f
     val animatedNeighborScale by animateFloatAsState(
@@ -198,39 +186,11 @@ fun LuminaPremiumCard(
             modifier = cardModifier,
             contentAlignment = Alignment.CenterStart
         ) {
-            // Soft Radiant Focus Ambient Glow
+            // Soft Radiant Focus Ambient Glow (Only instantiated when focused to save GPU/CPU frame budget)
             if (isFocused) {
-                val auraModifier = if (isVerticalGrid) {
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = breathePulse * 1.08f
-                            scaleY = breathePulse * 1.06f
-                        }
-                } else {
-                    Modifier
-                        .fillMaxHeight()
-                        .width(expandedWidth)
-                        .graphicsLayer {
-                            scaleX = breathePulse * 1.08f
-                            scaleY = breathePulse * 1.06f
-                        }
-                }
-
-                Box(
-                    modifier = auraModifier.drawBehind {
-                        val radialBrush = Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF00E5FF).copy(alpha = 0.28f),
-                                Color(0xFF8B5CF6).copy(alpha = 0.12f),
-                                Color.Transparent
-                            )
-                        )
-                        drawRoundRect(
-                            brush = radialBrush,
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
-                        )
-                    }
+                FocusedAuraGlow(
+                    isVerticalGrid = isVerticalGrid,
+                    expandedWidth = expandedWidth
                 )
             }
 
@@ -244,8 +204,8 @@ fun LuminaPremiumCard(
                         brush = if (isFocused) {
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFF00E5FF), // Pure Neon Cyan
-                                    Color(0xFF8B5CF6)  // Elegant Amethyst Purple
+                                    Color.White,
+                                    Color.White
                                 )
                             )
                         } else {
@@ -456,4 +416,54 @@ fun LuminaPremiumCard(
             }
         }
     }
+}
+
+@Composable
+private fun FocusedAuraGlow(
+    isVerticalGrid: Boolean,
+    expandedWidth: Dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "aura_pulse_transition")
+    val breathePulse by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aura_pulse"
+    )
+
+    val auraModifier = if (isVerticalGrid) {
+        Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = breathePulse * 1.08f
+                scaleY = breathePulse * 1.06f
+            }
+    } else {
+        Modifier
+            .fillMaxHeight()
+            .width(expandedWidth)
+            .graphicsLayer {
+                scaleX = breathePulse * 1.08f
+                scaleY = breathePulse * 1.06f
+            }
+    }
+
+    Box(
+        modifier = auraModifier.drawBehind {
+            val radialBrush = Brush.radialGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.25f),
+                    Color.White.copy(alpha = 0.08f),
+                    Color.Transparent
+                )
+            )
+            drawRoundRect(
+                brush = radialBrush,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+            )
+        }
+    )
 }

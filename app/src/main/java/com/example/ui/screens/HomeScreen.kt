@@ -360,7 +360,10 @@ val isWideLayout = context.resources.configuration.screenWidthDp >= 580
                                     horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                                     contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
                                 ) {
-                                    itemsIndexed(progressItems) { index, (item, progressVal) ->
+                                    itemsIndexed(
+                                        items = progressItems,
+                                        key = { _, (item, _) -> item.id }
+                                    ) { index, (item, progressVal) ->
                                         val fIndex = progressRowFocusedIndex
                                         val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
                                         CatalogItemHomeCard(
@@ -492,7 +495,10 @@ fun DrawCatalogRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                 contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
             ) {
-                itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                itemsIndexed(
+                    items = catalog.items.take(catalog.numItems),
+                    key = { index, item -> "${catalog.id}_${item.id}_$index" }
+                ) { index, item ->
                     val fIndex = focusedIndex
                     val isCovered = isCardCovered(index, fIndex, isFocusedNearRight, isWideLayout)
                     CatalogItemHomeCard(
@@ -556,7 +562,10 @@ fun DrawCatalogRow(
                 horizontalArrangement = Arrangement.spacedBy(4.dp.responsive()),
                 contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 3.dp.responsive())
             ) {
-                itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                itemsIndexed(
+                    items = catalog.items.take(catalog.numItems),
+                    key = { index, item -> "${catalog.id}_numbered_${item.id}_$index" }
+                ) { index, item ->
                     CatalogItemNumberedCard(
                         item = item,
                         rank = index + 1,
@@ -584,7 +593,10 @@ fun DrawCatalogRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
                 contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
             ) {
-                itemsIndexed(catalog.items.take(catalog.numItems)) { index, item ->
+                itemsIndexed(
+                    items = catalog.items.take(catalog.numItems),
+                    key = { index, item -> "${catalog.id}_fallback_${item.id}_$index" }
+                ) { index, item ->
                     val fIndex = focusedIndex
                     val isCovered = isCardCovered(index, fIndex, isFocusedNearRight, isWideLayout)
                     CatalogItemHomeCard(

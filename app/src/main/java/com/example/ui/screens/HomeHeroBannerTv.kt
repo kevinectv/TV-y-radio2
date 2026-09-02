@@ -9,6 +9,7 @@ import kotlin.math.roundToInt
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -190,8 +191,8 @@ fun HomeHeroBannerTv(
 
     var heroIndex by remember(featuredMovies) { mutableStateOf(0) }
     var autoRotateTrigger by remember { mutableStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
     val playButtonFocusRequester = remember { FocusRequester() }
+    var isHeroFocused by remember { mutableStateOf(false) }
 
     // Live Clock ticker for the Hero header
     var timeString by remember { mutableStateOf("12:00 PM") }
@@ -230,345 +231,274 @@ fun HomeHeroBannerTv(
         )
     }
 
-    val effectiveHeight = bannerHeight + 220.dp
-    Box(
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isWideLayout = configuration.screenWidthDp >= 580
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(effectiveHeight)
-            .focusRequester(playButtonFocusRequester)
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.type == KeyEventType.KeyDown) {
-                    when (keyEvent.key) {
-                        Key.DirectionLeft -> {
-                            if (heroIndex == 0) {
-                                false // Let focus bubble up to the drawer
-                            } else {
-                                heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
-                                autoRotateTrigger++
-                                true
-                            }
-                        }
-                        Key.DirectionRight -> {
-                            heroIndex = (heroIndex + 1) % featuredMovies.size
-                            autoRotateTrigger++
-                            true
-                        }
-                        else -> false
-                    }
-                } else {
-                    false
-                }
-            }
-            .focusable()
-            .clickable { onDetailsClick(currentMovie) }
+            .padding(end = 24.dp.responsive())
     ) {
-        // Top Header Row (Logo LUMINA + Clock) integrated into the top of the Hero banner scroll area
-        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-        val isWideLayout = configuration.screenWidthDp >= 580
+        // 1. TOP HEADER: Clean Lumina Brand Logo & Live Time
         Row(
             modifier = Modifier
-                .zIndex(1f)
                 .fillMaxWidth()
                 .padding(
-                    start = if (isWideLayout) 24.dp else 12.dp,
-                    end = if (isWideLayout) 32.dp else 16.dp,
-                    top = if (isWideLayout) 24.dp else 10.dp
+                    start = 8.dp.responsive(),
+                    end = 8.dp.responsive(),
+                    top = 16.dp.responsive(),
+                    bottom = 12.dp.responsive()
                 ),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Prepared Logo image using R.drawable.lumina_logo_custom (user's custom logo)
             androidx.compose.foundation.Image(
                 painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.lumina_logo_custom),
-                contentDescription = "Lumina Logo",
+                contentDescription = "Lumina",
                 modifier = Modifier
-                    .height(if (isWideLayout) 48.dp else 36.dp)
-                    .widthIn(max = if (isWideLayout) 260.dp else 190.dp),
+                    .height(if (isWideLayout) 28.dp.responsive() else 22.dp.responsive())
+                    .widthIn(max = 140.dp.responsive()),
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Live Clock
             Text(
                 text = timeString,
-                color = Color.White,
-                fontSize = if (isWideLayout) 13.sp.responsive() else 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                modifier = Modifier.padding(start = 4.dp)
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = if (isWideLayout) 12.sp.responsive() else 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp
             )
         }
 
-        // Background Backdrop with crossfade (light overlay for vivid backdrop)
-        Crossfade(
-            targetState = currentMovie,
-            animationSpec = tween(600),
-            label = "hero_tv_backdrop_fade",
-            modifier = Modifier.layout { measurable, constraints ->
-                val shift = 68.dp.roundToPx()
-                // Extend generously to the right to cover any system insets, nav bars, or parent paddings
-                val rightExtension = 120.dp.roundToPx() 
-                val newWidth = constraints.maxWidth + shift + rightExtension
-                val placeable = measurable.measure(constraints.copy(
-                    minWidth = newWidth,
-                    maxWidth = newWidth
-                ))
-                layout(placeable.width, placeable.height) {
-                    placeable.place(-shift, 0)
+        // 2. HERO FEATURE CARD CONTAINER (Exact spec from reference images)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(316.dp.responsive())
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF141724),
+                            Color(0xFF0C0E17)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.5.dp,
+                    color = if (isHeroFocused) Color.White else Color.White.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .focusRequester(playButtonFocusRequester)
+                .onFocusChanged { isHeroFocused = it.isFocused }
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.key) {
+                            Key.DirectionLeft -> {
+                                if (heroIndex == 0) {
+                                    false // Let focus bubble up to the drawer
+                                } else {
+                                    heroIndex = (heroIndex - 1 + featuredMovies.size) % featuredMovies.size
+                                    autoRotateTrigger++
+                                    true
+                                }
+                            }
+                            Key.DirectionRight -> {
+                                heroIndex = (heroIndex + 1) % featuredMovies.size
+                                autoRotateTrigger++
+                                true
+                            }
+                            else -> false
+                        }
+                    } else {
+                        false
+                    }
                 }
-            }
-        ) { targetMovie ->
-            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
-            Box(modifier = Modifier.fillMaxSize()) {
-                AsyncImage(
-                    model = richMeta.backdropUrl.ifBlank { targetMovie.backdropUrl ?: targetMovie.posterUrl },
-                    contentDescription = richMeta.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                .focusable()
+                .clickable { onDetailsClick(currentMovie) }
+        ) {
+            // Crossfade transitions when cycling featured content
+            Crossfade(
+                targetState = currentMovie,
+                animationSpec = tween(400),
+                label = "hero_tv_card_fade",
+                modifier = Modifier.fillMaxSize()
+            ) { targetMovie ->
+                val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
+                
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // A. Backdrop Image (Framed on the right & background)
+                    val context = LocalContext.current
+                    val backdropModel = remember(richMeta.backdropUrl, targetMovie.backdropUrl, targetMovie.posterUrl) {
+                        ImageRequest.Builder(context)
+                            .data(richMeta.backdropUrl.ifBlank { targetMovie.backdropUrl ?: targetMovie.posterUrl })
+                            .crossfade(200)
+                            .build()
+                    }
 
-                // Light cinematic gradients so backdrop is the absolute protagonist
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.8f),
-                                    Color.Black.copy(alpha = 0.4f),
-                                    Color.Transparent
-                                ),
-                                endX = 1200f
-                            )
-                        )
-                )
+                    AsyncImage(
+                        model = backdropModel,
+                        contentDescription = richMeta.title,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(24.dp)),
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.CenterEnd
+                    )
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.1f),
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.35f),
-                                    Color(0xFF030406)
-                                )
-                            )
-                        )
-                )
-            }
-        }
-
-        // Main Content Area (Left aligned naturally at 32.dp, positioned lower down)
-        Crossfade(
-            targetState = currentMovie,
-            animationSpec = tween(500),
-            label = "hero_tv_content_fade"
-        ) { targetMovie ->
-            val richMeta = resolveHeroMetadata(targetMovie, activeHeroLoadedDetails, featuredMovies)
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 32.dp, end = 48.dp, top = 96.dp, bottom = 48.dp),
-                contentAlignment = Alignment.BottomStart
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth(0.42f)
-                        .wrapContentHeight(),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    // 1. Logo or Title
+                    // B. Progressive Dark Gradient Scrim (Horizontal blend for left text legibility)
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(96.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        if (!richMeta.logoUrl.isNullOrBlank()) {
-                            val context = LocalContext.current
-                            coil.compose.SubcomposeAsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(richMeta.logoUrl)
-                                    .crossfade(true)
-                                    .allowHardware(false)
-                                    .transformations(TrimTransparentPixelsTransformation())
-                                    .build(),
-                                contentDescription = richMeta.title,
-                                modifier = Modifier
-                                    .heightIn(max = 110.dp)
-                                    .widthIn(max = 480.dp),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.CenterStart,
-                                loading = { },
-                                error = {
-                                    Text(
-                                        text = richMeta.title,
-                                        style = TextStyle(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 44.sp,
-                                            color = Color.White,
-                                            letterSpacing = (-1).sp,
-                                            shadow = androidx.compose.ui.graphics.Shadow(
-                                                color = Color.Black.copy(alpha = 0.9f),
-                                                offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                                blurRadius = 8f
-                                            )
-                                        ),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color(0xFF0C0E17).copy(alpha = 0.98f),
+                                        0.35f to Color(0xFF0C0E17).copy(alpha = 0.92f),
+                                        0.55f to Color(0xFF0C0E17).copy(alpha = 0.65f),
+                                        0.75f to Color(0xFF0C0E17).copy(alpha = 0.25f),
+                                        1.0f to Color.Transparent
                                     )
-                                }
+                                )
                             )
-                        } else {
+                    )
+
+                    // C. Progressive Dark Gradient Scrim (Vertical subtle bottom shade)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color.Transparent,
+                                        0.60f to Color.Transparent,
+                                        1.0f to Color(0xFF0C0E17).copy(alpha = 0.60f)
+                                    )
+                                )
+                            )
+                    )
+
+                    // D. Left Content Area (Specs: Subtitle, Title, Description, Watch Now Button)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .widthIn(max = 340.dp.responsive())
+                            .padding(
+                                start = 32.dp.responsive(),
+                                top = 32.dp.responsive(),
+                                bottom = 32.dp.responsive(),
+                                end = 16.dp.responsive()
+                            ),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp.responsive())
+                        ) {
+                            // Subtitle Metadata Line: Category • Year • Duration
+                            val metadataParts = listOfNotNull(
+                                richMeta.genres.ifEmpty { null },
+                                richMeta.year.ifEmpty { null },
+                                richMeta.duration.ifEmpty { null }
+                            )
+                            Text(
+                                text = metadataParts.joinToString(" • "),
+                                fontSize = 11.sp.responsive(),
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.65f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            // Main Title Display
                             Text(
                                 text = richMeta.title,
                                 style = TextStyle(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 44.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 26.sp.responsive(),
                                     color = Color.White,
-                                    letterSpacing = (-1).sp,
-                                    shadow = androidx.compose.ui.graphics.Shadow(
-                                        color = Color.Black.copy(alpha = 0.9f),
-                                        offset = androidx.compose.ui.geometry.Offset(2f, 2f),
-                                        blurRadius = 8f
-                                    )
+                                    letterSpacing = (-0.5).sp
                                 ),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            // Synopsis Overview
+                            Text(
+                                text = richMeta.description,
+                                color = Color.White.copy(alpha = 0.72f),
+                                fontSize = 11.5.sp.responsive(),
+                                lineHeight = 17.sp.responsive(),
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
-                    }
 
-                    // 2. Year • Duration • Genres
-                    Row(
-                        modifier = Modifier.wrapContentWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            text = richMeta.year,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
-                        Text(
-                            text = richMeta.duration,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp
-                        )
-                        Text(text = "•", color = Color.White.copy(alpha = 0.4f), fontSize = 14.sp)
-                        Text(
-                            text = richMeta.genres,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                    }
-
-                    // 3. Short Synopsis
-                    Text(
-                        text = richMeta.description,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 14.sp,
-                        maxLines = 3,
-                        lineHeight = 20.sp,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // 4. Primary Play Button & Carousel Indicators
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(48.dp)
-                    ) {
-                        // Original Rectangular Play Button
+                        // Primary Action Pill Button ("Watch now" / "Reproducir")
                         Surface(
-                            color = Color.White,
-                            shape = RoundedCornerShape(8.dp),
+                            color = if (isHeroFocused) Color.White else Color(0xFFE6E8F0),
+                            shape = CircleShape,
+                            shadowElevation = if (isHeroFocused) 8.dp else 2.dp,
                             modifier = Modifier
                                 .clickable { onTrailerClick(targetMovie) }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
+                                modifier = Modifier.padding(
+                                    horizontal = 22.dp.responsive(),
+                                    vertical = 10.dp.responsive()
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.PlayArrow,
-                                    contentDescription = "Reproducir",
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(22.dp)
+                                    contentDescription = null,
+                                    tint = Color(0xFF10131B),
+                                    modifier = Modifier.size(18.dp.responsive())
                                 )
                                 Text(
                                     text = "Reproducir",
-                                    color = Color.Black,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Black
+                                    color = Color(0xFF10131B),
+                                    fontSize = 12.5.sp.responsive(),
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
-                        
-                        // 5. Carousel Indicators
-                        val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
-                        if (featuredMovies.isNotEmpty()) {
+                    }
+
+                    // E. Carousel Indicator Dots (Bottom Right Pill Capsule)
+                    val currentIndex = featuredMovies.indexOfFirst { it.id == currentMovie.id }.coerceAtLeast(0)
+                    if (featuredMovies.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 28.dp.responsive(), bottom = 28.dp.responsive())
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black.copy(alpha = 0.40f))
+                                .padding(horizontal = 10.dp.responsive(), vertical = 6.dp.responsive())
+                        ) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.align(Alignment.CenterVertically).offset(y = 4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp.responsive()),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                featuredMovies.forEachIndexed { index, _ ->
-                                    val isActive = index == currentIndex
+                                val dotCount = featuredMovies.size.coerceAtMost(7)
+                                val activeDotIndex = (currentIndex % dotCount)
+                                for (i in 0 until dotCount) {
+                                    val isActive = i == activeDotIndex
                                     Box(
                                         modifier = Modifier
-                                            .height(6.dp)
-                                            .width(if (isActive) 24.dp else 6.dp)
-                                            .clip(RoundedCornerShape(3.dp))
+                                            .size(if (isActive) 6.5.dp.responsive() else 5.dp.responsive())
+                                            .clip(CircleShape)
                                             .background(
-                                                color = if (isActive) Color.White else Color.White.copy(alpha = 0.35f),
-                                                shape = RoundedCornerShape(3.dp)
+                                                if (isActive) Color.White else Color.White.copy(alpha = 0.35f)
                                             )
                                     )
                                 }
                             }
                         }
                     }
-                }
-            }
-        }
-        
-        // Floating Play Button on the right (decorative, non-focusable)
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 138.dp, end = 80.dp)
-                .focusable(false)
-        ) {
-            Surface(
-                color = Color.White,
-                shape = CircleShape,
-                shadowElevation = 8.dp,
-                modifier = Modifier
-                    .size(68.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(38.dp)
-                    )
                 }
             }
         }
