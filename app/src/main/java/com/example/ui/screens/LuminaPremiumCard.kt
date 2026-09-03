@@ -1,12 +1,10 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,14 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,28 +32,23 @@ import com.example.ui.components.responsive
 
 @Composable
 private fun getLocalNormalCardWidth(isWideLayout: Boolean): Dp =
-    if (isWideLayout) 100.dp.responsive() else 115.dp.responsive()
-
-@Composable
-private fun getLocalExpandedCardWidth(isWideLayout: Boolean): Dp =
-    if (isWideLayout) 200.dp.responsive() else 230.dp.responsive()
+    if (isWideLayout) 230.dp.responsive() else 115.dp.responsive()
 
 @Composable
 private fun getLocalCardHeight(isWideLayout: Boolean): Dp =
-    if (isWideLayout) 150.dp.responsive() else 172.dp.responsive()
+    if (isWideLayout) 130.dp.responsive() else 172.dp.responsive()
 
 /**
- * LuminaPremiumCard - Rebuilt from scratch to deliver an ultra-premium, modern, and highly-optimized
- * visual identity for Lumina on Android TV and mobile.
+ * LuminaPremiumCard - Modern landscape card design for Movies and Series on Android TV.
  *
  * Visual principles:
- * - Minimalist, elegant design. Zero unnecessary visual noise.
- * - Sized perfectly (slightly smaller to fit more cards on screen).
- * - Standard 2:3 aspect ratio posters that are never deformed or squished.
- * - Android TV Mode: Only shows the clean poster. No title/metadata underneath.
- * - Phone Mode: Displays a highly-polished, clean title and metadata row underneath the poster.
- * - Smooth luxury horizontal expansion in rows with active neighbor shifting and opacity fade.
- * - Lightweight graphicsLayer-based translations & scaling for guaranteed smooth 60fps.
+ * - Horizontal layout (16:9 ratio, wider than tall).
+ * - Fixed size: absolutely NO expansion, zoom, or scale on focus.
+ * - Backdrop/horizontal image as the primary visual layer.
+ * - Movie/Series logo overlaid proportionally on the image when available.
+ * - If no logo is available, displays the horizontal image with subtle title text.
+ * - Focus is strictly a visual indicator: crisp, pure white border (Color.White, 2.5.dp).
+ * - Mobile/phone layout remains unchanged with vertical 2:3 poster and metadata underneath.
  */
 @Composable
 fun LuminaPremiumCard(
@@ -77,73 +67,27 @@ fun LuminaPremiumCard(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val density = LocalDensity.current
-
-    // Detect screen type
-    val isWideLayout = context.resources.configuration.screenWidthDp >= 580
+    val isTv = remember(context) { isAndroidTvDevice(context) }
+    val isWideLayout = context.resources.configuration.screenWidthDp >= 580 || isTv
     val isVerticalGrid = layoutType == "Vertical" && rank == null
 
-    // Precise Card Sizing Metrics
+    // Fixed Card Sizing Metrics: NO scale, NO expansion
     val normalWidth = getLocalNormalCardWidth(isWideLayout)
-    val expandedWidth = getLocalExpandedCardWidth(isWideLayout)
     val cardHeight = getLocalCardHeight(isWideLayout)
-    val widthDelta = expandedWidth - normalWidth
 
-    // 1. High Performance Fluid Core Animations
-    val scaleOnFocus by animateFloatAsState(
-        targetValue = if (isFocused) 1.05f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "scale_focus"
-    )
-
-    // Horizontal width expansion for Carousel rows
-    val animatedWidth by animateDpAsState(
-        targetValue = if (isFocused) expandedWidth else normalWidth,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "expanded_width"
-    )
-
-    // Smooth backdrop crossfade on expansion
-    val backdropAlpha by animateFloatAsState(
-        targetValue = if (isFocused) 1f else 0f,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-        label = "crossfade_alpha"
-    )
-
-    // 2. Neighboring Card Shift Dynamics (Carousel mode)
-    val neighborScaleTarget = if (isOtherFocusedInRow) 0.94f else 1f
-    val animatedNeighborScale by animateFloatAsState(
-        targetValue = neighborScaleTarget,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-        label = "neighbor_scale"
-    )
-
-    val neighborAlphaTarget = if (isOtherFocusedInRow) 0.55f else 1f
-    val animatedNeighborAlpha by animateFloatAsState(
-        targetValue = neighborAlphaTarget,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-        label = "neighbor_alpha"
-    )
-
-    val neighborShiftTarget = if (isOtherFocusedInRow && focusedIndex != null) {
-        val direction = if (cardIndex > focusedIndex) 1f else -1f
-        14.dp * direction
-    } else {
-        0.dp
+    // Image to display: On TV/wide, prioritize horizontal backdrop; fallback to poster
+    val imageUrl = remember(isWideLayout, item.backdropUrl, item.posterUrl) {
+        if (isWideLayout) {
+            when {
+                !item.backdropUrl.isNullOrBlank() -> item.backdropUrl
+                !item.posterUrl.isNullOrBlank() -> item.posterUrl
+                else -> ""
+            }
+        } else {
+            item.posterUrl
+        }
     }
-    val animatedNeighborShift by animateDpAsState(
-        targetValue = neighborShiftTarget,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-        label = "neighbor_shift"
-    )
 
-    // Main layout: On Phone (not isWideLayout), wrap the Card and the text underneath in a unified column.
     Column(
         modifier = modifier
             .onFocusChanged { state ->
@@ -155,209 +99,149 @@ fun LuminaPremiumCard(
             }
             .focusable()
             .clickable { onClick() }
-            // Apply standard touch target padding
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        // Visual Card Body Container
-        val cardModifier = if (isVerticalGrid) {
+        val cardFrameModifier = if (isVerticalGrid) {
             Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f)
-                .zIndex(if (isFocused) 10f else 1f)
-                .graphicsLayer {
-                    scaleX = scaleOnFocus
-                    scaleY = scaleOnFocus
-                }
+                .aspectRatio(if (isWideLayout) (16f / 9f) else (2f / 3f))
         } else {
             Modifier
-                .width(animatedWidth)
+                .width(normalWidth)
                 .height(cardHeight)
-                .zIndex(if (isFocused) 10f else 1f)
-                .graphicsLayer {
-                    scaleX = animatedNeighborScale
-                    scaleY = animatedNeighborScale
-                    alpha = animatedNeighborAlpha
-                    translationX = animatedNeighborShift.toPx()
-                }
         }
 
         Box(
-            modifier = cardModifier,
-            contentAlignment = Alignment.CenterStart
+            modifier = cardFrameModifier
+                .zIndex(if (isFocused) 2f else 1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF0D0E15))
+                .border(
+                    width = if (isFocused) 2.5.dp else 1.dp,
+                    color = if (isFocused) Color.White else Color.White.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            // Soft Radiant Focus Ambient Glow (Only instantiated when focused to save GPU/CPU frame budget)
-            if (isFocused) {
-                FocusedAuraGlow(
-                    isVerticalGrid = isVerticalGrid,
-                    expandedWidth = expandedWidth
-                )
-            }
+            // Horizontal Backdrop / Poster Image
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = item.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.Center
+            )
 
-            // Main Card Surface Wrap (rounded & clipped)
+            // Cinematic gradient overlay for depth and logo readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(
-                        width = if (isFocused) 1.5.dp else 0.5.dp,
-                        brush = if (isFocused) {
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color.White,
-                                    Color.White
-                                )
-                            )
-                        } else {
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.08f),
-                                    Color.White.copy(alpha = 0.04f)
-                                )
-                            )
-                        },
-                        shape = RoundedCornerShape(12.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = if (isWideLayout) 0.60f else 0.45f)
+                            ),
+                            startY = 0.35f
+                        )
                     )
-                    .background(Color(0xFF0D0E15))
-            ) {
-                if (isVerticalGrid) {
-                    // Vertical Grid Visual: Always show high-quality full poster
+            )
+
+            // TV Mode: Movie/Series Logo overlay or Title text if logo is not available
+            if (isWideLayout) {
+                if (!item.logoUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = item.posterUrl,
+                        model = item.logoUrl,
                         contentDescription = item.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth(0.68f)
+                            .fillMaxHeight(0.48f)
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        contentScale = ContentScale.Fit,
                         alignment = Alignment.Center
                     )
-
-                    // Soft bottom darkening gradient shadow to protect title/progress legibility if needed
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.5f)
-                                    ),
-                                    startY = 0.5f
-                                )
-                            )
-                    )
                 } else {
-                    // Horizontal Row Visual with Smooth Cinematic Expansion
                     Box(
                         modifier = Modifier
-                            .width(expandedWidth)
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        // 1. Unfocused/Compressed Poster View
-                        AsyncImage(
-                            model = item.posterUrl,
-                            contentDescription = item.title,
-                            modifier = Modifier
-                                .width(normalWidth)
-                                .fillMaxHeight(),
-                            contentScale = ContentScale.Crop,
-                            alignment = Alignment.CenterStart
-                        )
-
-                        // 2. Focused Crossfade Widescreen Backdrop View
-                        if (isFocused || backdropAlpha > 0f) {
-                            val backdropModel = if (!item.backdropUrl.isNullOrEmpty()) item.backdropUrl else item.posterUrl
-                            AsyncImage(
-                                model = backdropModel,
-                                contentDescription = item.title,
-                                modifier = Modifier
-                                    .width(expandedWidth)
-                                    .fillMaxHeight()
-                                    .graphicsLayer { alpha = backdropAlpha },
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.CenterStart
-                            )
-
-                            // Subtle overlay gradient on focused backdrop for cinema feel
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer { alpha = backdropAlpha }
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color.Transparent,
-                                                Color.Black.copy(alpha = 0.7f)
-                                            ),
-                                            startY = 0.4f
-                                        )
-                                    )
-                            )
-                        }
-                    }
-                }
-
-                // Mini Glowing Progress Bar
-                if (progress > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp.responsive())
                             .align(Alignment.BottomStart)
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp.responsive(), vertical = 10.dp.responsive())
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(progress)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        colors = listOf(
-                                            Color(0xFF00E5FF),
-                                            Color(0xFF8B5CF6)
-                                        )
-                                    )
-                                )
-                        )
-                    }
-                }
-
-                // Minimal Indicator Badges (Favorite Heart)
-                if (isFavorite) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(20.dp)
-                            .background(Color.Black.copy(alpha = 0.65f), CircleShape)
-                            .padding(4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "Favorite",
-                            tint = Color(0xFFE91E63),
-                            modifier = Modifier.fillMaxSize()
+                        Text(
+                            text = item.title,
+                            color = Color.White,
+                            fontSize = 13.sp.responsive(),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
 
-            // High-End 3D Rank Offset Number for Rank Rows (Bleeds elegantly to the left of the poster)
+            // Progress Bar (if watched/in-progress)
+            if (progress > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp.responsive())
+                        .align(Alignment.BottomStart)
+                        .background(Color.White.copy(alpha = 0.2f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(progress)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF00E5FF),
+                                        Color(0xFF8B5CF6)
+                                    )
+                                )
+                            )
+                    )
+                }
+            }
+
+            // Favorite Indicator Heart Badge
+            if (isFavorite) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(20.dp)
+                        .background(Color.Black.copy(alpha = 0.65f), CircleShape)
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Favorite",
+                        tint = Color(0xFFE91E63),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            // Numbered rank for Top rows
             if (rank != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .offset(x = (-12).dp.responsive(), y = 6.dp.responsive())
+                        .offset(x = (-8).dp.responsive(), y = 6.dp.responsive())
                         .zIndex(15f)
                 ) {
                     Text(
                         text = rank.toString(),
                         color = Color(0xFF08090E),
-                        fontSize = 68.sp.responsive(),
+                        fontSize = 54.sp.responsive(),
                         fontWeight = FontWeight.Black,
                         style = TextStyle(
                             shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color(0xFF00E5FF).copy(alpha = 0.9f),
+                                color = Color.White.copy(alpha = 0.9f),
                                 offset = androidx.compose.ui.geometry.Offset(1f, 1f),
                                 blurRadius = 4f
                             )
@@ -367,15 +251,14 @@ fun LuminaPremiumCard(
             }
         }
 
-        // 3. Metadata Section (ONLY show on Phone views to preserve perfect TV minimalism)
+        // Metadata Section (Phone mode only: vertical poster has title/year/genre underneath)
         if (!isWideLayout) {
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Text wraps neatly, restricted to Card Width
             val textWidthModifier = if (isVerticalGrid) {
                 Modifier.fillMaxWidth()
             } else {
-                Modifier.width(animatedWidth)
+                Modifier.width(normalWidth)
             }
 
             Column(
@@ -416,54 +299,4 @@ fun LuminaPremiumCard(
             }
         }
     }
-}
-
-@Composable
-private fun FocusedAuraGlow(
-    isVerticalGrid: Boolean,
-    expandedWidth: Dp
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "aura_pulse_transition")
-    val breathePulse by infiniteTransition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "aura_pulse"
-    )
-
-    val auraModifier = if (isVerticalGrid) {
-        Modifier
-            .fillMaxSize()
-            .graphicsLayer {
-                scaleX = breathePulse * 1.08f
-                scaleY = breathePulse * 1.06f
-            }
-    } else {
-        Modifier
-            .fillMaxHeight()
-            .width(expandedWidth)
-            .graphicsLayer {
-                scaleX = breathePulse * 1.08f
-                scaleY = breathePulse * 1.06f
-            }
-    }
-
-    Box(
-        modifier = auraModifier.drawBehind {
-            val radialBrush = Brush.radialGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.25f),
-                    Color.White.copy(alpha = 0.08f),
-                    Color.Transparent
-                )
-            )
-            drawRoundRect(
-                brush = radialBrush,
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
-            )
-        }
-    )
 }

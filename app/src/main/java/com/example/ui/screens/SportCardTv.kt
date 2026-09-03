@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,6 +18,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +29,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.MatchStatus
 import com.example.data.model.SportMatch
+import com.example.ui.components.LocalTvFocusReporter
+import com.example.ui.components.LocalTvRowCoordinates
+import com.example.ui.components.TvFocusBounds
 import com.example.ui.components.responsive
 import com.example.ui.components.tvFocusEffect
 
@@ -34,7 +39,8 @@ import com.example.ui.components.tvFocusEffect
 fun SportCardTv(
     match: SportMatch,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onFocusChanged: ((Boolean) -> Unit)? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -61,7 +67,10 @@ fun SportCardTv(
         modifier = modifier
             .width(280.dp.responsive())
             .height(132.dp.responsive())
-            .onFocusChanged { isFocused = it.isFocused }
+            .onFocusChanged {
+                isFocused = it.isFocused
+                onFocusChanged?.invoke(it.isFocused)
+            }
             .clip(RoundedCornerShape(14.dp))
             .background(cardBg)
             .tvFocusEffect(

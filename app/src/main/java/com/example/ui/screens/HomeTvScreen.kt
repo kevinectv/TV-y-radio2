@@ -13,21 +13,25 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.data.model.CatalogItem
 import com.example.ui.MediaViewModel
+import com.example.ui.components.TvFocusRowContainer
 import com.example.ui.components.responsive
 
 import androidx.compose.material.icons.filled.SportsSoccer
 import com.example.data.model.SportMatch
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun HomeTvScreen(
     modifier: Modifier = Modifier,
@@ -109,7 +113,7 @@ fun HomeTvScreen(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(if (isWideLayout) 28.dp.responsive() else 18.dp.responsive()),
                     contentPadding = PaddingValues(
-                        start = 68.dp,
+                        start = 0.dp,
                         top = 4.dp,
                         bottom = 90.dp
                     )
@@ -117,9 +121,10 @@ fun HomeTvScreen(
                     item {
                         Box(
                             modifier = Modifier
+                                .padding(start = if (isWideLayout) 76.dp else 0.dp)
                                 .focusRequester(heroFocusRequester)
                                 .focusProperties {
-                                    if (progressItems.isNotEmpty() || firstNonEmptyCatalogIndex != -1) {
+                                    if (progressItems.isNotEmpty() || sportsFeatured.isNotEmpty() || firstNonEmptyCatalogIndex != -1) {
                                         down = firstRowFocusRequester
                                     }
                                 }
@@ -143,12 +148,14 @@ fun HomeTvScreen(
 
                     if (progressItems.isNotEmpty()) {
                         item {
+                            val progressFirstCardFocusRequester = remember { FocusRequester() }
                             Box(
                                 modifier = Modifier
                                     .focusRequester(firstRowFocusRequester)
                                     .focusProperties {
                                         up = heroFocusRequester
                                     }
+                                    .focusRestorer { progressFirstCardFocusRequester }
                                     .focusGroup()
                             ) {
                                 Column {
@@ -162,39 +169,50 @@ fun HomeTvScreen(
                                     var progressRowFocusedIndex by remember { mutableStateOf<Int?>(null) }
                                     var progressRowFocusedNearRight by remember { mutableStateOf(false) }
                                     
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-                                        contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
+                                    TvFocusRowContainer(
+                                        isRowActive = progressRowFocusedIndex != null,
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        itemsIndexed(
-                                            items = progressItems,
-                                            key = { _, (item, _) -> item.id }
-                                        ) { index, (item, progressVal) ->
-                                            val fIndex = progressRowFocusedIndex
-                                            val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
-                                            CatalogItemHomeCard(
-                                                item = item,
-                                                layoutType = "Landscape Row",
-                                                isFavorite = item.id in favoriteCatalogItems,
-                                                progress = progressVal,
-                                                onFocus = {},
-                                                onFocusChange = { isFocused, isNearRight ->
-                                                    if (isFocused) {
-                                                        progressRowFocusedIndex = index
-                                                        progressRowFocusedNearRight = isNearRight
-                                                    } else {
-                                                        if (progressRowFocusedIndex == index) {
-                                                            progressRowFocusedIndex = null
-                                                        }
-                                                    }
-                                                },
-                                                isOtherFocusedInRow = isCovered,
-                                                onClick = {
-                                                    viewModel.selectedDetailsItem.value = item
-                                                },
-                                                cardIndex = index,
-                                                focusedIndex = fIndex
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
+                                            contentPadding = PaddingValues(
+                                                start = if (isWideLayout) 76.dp else 16.dp.responsive(),
+                                                end = 24.dp.responsive(),
+                                                top = 8.dp.responsive(),
+                                                bottom = 8.dp.responsive()
                                             )
+                                        ) {
+                                            itemsIndexed(
+                                                items = progressItems,
+                                                key = { _, (item, _) -> item.id }
+                                            ) { index, (item, progressVal) ->
+                                                val fIndex = progressRowFocusedIndex
+                                                val isCovered = isCardCovered(index, fIndex, progressRowFocusedNearRight, isWideLayout)
+                                                CatalogItemHomeCard(
+                                                    item = item,
+                                                    layoutType = "Landscape Row",
+                                                    isFavorite = item.id in favoriteCatalogItems,
+                                                    progress = progressVal,
+                                                    onFocus = {},
+                                                    onFocusChange = { isFocused, isNearRight ->
+                                                        if (isFocused) {
+                                                            progressRowFocusedIndex = index
+                                                            progressRowFocusedNearRight = isNearRight
+                                                        } else {
+                                                            if (progressRowFocusedIndex == index) {
+                                                                progressRowFocusedIndex = null
+                                                            }
+                                                        }
+                                                    },
+                                                    isOtherFocusedInRow = isCovered,
+                                                    onClick = {
+                                                        viewModel.selectedDetailsItem.value = item
+                                                    },
+                                                    modifier = if (index == 0) Modifier.focusRequester(progressFirstCardFocusRequester) else Modifier,
+                                                    cardIndex = index,
+                                                    focusedIndex = fIndex
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -206,6 +224,7 @@ fun HomeTvScreen(
                     if (sportsFeatured.isNotEmpty()) {
                         item(key = "home_sports_row") {
                             val isFirstRow = progressItems.isEmpty()
+                            val sportsFirstCardFocusRequester = remember { FocusRequester() }
                             Box(
                                 modifier = Modifier
                                     .then(if (isFirstRow) Modifier.focusRequester(firstRowFocusRequester) else Modifier)
@@ -214,6 +233,7 @@ fun HomeTvScreen(
                                             up = heroFocusRequester
                                         }
                                     }
+                                    .focusRestorer { sportsFirstCardFocusRequester }
                                     .focusGroup()
                             ) {
                                 Column {
@@ -224,20 +244,37 @@ fun HomeTvScreen(
                                     )
                                     Spacer(modifier = Modifier.height(if (isWideLayout) 8.dp.responsive() else 12.dp.responsive()))
 
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
-                                        contentPadding = PaddingValues(horizontal = 16.dp.responsive(), vertical = 8.dp.responsive())
+                                    var sportsFocusedIndex by remember { mutableStateOf<Int?>(null) }
+
+                                    TvFocusRowContainer(
+                                        isRowActive = sportsFocusedIndex != null,
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        items(
-                                            items = sportsFeatured,
-                                            key = { "home_sport_${it.id}" }
-                                        ) { match ->
-                                            SportCardTv(
-                                                match = match,
-                                                onClick = {
-                                                    selectedSportMatchForDetails = match
-                                                }
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp.responsive()),
+                                            contentPadding = PaddingValues(
+                                                start = if (isWideLayout) 76.dp else 16.dp.responsive(),
+                                                end = 24.dp.responsive(),
+                                                top = 8.dp.responsive(),
+                                                bottom = 8.dp.responsive()
                                             )
+                                        ) {
+                                            itemsIndexed(
+                                                items = sportsFeatured,
+                                                key = { _, it -> "home_sport_${it.id}" }
+                                            ) { index, match ->
+                                                SportCardTv(
+                                                    match = match,
+                                                    modifier = if (index == 0) Modifier.focusRequester(sportsFirstCardFocusRequester) else Modifier,
+                                                    onFocusChanged = { focused ->
+                                                        if (focused) sportsFocusedIndex = index
+                                                        else if (sportsFocusedIndex == index) sportsFocusedIndex = null
+                                                    },
+                                                    onClick = {
+                                                        selectedSportMatchForDetails = match
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -249,29 +286,20 @@ fun HomeTvScreen(
                         if (catalog.items.isNotEmpty()) {
                             item(key = "catalog_${catalog.name}") {
                                 val isFirstRow = progressItems.isEmpty() && sportsFeatured.isEmpty() && index == firstNonEmptyCatalogIndex
-                                Box(
-                                    modifier = Modifier
-                                        .then(if (isFirstRow) Modifier.focusRequester(firstRowFocusRequester) else Modifier)
-                                        .focusProperties {
-                                            if (isFirstRow) {
-                                                up = heroFocusRequester
-                                            }
-                                        }
-                                        .focusGroup()
-                                ) {
-                                    val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
-                                    DrawCatalogRow(
-                                        catalog = catalog,
-                                        favoriteCatalogItems = favoriteCatalogItems,
-                                        seenProgress = seenProgress,
-                                        customTitle = displayName,
-                                        customIcon = displayIcon,
-                                        onFocus = {},
-                                        onClick = { clickedItem ->
-                                            viewModel.selectedDetailsItem.value = clickedItem
-                                        }
-                                    )
-                                }
+                                val (displayName, displayIcon) = getCategoryDisplayInfo(catalog.name)
+                                DrawCatalogRow(
+                                    catalog = catalog,
+                                    favoriteCatalogItems = favoriteCatalogItems,
+                                    seenProgress = seenProgress,
+                                    customTitle = displayName,
+                                    customIcon = displayIcon,
+                                    rowFocusRequester = if (isFirstRow) firstRowFocusRequester else null,
+                                    upFocusRequester = if (isFirstRow) heroFocusRequester else null,
+                                    onFocus = {},
+                                    onClick = { clickedItem ->
+                                        viewModel.selectedDetailsItem.value = clickedItem
+                                    }
+                                )
                             }
                         }
                     }
